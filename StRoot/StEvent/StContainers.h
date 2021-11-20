@@ -146,6 +146,7 @@ class StEtrHit;
 class StFcsCluster;
 class StFcsHit;
 class StFcsPoint;
+class StFttRawHit;
 class StFgtHit;
 class StFgtPoint;
 class StFgtStrip;
@@ -218,6 +219,7 @@ StCollectionDef(EtrHit)
 StCollectionDef(FcsCluster)
 StCollectionDef(FcsHit)
 StCollectionDef(FcsPoint)
+StCollectionDef(FttRawHit)
 StCollectionDef(FgtHit)
 StCollectionDef(FgtPoint)
 StCollectionDef(FgtStrip)

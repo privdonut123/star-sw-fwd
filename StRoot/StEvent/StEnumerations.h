@@ -302,10 +302,11 @@ enum StDetectorId {kUnknownId   = kUnknownIdentifier,
                    kFtsId       = kFtsIdentifier,
                    kiTpcId      = kiTpcIdentifier,
                    kETofId      = kETofIdentifier,
-		   kFcsWcalId   = kFcsWcalIdentifier,
-		   kFcsHcalId   = kFcsHcalIdentifier,
-		   kFcsPresId   = kFcsPresIdentifier,		   
-                   kMaxDetectorId = 44};
+		           kFcsWcalId   = kFcsWcalIdentifier,
+		           kFcsHcalId   = kFcsHcalIdentifier,
+		           kFcsPresId   = kFcsPresIdentifier,
+                   kFttId       = kFttIdentifier,
+                   kMaxDetectorId = 45};
 
 /*!
  * \enum StTrackType
@@ -341,7 +342,7 @@ enum StDedxMethod {kUndefinedMethodId        = kUndefinedMethodIdentifier,
                   kEnsembleTruncatedMeanId   = kEnsembleTruncatedMeanIdentifier,
                   kLikelihoodFitId           = kLikelihoodFitIdentifier,
                   kWeightedTruncatedMeanId   = kWeightedTruncatedMeanIdentifier,
-		  kOtherMethodId             = kOtherMethodIdentifier,
+                  kOtherMethodId             = kOtherMethodIdentifier,
                   kOtherMethodId2            = kOtherMethodIdentifier2};
 
 /*!
