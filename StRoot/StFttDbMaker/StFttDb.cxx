@@ -111,28 +111,28 @@ void StFttDb::loadHardwareMapFromFile( std::string fn ){
 // Row 3 and 4 are always diagonal
 // odd (even) FOB are horizontal (vertical) for A and C (B and D)
 // even (odd) FOB are vertical (horizontal) for A and C (B and D)
-StFttDb::StripOrientation StFttDb::getOrientation( int rob, int feb, int vmm, int row ) const {
+UChar_t StFttDb::getOrientation( int rob, int feb, int vmm, int row ) const {
     if ( mDebug ) {
         printf( "getOrientation( %d, %d, %d, %d )", rob, feb, vmm, row ); puts("");
     }
     if ( 3 == row || 4 == row ){
-        return StFttDb::StripOrientation::Diagonal;
+        return kFttDiagonal;
     }
     if ( rob % 2 == 0 ){ // even rob
         if ( feb % 2 != 0 ) { // odd
-            return StFttDb::StripOrientation::Horizontal;
+            return kFttHorizontal;
         }
         // even
-        return StFttDb::StripOrientation::Vertical;
+        return kFttVertical;
     } else { // odd rob
         if ( feb % 2 != 0 ) { // odd
-            return StFttDb::StripOrientation::Vertical;
+            return kFttVertical;
         }
         // even
-        return StFttDb::StripOrientation::Horizontal;
+        return kFttHorizontal;
     }
     // should never get here!
-    return StFttDb::StripOrientation::Unknown;
+    return kFttUnknownOrientation;
 }
 
 /* get 
@@ -150,7 +150,7 @@ StFttDb::StripOrientation StFttDb::getOrientation( int rob, int feb, int vmm, in
  *      orientation: one of {Horizontal, Vertical, Diagonal, Unknown}
  *
  */
-bool StFttDb::hardwareMap( int rob, int feb, int vmm, int ch, int &row, int &strip, StFttDb::StripOrientation &orientation ) const{
+bool StFttDb::hardwareMap( int rob, int feb, int vmm, int ch, int &row, int &strip, UChar_t &orientation ) const{
     uint16_t key = packKey( feb, vmm, ch );
     if ( mMap.count( key ) ){
         uint16_t val = mMap.at( key );
@@ -173,7 +173,7 @@ bool StFttDb::hardwareMap( StFttRawHit * hit ) const{
         u_char iQuad = hit->rdo() - 1;
         int rob = iQuad + ( iPlane *nQuadPerPlane ) + 1;
 
-        StripOrientation orientation = getOrientation( rob, hit->feb()+1, hit->vmm()+1, row );
+        UChar_t orientation = getOrientation( rob, hit->feb()+1, hit->vmm()+1, row );
         hit->setMapping( iPlane, iQuad, row, strip, orientation );
         return true;
     }
@@ -201,9 +201,9 @@ UChar_t StFttDb::fob( StFttRawHit * hit ){
     return hit->feb() + ( quadrant( hit ) * nFobPerQuad ) + ( plane(hit) * nFobPerPlane ) + 1;
 }
 
-StFttDb::StripOrientation StFttDb::orientation( StFttRawHit * hit ){
-    if ( hit->orientation() < (UChar_t) StripOrientation::Unknown ){
-        return (StripOrientation) hit->orientation();
+UChar_t StFttDb::orientation( StFttRawHit * hit ){
+    if ( hit->orientation() < kFttUnknownOrientation ){
+        return hit->orientation();
     }
-    return StripOrientation::Unknown;
+    return kFttUnknownOrientation;
 }

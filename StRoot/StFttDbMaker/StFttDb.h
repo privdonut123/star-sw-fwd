@@ -48,20 +48,20 @@ public:
     
 
   // Enum for strip orientation in descriptive terms
-    enum StripOrientation {
-        Horizontal = 0,
-        Vertical = 1,
-        Diagonal = 2,
-        Unknown = 3
-    };
+    // enum StripOrientation {
+    //     Horizontal = 0,
+    //     Vertical = 1,
+    //     Diagonal = 2,
+    //     Unknown = 3
+    // };
 
-    // need non-class enum to get CINT to work
-    enum Quadrant {
-        A = 0,
-        B = 1,
-        C = 2,
-        D = 3
-    };
+    // // need non-class enum to get CINT to work
+    // enum Quadrant {
+    //     A = 0,
+    //     B = 1,
+    //     C = 2,
+    //     D = 3
+    // };
     static double stripPitch; // mm
     static double rowLength; // mm
 
@@ -92,9 +92,9 @@ public:
     static const int maxTb           = 32768 + 1000;
 
 
-    StripOrientation orientation( StFttRawHit * hit );
-    StripOrientation getOrientation( int rob, int feb, int vmm, int row ) const;
-    bool hardwareMap( int rob, int feb, int vmm, int ch, int &row, int &strip, StripOrientation &orientation ) const;
+    UChar_t orientation( StFttRawHit * hit );
+    UChar_t getOrientation( int rob, int feb, int vmm, int row ) const;
+    bool hardwareMap( int rob, int feb, int vmm, int ch, int &row, int &strip, UChar_t &orientation ) const;
     bool hardwareMap( StFttRawHit * rawHit ) const;
 
  private:
