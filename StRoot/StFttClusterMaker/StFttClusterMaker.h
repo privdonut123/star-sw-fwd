@@ -12,10 +12,16 @@
 #ifndef STFTTCLUSTERMAKER_H
 #define STFTTCLUSTERMAKER_H
 #include "StMaker.h"
+#include <vector>
+#include <map>
+
+
 
 class StFttDb;
 class StEvent;
 class StFttCollection;
+class StFttRawHit;
+class StFttCluster;
 
 class StFttClusterMaker: public StMaker {
 
@@ -33,6 +39,11 @@ public:
 
 private:
     void ApplyHardwareMap();
+    std::vector<StFttCluster*> FindClusters( std::vector<StFttRawHit * >, UChar_t );
+    StFttRawHit * FindMaxAdc( std::vector<StFttRawHit *>, size_t &pos );
+
+    void InjectTestData();
+    
     StEvent*             mEvent;
     StFttCollection*     mFttCollection;
     Int_t                mRunYear;
