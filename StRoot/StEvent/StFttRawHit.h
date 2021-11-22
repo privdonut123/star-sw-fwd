@@ -13,6 +13,7 @@
 
 #include <Stiostream.h>
 #include "StObject.h"
+#include "StEnumerations.h"
 
 
 class StFttRawHit : public StObject {

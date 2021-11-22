@@ -36,10 +36,10 @@ public:
     const StSPtrVecFttRawHit& rawHits() const; // Return the hit list
     unsigned int numberOfRawHits() const;   // Return the number of hits
 
-    // void addCluster(unsigned int det, StFttCluster*);            // Add a cluster
-    // StSPtrVecFttCluster& clusters(unsigned int det);             // Return the cluster list
-    // const StSPtrVecFttCluster& clusters(unsigned int det) const; // Return the cluster list
-    // unsigned int numberOfClusters(unsigned int det) const;       // Return the number of clusters
+    void addCluster(StFttCluster*);            // Add a cluster
+    StSPtrVecFttCluster& clusters();             // Return the cluster list
+    const StSPtrVecFttCluster& clusters() const; // Return the cluster list
+    unsigned int numberOfClusters() const;       // Return the number of clusters
 
     // void addPoint(unsigned int det, StFttPoint*);            // Add a point
     // StSPtrVecFttPoint& points(unsigned int det);             // Return the point list
@@ -50,7 +50,7 @@ public:
     
 private:
     StSPtrVecFttRawHit     mRawHits;
-    // StSPtrVecFttCluster mClusters; 
+    StSPtrVecFttCluster mClusters; 
     // StSPtrVecFttPoint   mPoints;  
 
     ClassDef(StFttCollection,1)

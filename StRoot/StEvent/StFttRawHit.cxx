@@ -22,9 +22,10 @@ mADC(0),
 mBCID(0),
 mTB(-32000),
 mPlane(255),
-mQuadrant(255),
+mQuadrant(kFttUnknownQuadrant),
 mRow(255),
-mStrip(255)
+mStrip(255),
+mOrientation(kFttUnknownOrientation)
 { /*noop*/ }
 
 StFttRawHit::StFttRawHit(   UChar_t mSector, UChar_t mRDO, UChar_t mFEB, 
@@ -60,19 +61,20 @@ void StFttRawHit::setMapping(   UChar_t mPlane, UChar_t mQuadrant,
 ostream&
 operator<<( ostream &os, const StFttRawHit& rh )
 {
-    os << " StFttRawHit( " << endl;
-    os << "\tmSector = "   << rh.sector()   << endl;
-    os << "\tmRDO = "      << rh.rdo()      << endl;
-    os << "\tmFEB = "      << rh.feb()      << endl;
-    os << "\tmVMM = "      << rh.vmm()      << endl;
-    os << "\tmChannel = "  << rh.channel()  << endl;
-    os << "\tmADC = "      << rh.adc()      << endl;
-    os << "\tmBCID = "     << rh.bcid()     << endl;
-    os << "\tmTB = "       << rh.tb()       << endl;
-    os << "\tmPlane = "    << rh.plane()    << endl;
-    os << "\tmQuadrant = " << rh.quadrant() << endl;
-    os << "\tmRow = "      << rh.row()      << endl;
-    os << "\tmStrip = "    << rh.strip()    << " ) " << endl;
+    os << " StFttRawHit( "    << endl;
+    os << "\tmSector = "      << (int)rh.sector()      << endl;
+    os << "\tmRDO = "         << (int)rh.rdo()         << endl;
+    os << "\tmFEB = "         << (int)rh.feb()         << endl;
+    os << "\tmVMM = "         << (int)rh.vmm()         << endl;
+    os << "\tmChannel = "     << (int)rh.channel()     << endl;
+    os << "\tmADC = "         << (int)rh.adc()         << endl;
+    os << "\tmBCID = "        << (int)rh.bcid()        << endl;
+    os << "\tmTB = "          << (int)rh.tb()          << endl;
+    os << "\tmPlane = "       << (int)rh.plane()       << endl;
+    os << "\tmQuadrant = "    << (int)rh.quadrant()    << endl;
+    os << "\tmRow = "         << (int)rh.row()         << endl;
+    os << "\tmStrip = "       << (int)rh.strip()       << endl;
+    os << "\tmOrientation = " << (int)rh.orientation() << " ) " << endl;
 
 
     return os;

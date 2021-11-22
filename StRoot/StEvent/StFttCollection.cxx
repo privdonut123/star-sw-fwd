@@ -34,10 +34,10 @@ StSPtrVecFttRawHit& StFttCollection::rawHits() {return mRawHits;}
 const StSPtrVecFttRawHit& StFttCollection::rawHits() const {return mRawHits;}
 unsigned int StFttCollection::numberOfRawHits() const { return mRawHits.size(); }
 
-// void StFttCollection::addCluster(StFttCluster* cluster){mClusters[det%kFttNDet].push_back(cluster);}
-// StSPtrVecFttCluster& StFttCollection::clusters() {return mClusters[det%kFttNDet];}
-// const StSPtrVecFttCluster& StFttCollection::clusters() const {return mClusters[det%kFttNDet];}
-// unsigned int StFttCollection::numberOfClusters() const { return mClusters[det%kFttNDet].size(); }
+void StFttCollection::addCluster(StFttCluster* cluster){mClusters.push_back(cluster);}
+StSPtrVecFttCluster& StFttCollection::clusters() {return mClusters;}
+const StSPtrVecFttCluster& StFttCollection::clusters() const {return mClusters;}
+unsigned int StFttCollection::numberOfClusters() const { return mClusters.size(); }
 
 // void StFttCollection::addPoint(StFttPoint* point){mPoints[det%kFttNDet].push_back(point);}
 // StSPtrVecFttPoint& StFttCollection::points() {return mPoints[det%kFttNDet];}

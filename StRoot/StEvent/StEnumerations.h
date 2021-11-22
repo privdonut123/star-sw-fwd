@@ -673,6 +673,20 @@ enum StFcsConstants {
     kFcsHcal4x4NRow=9
 };
 
+/** StFtt Enums **/
+enum StFttConstants {
+    kFttHorizontal = 0,
+    kFttVertical = 1,
+    kFttDiagonal = 2,
+    kFttUnknownOrientation = 3,
+    kFttQuadrantA = 0,
+    kFttQuadrantB = 1,
+    kFttQuadrantC = 2,
+    kFttQuadrantD = 3,
+    kFttUnknownQuadrant = 4,
+};
+
+
 enum StRHICfConstants{
     kRHICfNtower=2,     // 0=small, 1=large                                                        
     kRHICfNplate=16,    // longitudinal segmentations
