@@ -3,10 +3,11 @@
 #include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
 #include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
 #include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
+#include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
 
 #include "KiTrack/IHit.h"
 #include "GenFit/Track.h"
-// #include "GenFit/GFRaveVertexFactory.h"
+#include "GenFit/GFRaveVertexFactory.h"
 
 #include "TMath.h"
 
@@ -28,6 +29,14 @@
 #include "StEvent/StPrimaryVertex.h"
 #include "StEvent/StEnumerations.h"
 #include "StEvent/StTrackDetectorInfo.h"
+#include "StEvent/StFttPoint.h"
+#include "StEvent/StFcsHit.h"
+#include "StEvent/StFcsCluster.h"
+#include "StEvent/StFttCollection.h"
+#include "StEvent/StFcsCollection.h"
+#include "StEvent/StTriggerData.h"
+#include "StEvent/StFstHitCollection.h"
+#include "StEvent/StFstHit.h"
 
 #include "StEventUtilities/StEventHelper.h"
 
@@ -48,12 +57,20 @@
 #include "TROOT.h"
 #include "TLorentzVector.h"
 
+#include "StRoot/StEpdUtil/StEpdGeom.h"
+#include "StFcsDbMaker/StFcsDb.h"
+#include "StFstUtil/StFstCollection.h"
+
+#define DLOG(...) printf(__VA_ARGS__);
+
 FwdSystem* FwdSystem::sInstance = nullptr;
 TMVA::Reader * BDTCrit2::reader = nullptr;
 float BDTCrit2::Crit2_RZRatio = -999;
 float BDTCrit2::Crit2_DeltaRho = -999;
 float BDTCrit2::Crit2_DeltaPhi = -999;
 float BDTCrit2::Crit2_StraightTrackRatio = -999;
+
+size_t StarFieldAdaptor::sNCalls;
 
 //_______________________________________________________________________________________
 class GenfitUtils{
@@ -64,6 +81,16 @@ class GenfitUtils{
 
     
 }; // GenfitUtils
+
+
+class StFwdTrack : public StGlobalTrack {
+public:
+    StFwdTrack( genfit::Track *gt ) : mGenfitTrack( *gt ){
+
+    }
+    vector<TVector3> mProjections;
+    genfit::Track mGenfitTrack;
+};
 
 
 // Basic sanity cuts on genfit tracks
@@ -212,6 +239,7 @@ class ForwardTracker : public ForwardTrackMaker {
 StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mGenHistograms(false), mGenTree(false), mForwardTracker(nullptr), mForwardData(nullptr){
     SetAttr("useFtt",1);                 // Default Ftt on 
     SetAttr("useFst",1);                 // Default Fst on
+    SetAttr("useFcs",1);                 // Default Fcs on
     SetAttr("config", "config.xml");     // Default configuration file (user may override before Init())
     SetAttr("fillEvent",1); // fill StEvent
 };
@@ -249,6 +277,7 @@ int StFwdTrackMaker::Finish() {
 
 //________________________________________________________________________
 int StFwdTrackMaker::Init() {
+
     // Initialize configuration file
     std::string configFile = SAttr("config");
     if (mConfigFile.length() > 4) {
@@ -283,6 +312,12 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("vertx", &mTreeVertX, "vertx[nvert]/F");
         mTree->Branch("verty", &mTreeVertY, "verty[nvert]/F");
         mTree->Branch("vertz", &mTreeVertZ, "vertz[nvert]/F");
+
+        // rcverts
+        mTree->Branch("nrave", &mTreeNRave, "nrave/I");
+        mTree->Branch("ravex", &mTreeRaveX, "ravex[nrave]/F");
+        mTree->Branch("ravey", &mTreeRaveY, "ravey[nrave]/F");
+        mTree->Branch("ravez", &mTreeRaveZ, "ravez[nrave]/F");
 
         // rc tracks
         mTree->Branch("rnt", &mTreeRNTracks, "rnt/I");
@@ -370,6 +405,10 @@ int StFwdTrackMaker::Init() {
     mForwardTracker->initialize( mGenHistograms );
 
     if ( mGenHistograms ){
+        mHistograms["fwdVertexZ"] = new TH1D("fwdVertexZ", "FWD Vertex (RAVE);z", 1000, -50, 50);
+        mHistograms["fwdVertexXY"] = new TH2D("fwdVertexXY", "FWD Vertex (RAVE);x;y", 100, -1, 1, 100, -1, 1);
+        mHistograms["fwdVertexDeltaZ"] = new TH2D("fwdVertexDeltaZ", "FWD Vertex - MC Vertex;#Delta z", 100, -1, 1, 100, -1, 1);
+        
         mHistograms["McEventEta"] = new TH1D("McEventEta", ";MC Track Eta", 1000, -5, 5);
         mHistograms["McEventPt"] = new TH1D("McEventPt", ";MC Track Pt (GeV/c)", 1000, 0, 10);
         mHistograms["McEventPhi"] = new TH1D("McEventPhi", ";MC Track Phi", 1000, 0, 6.2831852);
@@ -411,7 +450,7 @@ int StFwdTrackMaker::Init() {
         }
 
     } // mGenHistograms
-
+    LOG_INFO << "StFwdTrackMaker::Init" << endm;
     return kStOK;
 };
 
@@ -476,14 +515,54 @@ void StFwdTrackMaker::loadStgcHits( FwdDataSource::McTrackMap_t &mcTrackMap, Fwd
 
     // Get the StEvent handle to see if the rndCollection is available
     StEvent *event = (StEvent *)this->GetDataSet("StEvent");
+
+    StFttCollection *col = event->fttCollection();
+    string fttFromSource = mFwdConfig.get<string>( "Source:ftt", "" );
+    mTreeN = 0;
+
+    if ( col && col->numberOfPoints() > 0 || "DATA" == fttFromSource ){
+        TMatrixDSym hitCov3(3);
+        const double sigXY = 10;
+        hitCov3(0, 0) = sigXY * sigXY;
+        hitCov3(1, 1) = sigXY * sigXY;
+        hitCov3(2, 2) = 20; // unused since they are loaded as points on plane
+        for ( auto point : col->points() ){
+            // LOG_INFO << "Adding FTT Point" << endm;
+            int plane_id = 0;
+            FwdHit *hit = new FwdHit(count++, point->xyz().x()/10.0, point->xyz().y()/10.0, point->xyz().z(), -point->plane(), 0, hitCov3, nullptr);
+            mFttHits.push_back( TVector3( point->xyz().x()/10.0, point->xyz().y()/10.0, point->xyz().z() )  );
+            if ( mGenHistograms ) {
+                this->mHistograms[TString::Format("stgc%dHitMapSec", point->plane()).Data()]->Fill(point->xyz().x()/10.0, point->xyz().y()/10.0);
+            }
+            // Add the hit to the hit map
+            hitMap[hit->getSector()].push_back(hit);
+
+            // LOG_INFO << TString::Format( "(%f, %f, %f)", point->xyz().x(), point->xyz().y(), point->xyz().z() );
+
+            if (mGenTree && mTreeN < MAX_TREE_ELEMENTS) {
+                mTreeX[mTreeN] = point->xyz().x()/10.0;
+                mTreeY[mTreeN] = point->xyz().y()/10.0;
+                mTreeZ[mTreeN] = point->xyz().z();
+                mTreeTID[mTreeN] = 0;
+                mTreeVID[mTreeN] = point->plane();
+                mTreeHPt[mTreeN] = 0;
+                mTreeHSV[mTreeN] = 0;
+                mTreeN++;
+            }
+        }
+
+        return;
+    }
+
+
     StRnDHitCollection *rndCollection = nullptr;
     if ( event) {
         rndCollection = event->rndHitCollection();
     }
 
-    string fttFromGEANT = mFwdConfig.get<string>( "Source:ftt", "" );
+    
 
-    if ( !rndCollection || "GEANT" == fttFromGEANT ){
+    if ( !rndCollection || "GEANT" == fttFromSource ){
         LOG_DEBUG << "Loading sTGC hits directly from GEANT hits" << endm;
         loadStgcHitsFromGEANT( mcTrackMap, hitMap, count );
     } else {
@@ -532,6 +611,8 @@ void StFwdTrackMaker::loadStgcHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrac
         float y = git->x[1] + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
         float z = git->x[2];
 
+
+        
         if (mGenTree && mTreeN < MAX_TREE_ELEMENTS) {
             mTreeX[mTreeN] = x;
             mTreeY[mTreeN] = y;
@@ -573,6 +654,7 @@ void StFwdTrackMaker::loadStgcHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrac
 
         // Add the hit to the hit map
         hitMap[hit->getSector()].push_back(hit);
+        mFttHits.push_back( TVector3( x, y, z )  );
 
         // Add hit pointer to the track
         if (mcTrackMap[track_id])
@@ -638,6 +720,159 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
 
     // Get the StEvent handle to see if the rndCollection is available
     StEvent *event = (StEvent *)this->GetDataSet("StEvent");
+
+
+    LOG_INFO << "LOAD FST HITS" << endm;
+    // StFstHitCollection *fstHitCollection = event->fstHitCollection();
+
+
+    // TObjectSet *fstDataSet = (TObjectSet *) GetDataSet("fstRawHitAndCluster");
+
+    // if (!fstDataSet) {
+    //     LOG_WARN << "Make() - fstRawHitAndCluster dataset not found. No FST hits will be available for tracking" << endm;
+    //     return;
+    // }
+
+    // StFstCollection *fstCollectionPtr = (StFstCollection *) fstDataSet->GetObject();
+
+    // if ( !fstCollectionPtr ) {
+    //     LOG_WARN << "Make() - StFstCollection not found. No FST hits will be available for tracking" << endm;
+    //     return;
+    // }
+
+    // for (unsigned char wedgeIdx = 0; wedgeIdx < kFstNumWedges; wedgeIdx++) {
+    //     StFstClusterCollection *clusterCollectionPtr = fstCollectionPtr->getClusterCollection(wedgeIdx );
+
+
+    //     if ( clusterCollectionPtr ) {
+    //         unsigned int numClusters = clusterCollectionPtr->getNumClusters();
+    //         LOG_INFO << "Make() - Number of clusters found in wedge " << (int)(wedgeIdx + 1) << ": " << numClusters << endm;
+
+    //         unsigned short idTruth = 0;
+    //         unsigned char  nRawHits = -1, nRawHitsR = -1, nRawHitsPhi = -1;
+    //         unsigned char  disk = -1, wedge = -1, sensor = -1, apv = -1;
+    //         int  meanRStrip = -1, meanPhiStrip = -1;
+    //                     float  charge = 0., chargeErr = 0.;
+    //         unsigned char  maxTb = -1;
+    //         int  key = -1;
+    //         float phiInner = -999.9, phiOuter = -999.9;
+
+    //         for (std::vector< StFstCluster * >::iterator clusterIter = clusterCollectionPtr->getClusterVec().begin(); clusterIter != clusterCollectionPtr->getClusterVec().end(); ++clusterIter) {
+    //             LOG_INFO << "clusterIter = " << (*clusterIter) << endm;
+    //             idTruth         = (*clusterIter)->getIdTruth();
+    //             key             = (*clusterIter)->getKey();
+    //             disk            = (*clusterIter)->getDisk();
+    //             wedge           = (*clusterIter)->getWedge();
+    //             sensor          = (*clusterIter)->getSensor();
+    //             apv             = (*clusterIter)->getApv();
+    //             meanRStrip      = (*clusterIter)->getMeanRStrip();
+    //             meanPhiStrip    = (*clusterIter)->getMeanPhiStrip();
+    //             maxTb           = (*clusterIter)->getMaxTimeBin();
+    //             charge          = (*clusterIter)->getTotCharge();
+    //             chargeErr       = (*clusterIter)->getTotChargeErr();
+    //             nRawHits        = (*clusterIter)->getNRawHits();
+    //             nRawHitsR       = (*clusterIter)->getNRawHitsR();
+    //             nRawHitsPhi     = (*clusterIter)->getNRawHitsPhi();
+    //             // nClusteringType = (*clusterIter)->getClusteringType();
+
+    //             LOG_INFO << "Making new Fst Hit on disk: " << disk << endm;
+    //             StFstHit *newHit = new StFstHit(disk, wedge, sensor, apv, charge, chargeErr, maxTb, meanRStrip, meanPhiStrip, nRawHits, nRawHitsR, nRawHitsPhi);
+    //             newHit->setId(key);
+    //             newHit->setIdTruth(idTruth);
+    //             LOG_INFO << "MADE " << newHit << endm;
+
+
+    //             int moduleIdx;
+    //             if(disk == 1) // Disk 1
+    //                 moduleIdx = wedge;
+    //             else if(disk == 2)// Disk 2
+    //                 moduleIdx = wedge-12;
+    //             else if(disk == 3)// Disk 3
+    //                 moduleIdx = wedge-24;
+    //             // The simple transformation will be updated with the geomtry table in database later
+    //             if(disk == 1 || disk == 3)
+    //             {// Disk 1 & 3
+    //                 phiInner = kFstphiStart[moduleIdx-1]*TMath::Pi()/6.0 + 0.5*kFstzDirct[moduleIdx-1]*kFstStripPitchPhi;
+    //                 phiOuter = kFstphiStop[moduleIdx-1]*TMath::Pi()/6.0  - 0.5*kFstzDirct[moduleIdx-1]*kFstStripPitchPhi;
+    //             }
+    //             else if(disk == 2)
+    //             { // Disk 2
+    //                 phiInner = kFstphiStop[moduleIdx-1]*TMath::Pi()/6.0  - 0.5*kFstzDirct[moduleIdx-1]*kFstStripPitchPhi;
+    //                 phiOuter = kFstphiStart[moduleIdx-1]*TMath::Pi()/6.0 + 0.5*kFstzDirct[moduleIdx-1]*kFstStripPitchPhi;
+    //             }
+    //             double local[3];
+    //             if(meanRStrip < kFstNumRStripsPerWedge/2)
+    //             { // inner
+    //                 local[0] = kFstrStart[meanRStrip] + 0.5*kFstStripPitchR;
+    //                 local[1] = phiInner + kFstzFilp[disk-1]*kFstzDirct[moduleIdx-1]*meanPhiStrip*kFstStripPitchPhi;
+    //             }
+    //             else
+    //             {// outer
+    //                 if(sensor == 1){
+    //                     local[0] = kFstrStart[meanRStrip] + 0.5*kFstStripPitchR;
+    //                     local[1] = phiOuter - kFstzFilp[disk-1]*kFstzDirct[moduleIdx-1]*meanPhiStrip*kFstStripPitchPhi - kFstzFilp[disk-1]*kFstzDirct[moduleIdx-1]*0.5*kFstStripGapPhi;
+    //                 }
+    //                 if(sensor == 2){
+    //                     local[0] = kFstrStart[meanRStrip] + 0.5*kFstStripPitchR;
+    //                     local[1] = phiOuter - kFstzFilp[disk-1]*kFstzDirct[moduleIdx-1]*meanPhiStrip*kFstStripPitchPhi + kFstzFilp[disk-1]*kFstzDirct[moduleIdx-1]*0.5*kFstStripGapPhi;
+    //                 }
+    //             }
+
+    //             LOG_INFO << "Setting Fst Hit Position (local)" << endm;
+    //             if(disk == 1) local[2] = 151.750; //unit: cm
+    //             else if(disk == 2) local[2] = 165.248; //unit: cm
+    //             else if(disk == 3) local[2] = 178.781; //unit: cm
+    //             newHit->setLocalPosition(local[0], local[1], local[2]); //set local position on sensor
+
+    //             float x0 = local[0] * cos( local[1] );
+    //             float y0 = local[0] * sin( local[1] );
+    //             mFstHits.push_back( TVector3( x0, y0, local[2] ) );
+
+    //             // LOG_INFO << "Adding to fstHitCollection = " << fstHitCollection << endm;
+    //             // fstHitCollection->addHit(newHit);
+
+    //             // LOG_INFO << "DONE Adding to fstHitCollection = " << fstHitCollection << endm;
+    //         } //cluster loop over
+    //     }//end clusterCollectionPtr
+
+
+
+    // }
+
+
+
+    // // if ( fstHitCollection ){
+
+    // //     LOG_INFO << "LOAD FST HITS, NOT NULL" << endm;
+    // //     for ( unsigned int iw = 0; iw < kFstNumWedges; iw++ ){
+    // //         StFstWedgeHitCollection * wc = fstHitCollection->wedge( iw );
+
+    // //         for ( unsigned int is = 0; is < kFstNumSensorsPerWedge; is++ ){
+    // //             StFstSensorHitCollection * sc = wc->sensor( is );
+
+    // //             std::vector<StFstHit*> fsthits = sc->hits();
+
+    // //             LOG_INFO << "fsthits.size() == " << fsthits.size() << endm;
+    // //             for ( int ih = 0; ih < fsthits.size(); ih++ ){
+    // //                 float vR = fsthits[ih]->localPosition(0);
+    // //                 float vPhi = fsthits[ih]->localPosition(1);
+    // //                 float vZ = fsthits[ih]->localPosition(2);
+
+    // //                 LOG_INFO << "FST HIT: " << vR << ", " << vPhi << ", " << vZ << endm;                
+    // //                 mFstHits.push_back( TVector3( 0, 0, 0)  );
+    // //             }
+
+    // //         }
+
+    // //     }
+        
+    // // }
+
+    // LOG_INFO << " FOUND " << mFstHits.size() << " FST HITS" << endm;
+    // return ;
+
+
+
     StRnDHitCollection *rndCollection = nullptr;
     if (nullptr != event) {
         rndCollection = event->rndHitCollection();
@@ -658,6 +893,7 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     StEvent *event = (StEvent *)this->GetDataSet("StEvent");
     if (!event) 
         return;
+
 
     StRnDHitCollection *rndCollection = event->rndHitCollection();
 
@@ -694,6 +930,7 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
 
         // Add the hit to the hit map
         hitMap[fhit->getSector()].push_back(fhit);
+        mFstHits.push_back( TVector3( hit->position().x(), hit->position().y(), hit->position().z())  );
 
     }
 } //loadFstHitsFromStEvent
@@ -760,18 +997,30 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
 
         hitCov3 = makeSiCovMat( TVector3( x, y, z ), mFwdConfig );
         FwdHit *hit = new FwdHit(count++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
+        mFstHits.push_back( TVector3( x, y, z )  );
 
         // Add the hit to the hit map
         hitMap[hit->getSector()].push_back(hit);
     }
 } // loadFstHitsFromGEANT
 
-void StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
+size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
+    
+
+    LOG_INFO << "Looking for GEANT sim vertex info" << endm;
+    St_g2t_vertex *g2t_vertex = (St_g2t_vertex *)GetDataSet("geant/g2t_vertex");
+
+    if ( g2t_vertex != nullptr ) {
+        // Set the MC Vertex for track fitting
+        g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(0);
+        mForwardTracker->setEventVertex( TVector3( vert->ge_x[0], vert->ge_x[1], vert->ge_x[2] ) );
+    }
+
     // Get geant tracks
     St_g2t_track *g2t_track = (St_g2t_track *)GetDataSet("geant/g2t_track");
 
     if (!g2t_track)
-        return;
+        return 0;
 
     size_t nShowers = 0;
 
@@ -812,20 +1061,8 @@ void StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
         }
 
     } // loop on track (irow)
-} // loadMcTracks
 
 
-//________________________________________________________________________
-int StFwdTrackMaker::Make() {
-    long long itStart = FwdTrackerUtils::nowNanoSecond();
-    
-    FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
-    FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
-    FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
-
-    loadMcTracks( mcTrackMap );
-
-    
     // now check the Mc tracks against the McEvent filter
     size_t nForwardTracks = 0;
     size_t nForwardTracksNoThreshold = 0;
@@ -857,44 +1094,156 @@ int StFwdTrackMaker::Make() {
         mHistograms[ "nMcTracksFwdNoThreshold" ]->Fill( nForwardTracksNoThreshold );
     }
 
+
+    return nForwardTracks;
+} // loadMcTracks
+
+void StFwdTrackMaker::loadFcs( ) {
+    DLOG( "Loading FCS Hits and EPD hits \n" );
+
+    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
+    StFcsDb* fcsDb=static_cast<StFcsDb*>(GetDataSet("fcsDb"));
+    if ( !stEvent || !fcsDb ){
+        DLOG( "NO FCS DB!\n" );
+        return;
+    }
+    StFcsCollection* fcsCol = stEvent->fcsCollection();
+    StEpdGeom* epdgeo=new StEpdGeom;
+
+
+    // LOAD ECAL / HCAL CLUSTERS
+    
+    for ( int idet = 0; idet  < 4; idet++ ){
+        LOG_INFO << "Load FCS Clusters from Det " << idet << endm;
+        StSPtrVecFcsCluster& clusters = fcsCol->clusters(idet);
+        
+        int nc=fcsCol->numberOfClusters(idet);
+
+        DLOG( "FOUND %d clusters \n", nc )
+        for ( int i = 0; i < nc; i++ ){
+            LOG_INFO << "\tcluster[" << i << "]" << endm;
+            StFcsCluster* clu = clusters[i];
+            StThreeVectorD xyz = fcsDb->getStarXYZfromColumnRow(clu->detectorId(),clu->x(),clu->y());
+            mFcsClusters.push_back( TVector3( xyz.x(), xyz.y(), xyz.z() ) );
+            DLOG( "LOADING ECAL/HCAL Cluster\n" );
+        }
+    }
+
+    // LOAD PRESHOWER HITS (EPD)
+    for ( int det = 4; det < 6; det ++ ) {
+        // LOG_INFO << "Load FCS Hits from Det " << det << endm;
+        StSPtrVecFcsHit& hits = stEvent->fcsCollection()->hits(det);
+        int nh=fcsCol->numberOfHits(det);
+        for ( int i = 0; i < nh; i++ ){
+            StFcsHit* hit=hits[i];
+            // LOG_INFO << "\thit[" << i << "]" << endm;
+            if(det==kFcsPresNorthDetId || det==kFcsPresSouthDetId){ //EPD
+                 double zepd=375.0;
+                 int pp,tt,id,n;
+                 double x[5],y[5];
+                 // LOG_INFO << "EPD Hit: " << hit->adcSum()  << ", energy: " << hit->energy() << endm;
+                 if ( hit->energy() < 0.2 ) continue;
+                 fcsDb->getEPDfromId(det,hit->id(),pp,tt);
+                 epdgeo->GetCorners(100*pp+tt,&n,x,y);
+                 double x0 = (x[0] + x[1] + x[2] + x[3]) / 4.0;
+                 double y0 = (y[0] + y[1] + y[2] + y[3]) / 4.0;
+                 mFcsPreHits.push_back( TVector3( x0, y0, zepd ) );
+            }
+        }
+    }
+    
+
+    delete epdgeo;
+
+}
+
+
+//________________________________________________________________________
+int StFwdTrackMaker::Make() {
+    // START time for measuring tracking
+    long long itStart = FwdTrackerUtils::nowNanoSecond();
+
+    // Access forward Tracker maps
+    FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
+    FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
+    FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
+    
+    // clear vectors for visualization OBJ hits
+    mFttHits.clear();
+    mFstHits.clear();
+    mFcsPreHits.clear();
+    mFcsClusters.clear();
+    mFwdTracks.clear();
+
+    // default event vertex
+    mForwardTracker->setEventVertex( TVector3( 0, 0, 0 ) );
+
+    /**********************************************************************/
+    // Load MC tracks
+    size_t nForwardTracks = loadMcTracks( mcTrackMap );
     size_t maxForwardTracks = mFwdConfig.get<size_t>( "McEvent.Mult:max", 10000 );
     if ( nForwardTracks > maxForwardTracks ){
         LOG_DEBUG << "Skipping event with more than " << maxForwardTracks << " forward tracks" << endm;
         return kStOk;
     }
 
+    /**********************************************************************/
+    // Load sTGC 
     if ( IAttr("useFtt") ) {
         loadStgcHits( mcTrackMap, hitMap );
     }
     
+
+    /**********************************************************************/
+    // Load FST
     if ( IAttr("useFst") ) {
         loadFstHits( mcTrackMap, fsiHitMap );
     }
 
-    // St_g2t_event *g2t_event = (St_g2t_event *)GetDataSet("geant/g2t_event");
-    // int nevent = event->GetNRows();
-    // LOG_INFO << "NEVENT " << nevent << endm;
+    /**********************************************************************/
+    // Load FCS
+    if ( IAttr("useFcs") ) {
+        loadFcs();
+    }
 
-    // LOG_INFO << "Looking for GEANT sim vertex info" << endm;
-    St_g2t_vertex *g2t_vertex = (St_g2t_vertex *)GetDataSet("geant/g2t_vertex");
+    /**********************************************************************/
+    // Run Track finding + fitting
+    LOG_INFO << ">>START Event Forward Tracking" << endm;
+    mForwardTracker->doEvent();
+    LOG_INFO << "<<FINISH Event Forward Tracking" << endm;
 
-    // Set the MC Vertex for track fitting
-    g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(0);
-    mForwardTracker->setEventVertex( TVector3( vert->ge_x[0], vert->ge_x[1], vert->ge_x[2] ) );
     
 
-    // Process single event
-    mForwardTracker->doEvent();
+
+    /**********************************************************************/
+    // Run Track finding + fitting
+    
+    const auto &genfitTracks = mForwardTracker -> globalTracks();
+    if ( visualize  && genfitTracks.size() > 0 && genfitTracks.size() < 20 ) {
+        const auto &seed_tracks = mForwardTracker -> getRecoTracks();
+        
+        
+
+        ObjExporter woe;
+        woe.output( 
+            TString::Format( "ev%lu", eventIndex ).Data(), 
+            seed_tracks, genfitTracks, mRaveVertices, 
+            mFttHits, mFstHits, mFcsPreHits, mFcsClusters );
+        eventIndex++;
+        LOG_INFO << "Done Writing OBJ " << endm;
+    }
+
+    // mForwardTracker->getTrackFitter()->projectToFst( 0, genfitTracks[0] );
 
     // fill the ttree if we have it turned on (mGenTree)
     FillTTree();
 
-    LOG_DEBUG << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
+    LOG_INFO << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
 
 
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
 
-    if ( false && IAttr("fillEvent") ) {
+    if ( IAttr("fillEvent") ) {
 
         if (!stEvent) {
             LOG_WARN << "No StEvent found. Forward tracks will not be saved" << endm;
@@ -903,6 +1252,12 @@ int StFwdTrackMaker::Make() {
 
         // Now fill StEvent
         FillEvent();
+
+        LOG_INFO << "ProcessFwdTracks" << endm;
+        ProcessFwdTracks();
+        LOG_INFO << "DONE ProcessFwdTracks" << endm;
+        LOG_INFO << "DONE ProcessFwdTracks" << endm;
+        LOG_INFO << "DONE ProcessFwdTracks" << endm;
 
         // Now loop over the tracks and do printout
         int nnodes = stEvent->trackNodes().size();
@@ -937,19 +1292,60 @@ int StFwdTrackMaker::Make() {
     return kStOK;
 } // Make
 
+void StFwdTrackMaker::FitVertex(){
+    const auto &seed_tracks = mForwardTracker -> getRecoTracks();
+    const auto &genfitTracks = mForwardTracker -> globalTracks();
+
+    if ( genfitTracks.size() > 2 ){
+        genfit::GFRaveVertexFactory gfrvf;
+
+        TMatrixDSym bscm(3);
+        bscm(0, 0) = 1.1*1.1;
+        bscm(1, 1) = 1.1*1.1;
+        bscm(2, 2) = 10.5 * 10.5;
+        gfrvf.setBeamspot( TVector3( 0, 0, 0 ), bscm );
+        // std::vector< genfit::GFRaveVertex * > vertices;
+        const auto &genfitTracks = mForwardTracker -> globalTracks();
+        mRaveVertices.clear();
+        gfrvf.findVertices( &mRaveVertices, genfitTracks, false );
+        
+        LOG_INFO << "mRaveVertices.size() = " << mRaveVertices.size() << endm;
+        // printf( "EVENT VERTEX @(%f, %f, %f)\n", vert->ge_x[0], vert->ge_x[1], vert->ge_x[2] );
+        for ( auto vert : mRaveVertices ){
+            printf( "RAVE vertex @(%f, %f, %f)\n\n", vert->getPos().X(), vert->getPos().Y(), vert->getPos().Z() );
+        }
+    }
+}
+
+
 void StFwdTrackMaker::FillTTree(){
 
     St_g2t_vertex *g2t_vertex = (St_g2t_vertex *)GetDataSet("geant/g2t_vertex");
     if (mGenTree) {
         
-        mTreeNVert = g2t_vertex->GetNRows();
-        if ( mTreeNVert >= MAX_TREE_ELEMENTS ) mTreeNVert = MAX_TREE_ELEMENTS;
-        LOG_INFO << "Saving " << mTreeNVert << " vertices in TTree" << endm;
-        for ( int i = 0; i < mTreeNVert; i++ ){
-            g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(i);
-            mTreeVertX[i] = vert->ge_x[0];
-            mTreeVertY[i] = vert->ge_x[1];
-            mTreeVertZ[i] = vert->ge_x[2];
+        // VERTICES
+        if ( g2t_vertex ){
+            mTreeNVert = g2t_vertex->GetNRows();
+            if ( mTreeNVert >= MAX_TREE_ELEMENTS ) mTreeNVert = MAX_TREE_ELEMENTS;
+            LOG_INFO << "Saving " << mTreeNVert << " vertices in TTree" << endm;
+            for ( int i = 0; i < mTreeNVert; i++ ){
+                g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(i);
+                mTreeVertX[i] = vert->ge_x[0];
+                mTreeVertY[i] = vert->ge_x[1];
+                mTreeVertZ[i] = vert->ge_x[2];
+            }
+        }
+
+        // RAVE RECO VERTICES
+        mTreeNRave = mRaveVertices.size();
+        if ( mTreeNRave >= MAX_TREE_ELEMENTS ) mTreeNRave = MAX_TREE_ELEMENTS;
+        LOG_INFO << "Saving " << mTreeNRave << " RAVE vertices in TTree" << endm;
+        int iRave = 0;
+        for ( auto vert : mRaveVertices ){
+            mTreeRaveX[iRave] = vert->getPos().X();
+            mTreeRaveY[iRave] = vert->getPos().Y();
+            mTreeRaveZ[iRave] = vert->getPos().Z();
+            iRave++;
         }
 
         if (mForwardTracker->getSaveCriteriaValues()) {
@@ -1143,6 +1539,7 @@ void StFwdTrackMaker::FillEvent()
     int track_count_total  = 0;
     int track_count_accept = 0;
 
+    LOG_INFO << "Saving " << genfitTracks.size() << " tracks" << endm;
     for ( auto *genfitTrack : genfitTracks ) {
 
         // Get the track seed
@@ -1152,29 +1549,39 @@ void StFwdTrackMaker::FillEvent()
         track_count_total++;
 
         // Check to see if the track passes cuts (it should, for now)
-        if ( !GenfitUtils::accept(genfitTrack) ) continue;
+        // if ( !GenfitUtils::accept(genfitTrack) ) continue;
 
         track_count_accept++;
 
         // Create a detector info object to be filled
         StTrackDetectorInfo *detectorInfo = new StTrackDetectorInfo;
-        FillDetectorInfo( detectorInfo, genfitTrack, true );
+        // FillDetectorInfo( detectorInfo, genfitTrack, true );
 
         // Create a new track node (on which we hang a global and, maybe, primary track)
-        StTrackNode *trackNode = new StTrackNode;
+        // StTrackNode *trackNode = new StTrackNode;
 
         // This is our global track, to be filled from the genfit::Track object "track"
-        StGlobalTrack *globalTrack = new StGlobalTrack;
+        StGlobalTrack *globalTrack = new StFwdTrack( genfitTrack );
 
         // Fill the track with the good stuff
-        FillTrack( globalTrack, genfitTrack, seed, detectorInfo );
-        FillTrackDcaGeometry( globalTrack, genfitTrack );
-        trackNode->addTrack( globalTrack );
+        // FillTrack( dynamic_cast<StGlobalTrack*>(globalTrack), genfitTrack, seed, detectorInfo );
+        // FillTrackDcaGeometry( dynamic_cast<StGlobalTrack*>(globalTrack), genfitTrack );
+        
+        StFwdTrack * fwdTrack = dynamic_cast<StFwdTrack*>(globalTrack);
+        // fwdTrack->mGenfitTrack = genfitTrack->clone()
+        mFwdTracks.push_back( fwdTrack );
+
+
+        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 375.0 ) ); // EPD
+        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 715.0 ) ); // ECAL
+        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 807.0 ) ); // HCAL
+        // trackNode->addTrack( globalTrack );
 
         // On successful fill (and I don't see why we wouldn't be) add detector info to the list
-        trackDetectorInfos.push_back( detectorInfo );
+        // trackDetectorInfos.push_back( detectorInfo );
 
-        trackNodes.push_back( trackNode );
+
+        // trackNodes.push_back( trackNode );
 
         // // Set relationships w/ tracker object and MC truth
         // // globalTrack->setKey( key );
@@ -1712,3 +2119,22 @@ void StFwdTrackMaker::FillDetectorInfo( StTrackDetectorInfo *info, const genfit:
     info->setNumberOfPoints( ntotal, kUnknownId ); // TODO: Assign after StEvent is updated
 }
 
+
+
+
+void StFwdTrackMaker::ProcessFwdTracks(  ){
+
+    for ( auto fwdTrack : mFwdTracks ){
+        auto atEPD = fwdTrack->mProjections[0];
+        auto atECAL = fwdTrack->mProjections[1];
+        auto atHCAL = fwdTrack->mProjections[2];
+        try {
+            LOG_INFO << "Track crosses EPD @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atEPD.X(), atEPD.Y(), atEPD.Z() ) << endm;
+            LOG_INFO << "Track crosses ECAL @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atECAL.X(), atECAL.Y(), atECAL.Z() ) << endm;
+            LOG_INFO << "Track crosses HCAL @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atHCAL.X(), atHCAL.Y(), atHCAL.Z() ) << endm;
+        } catch ( genfit::Exception e ) {
+            
+        }
+    }
+
+}

@@ -1,0 +1,10 @@
+nEvents=200
+
+fzd=$1
+jobId=$2
+
+echo root4star -b -q -l 'tests/fast_track.C( '"${nEvents}"', "'"${fzd}"'", "tests/full_track.xml" )' 
+time root4star -b -q -l 'tests/fast_track.C( '"${nEvents}"', "'"${fzd}"'", "tests/full_track.xml" )'
+
+mv full.root pythia${jobId}_qa.root
+mv mltree.root pythia${jobId}_mltree.root

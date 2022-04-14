@@ -8,6 +8,7 @@
 #endif
 
 #include "FwdTrackerConfig.h"
+#include "TVector3.h"
 
 namespace KiTrack {
 class IHit;
@@ -15,6 +16,7 @@ class IHit;
 
 namespace genfit {
   class Track;
+  class GFRaveVertex;
 }
 
 class ForwardTracker;
@@ -38,6 +40,10 @@ class McTrack;
 
 const size_t MAX_TREE_ELEMENTS = 4000;
 
+class StFwdTrack;
+
+
+
 class StFwdTrackMaker : public StMaker {
 
     ClassDef(StFwdTrackMaker, 0);
@@ -60,6 +66,8 @@ class StFwdTrackMaker : public StMaker {
     void SetGenerateHistograms( bool _genHisto ){ mGenHistograms = _genHisto; }
     void SetGenerateTree(bool _genTree) { mGenTree = _genTree; }
 
+    vector<StFwdTrack*> mFwdTracks;
+
   private:
   protected:
 
@@ -67,6 +75,12 @@ class StFwdTrackMaker : public StMaker {
     typedef std::vector<KiTrack::IHit *> Seed_t;
 
     
+    // for Wavefront OBJ export
+    size_t eventIndex = 0;
+    vector<TVector3> mFttHits;
+    vector<TVector3> mFstHits;
+    vector<TVector3> mFcsClusters;
+    vector<TVector3> mFcsPreHits;
 
     bool mGenHistograms = false;
     std::map<std::string, TH1 *> mHistograms;
@@ -74,6 +88,7 @@ class StFwdTrackMaker : public StMaker {
     TTree *mTree     = nullptr;
     bool mGenTree = false;
     std::string mConfigFile;
+    bool visualize = true;
 
     // elements used only if the mGenTree = true
     float mTreeX[MAX_TREE_ELEMENTS], mTreeY[MAX_TREE_ELEMENTS], mTreeZ[MAX_TREE_ELEMENTS], mTreeHPt[MAX_TREE_ELEMENTS];
@@ -85,10 +100,19 @@ class StFwdTrackMaker : public StMaker {
     float mTreePt[MAX_TREE_ELEMENTS], mTreeEta[MAX_TREE_ELEMENTS], mTreePhi[MAX_TREE_ELEMENTS];
     float mTreeRPt[MAX_TREE_ELEMENTS], mTreeREta[MAX_TREE_ELEMENTS], mTreeRPhi[MAX_TREE_ELEMENTS], mTreeRQual[MAX_TREE_ELEMENTS];
 
+    // MC EVENT Vertices (Seed)
     int mTreeNVert;
     float mTreeVertX[MAX_TREE_ELEMENTS], mTreeVertY[MAX_TREE_ELEMENTS], mTreeVertZ[MAX_TREE_ELEMENTS];
+
+    // RC RAVE Verts
+    int mTreeNRave;
+    float mTreeRaveX[MAX_TREE_ELEMENTS], mTreeRaveY[MAX_TREE_ELEMENTS], mTreeRaveZ[MAX_TREE_ELEMENTS];
+    std::vector< genfit::GFRaveVertex * > mRaveVertices;
+
     std::map<string, std::vector<float>> mTreeCrits;
     std::map<string, std::vector<int>> mTreeCritTrackIds;
+
+    void ProcessFwdTracks();
 
     // I could not get the library generation to succeed with these.
     // so I have removed them
@@ -97,7 +121,8 @@ class StFwdTrackMaker : public StMaker {
         FwdTrackerConfig mFwdConfig;
         std::shared_ptr<ForwardTracker> mForwardTracker;
         std::shared_ptr<FwdDataSource> mForwardData;
-        void loadMcTracks( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap );
+        size_t loadMcTracks( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap );
+        void loadFcs();
         void loadStgcHits( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
         void loadStgcHitsFromGEANT( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
         void loadStgcHitsFromStEvent( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
@@ -107,6 +132,7 @@ class StFwdTrackMaker : public StMaker {
     #endif
 
     void FillTTree(); // if debugging ttree is turned on (mGenTree)
+    void FitVertex();
     // Fill StEvent
     void FillEvent();
     void FillDetectorInfo(StTrackDetectorInfo *info, const genfit::Track *track, bool increment);
