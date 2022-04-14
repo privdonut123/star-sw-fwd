@@ -68,7 +68,8 @@ class TrackFitter {
         // Determine which Magnetic field to use
         // Either constant field or real field from StarFieldAdaptor
         if (mConfig.get<bool>("TrackFitter:constB", false)) {
-            mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 5.)); // 0.5 T Bz
+            // mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 5.)); // 0.5 T Bz
+            mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 0.)); // ZERO FIELD
             LOG_INFO << "StFwdTrackMaker: Tracking with constant magnetic field" << endl;
         } else {
             mBField = std::unique_ptr<genfit::AbsBField>(new StarFieldAdaptor());
@@ -400,14 +401,16 @@ class TrackFitter {
         auto TCM = fitTrack->getCardinalRep()->get6DCov(tst);
         //  can get the track length if needed
         // double len = fitTrack->getCardinalRep()->extrapolateToPlane(tst, detSi, false, true);
+        double len = fitTrack->getCardinalRep()->extrapolateToPlane(tst, detSi);
 
         TCM = fitTrack->getCardinalRep()->get6DCov(tst);
 
         // can get the projected positions if needed
-        // float x = tst.getPos().X();
-        // float y = tst.getPos().Y();
+        float x = tst.getPos().X();
+        float y = tst.getPos().Y();
+        float z = tst.getPos().Z();
         // and the uncertainties
-        // LOG_INFO << "Track Uncertainty at FST (plane=" << si_plane << ") @ x= " << x << ", y= " << y << " : " << sqrt(TCM(0, 0)) << ", " << sqrt(TCM(1, 1)) << endm;
+        LOG_INFO << "Track Uncertainty at FST (plane=" << si_plane << ") @ x= " << x << ", y= " << y << ", z= " << z << " : " << sqrt(TCM(0, 0)) << ", " << sqrt(TCM(1, 1)) << endm;
 
         return tst;
     }
@@ -783,7 +786,9 @@ class TrackFitter {
 
             if (fitTrack.getFitStatus(trackRepPos)->isFitConverged() == false &&
                 fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false) {
-        
+            
+                LOG_WARN << "Fit Failed" << endm;
+
                 p.SetXYZ(0, 0, 0);
                 long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
                 if (mGenHistograms) {
@@ -835,6 +840,8 @@ class TrackFitter {
     vector<genfit::SharedPlanePtr> mFSTPlanes;
     vector<genfit::SharedPlanePtr> mFSTPlanesInner;
     vector<genfit::SharedPlanePtr> mFSTPlanesOuter;
+
+    void SetIncludeVertex( bool vert ) { mIncludeVertexInFit = vert; }
 
   protected:
     std::unique_ptr<genfit::AbsBField> mBField;

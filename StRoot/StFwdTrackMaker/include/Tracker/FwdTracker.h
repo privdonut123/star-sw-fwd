@@ -32,6 +32,7 @@
 #include "StFwdTrackMaker/include/Tracker/CriteriaKeeper.h"
 
 #include "GenFit/FitStatus.h"
+#include "GenFit/GFRaveVertexFactory.h"
 
 #include "StFwdTrackMaker/FwdTrackerConfig.h"
 #include "StFwdTrackMaker/Common.h"
@@ -392,6 +393,7 @@ class ForwardTrackMaker {
         // Step 1
         // Load and sort the hits
         /*************************************************************/
+        LOG_INFO << "STEP 1 " << endm;
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         FwdDataSource::HitMap_t &hitmap = mDataSource->getFttHits();;
         FwdDataSource::McTrackMap_t &mcTrackMap = mDataSource->getMcTracks();
@@ -410,6 +412,7 @@ class ForwardTrackMaker {
         /***********************************************/
         // MC Track Finding
         if (mcTrackFinding) {
+            LOG_INFO << "MC FINDING " << endm;
             doMcTrackFinding(mcTrackMap);
 
             /***********************************************/
@@ -429,15 +432,17 @@ class ForwardTrackMaker {
         /***********************************************/
 
         /***********************************************/
-        // Standard Track Finding
+        // Stand0ard Track Finding
         // plus initial fit
+        LOG_INFO << "WOW " << endm;
         size_t nIterations = mConfig.get<size_t>("TrackFinder:nIterations", 0);
-
+        LOG_INFO << "nIT =  " << nIterations << endm;
         for (size_t iIteration = 0; iIteration < nIterations; iIteration++) {
+            LOG_INFO << "ITERATION " << endm;
             doTrackIteration(iIteration, hitmap);
         }
         /***********************************************/
-
+        LOG_INFO << "ITERATIONS COMPLETE " << endm;
 
         /***********************************************/
         // REFIT with Silicon hits
@@ -448,12 +453,16 @@ class ForwardTrackMaker {
         }
         /***********************************************/
 
+        LOG_INFO << "Si Fit COMPLETE " << endm;
+
         if ( mGenHistograms ){
+            LOG_INFO << "BEFORE Summary " << endm;
             mQualityPlotter->summarizeEvent(mRecoTracks, mcTrackMap, mFitMoms, mFitStatus);
+            LOG_INFO << "AFTER Summary " << endm;
         }
     } // doEvent
 
-    void trackFitting(Seed_t &track) {
+    void fitTrack(Seed_t &track) {
 
         if ( mGenHistograms ){
             mHist["FitStatus"]->Fill("Seeds", 1);
@@ -575,6 +584,21 @@ class ForwardTrackMaker {
         } // if (mDoTrackFitting && !bailout)
     }
 
+    void doTrackFitting( std::vector<Seed_t> &tracks) {
+        long long itStart = FwdTrackerUtils::nowNanoSecond();
+        // Fit each accepted track seed
+        for (auto t : tracks) {
+            fitTrack(t);
+        }
+        long long itEnd = FwdTrackerUtils::nowNanoSecond();
+        long long duration = (itEnd - itStart) * 1e-6; // milliseconds
+        if ( mGenHistograms ){
+            this->mHist["FitDuration"]->Fill(duration);
+        }
+        // TODO: After tracking vertex finding...
+
+    }
+
     void doMcTrackFinding(FwdDataSource::McTrackMap_t &mcTrackMap) {
 
         mQualityPlotter->startIteration();
@@ -607,16 +631,7 @@ class ForwardTrackMaker {
             }
         }
 
-        long long itStart = FwdTrackerUtils::nowNanoSecond();
-        // Fit each accepted track seed
-        for (auto t : mRecoTracks) {
-            trackFitting(t);
-        }
-        long long itEnd = FwdTrackerUtils::nowNanoSecond();
-        long long duration = (itEnd - itStart) * 1e-6; // milliseconds
-        if ( mGenHistograms ){
-            this->mHist["FitDuration"]->Fill(duration);
-        }
+        doTrackFitting(mRecoTracks);
 
         if ( mGenHistograms ){
             mQualityPlotter->afterIteration(0, mRecoTracks);
@@ -658,11 +673,19 @@ class ForwardTrackMaker {
      * @returns a list of track seeds
      */
     vector<Seed_t> doTrackingOnHitmapSubset( size_t iIteration, FwdDataSource::HitMap_t &hitmap  ) {
+        LOG_INFO << "TRACKING SUBSET" << endm;
+        // for ( auto kv:hitmap ) {
+        //     for ( auto h : kv.second ) {
+        //         LOG_INFO << "H x:" << h->getX() << ", " <<  h->getY() << ", " << h->getZ() << endm;
+        //     }
+        // }
+
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         /*************************************************************/
         // Step 2
         // build 2-hit segments (setup parent child relationships)
         /*************************************************************/
+        LOG_INFO << "\tStep1" << endm;
         // Initialize the segment builder with sorted hits
         KiTrack::SegmentBuilder builder(hitmap);
 
@@ -694,6 +717,8 @@ class ForwardTrackMaker {
         // Get the segments and return an automaton object for further work
         
         KiTrack::Automaton automaton = builder.get1SegAutomaton();
+        LOG_INFO << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
+        LOG_INFO << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
 
         // at any point we can get a list of tracks out like this:
         // std::vector < std::vector< KiTrack::IHit* > > tracks = automaton.getTracks();
@@ -708,6 +733,7 @@ class ForwardTrackMaker {
         // Step 3
         // build 3-hit segments from the 2-hit segments
         /*************************************************************/
+        LOG_INFO << "\tStep3" << endm;
         automaton.clearCriteria();
         automaton.resetStates();
         criteriaPath = "TrackFinder.Iteration[" + std::to_string(iIteration) + "].ThreeHitSegments";
@@ -738,15 +764,23 @@ class ForwardTrackMaker {
             mHist["Step3Duration"]->Fill( duration );
         if (duration > 200){
             LOG_WARN << "The Three Hit Criteria took more than 200ms to process, duration: " << duration << " ms" << endm;
-            LOG_WARN << "bailing out" << endm;
+            LOG_WARN << "bailing out (skipping subset HNN)" << endm;
             std::vector<Seed_t> acceptedTracks;
+            std::string subsetPath = "TrackFinder.Iteration[" + std::to_string(iIteration) + "].SubsetNN";
+            size_t minHitsOnTrack = mConfig.get<size_t>(subsetPath + ":min-hits-on-track", FwdSystem::sNFttLayers);
+            acceptedTracks = automaton.getTracks(minHitsOnTrack);
             return acceptedTracks;
         }
         itStart = FwdTrackerUtils::nowNanoSecond();
+
+        LOG_INFO << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
+        LOG_INFO << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
+
         /*************************************************************/
         // Step 4
         // Get the tracks from the possible tracks that are the best subset
         /*************************************************************/
+        LOG_INFO << "\tStep4" << endm;
         std::string subsetPath = "TrackFinder.Iteration[" + std::to_string(iIteration) + "].SubsetNN";
 
         if (false == mConfig.exists(subsetPath))
@@ -758,6 +792,7 @@ class ForwardTrackMaker {
         std::vector<Seed_t> rejectedTracks;
 
         if (findSubsets) {
+            LOG_INFO << "\tRunning HNN" << endm;
             size_t minHitsOnTrack = mConfig.get<size_t>(subsetPath + ":min-hits-on-track", 7);
             // Getting all tracks with at least minHitsOnTrack hits on them
             std::vector<Seed_t> tracks = automaton.getTracks(minHitsOnTrack);
@@ -797,6 +832,7 @@ class ForwardTrackMaker {
             LOG_WARN << "The took more than 500ms to process, duration: " << duration << " ms" << endm;
             LOG_WARN << "We got " << acceptedTracks.size() << " tracks this round" << endm;
         }
+        LOG_INFO << "We got " << acceptedTracks.size() << " tracks this round" << endm;
         return acceptedTracks;
     } // doTrackingOnHitmapSubset
 
@@ -817,9 +853,14 @@ class ForwardTrackMaker {
         if ( mGenHistograms ){
             mQualityPlotter->startIteration();
         }
+        LOG_INFO << "\tStep1" << endm;
+        std::string pslPath = "TrackFinder.Iteration["+ std::to_string(iIteration) + "]:nPhiSlices";
+        if ( false == mConfig.exists( pslPath ) ) pslPath = "TrackFinder:nPhiSlices";
+        size_t phi_slice_count = mConfig.get<size_t>( pslPath, 1 );
+        LOG_INFO << "Track finding in " << phi_slice_count << " phi slices" << endm;
 
-
-        if ( false ) { // no phi slicing!
+        if ( phi_slice_count <= 1 || phi_slice_count > 100 ) { // no phi slicing!
+            LOG_INFO << "Tracking without phi slices" << endm;
             /*************************************************************/
             // Steps 2 - 4 here
             /*************************************************************/
@@ -828,15 +869,12 @@ class ForwardTrackMaker {
         } else {
 
             FwdDataSource::HitMap_t slicedHitMap;
-            std::string pslPath = "TrackFinder.Iteration["+ std::to_string(iIteration) + "]:nPhiSlices";
-            if ( false == mConfig.exists( pslPath ) ) pslPath = "TrackFinder:nPhiSlices";
-            size_t phi_slice_count = mConfig.get<size_t>( pslPath, 1 );
-
+            
             if ( phi_slice_count == 0 || phi_slice_count > 100 ){
                 LOG_WARN << "Invalid phi_slice_count = " << phi_slice_count << ", resetting to 1" << endm;
                 phi_slice_count= 1;
             }
-
+            LOG_INFO << ".";
             float phi_slice = 2 * TMath::Pi() / (float) phi_slice_count;
             for ( size_t phi_slice_index = 0; phi_slice_index < phi_slice_count; phi_slice_index++ ){
 
@@ -866,7 +904,7 @@ class ForwardTrackMaker {
                 mRecoTracksThisItertion.insert( mRecoTracksThisItertion.end(), acceptedTracks.begin(), acceptedTracks.end() );
             } //loop on phi slices
         }// if loop on phi slices
-
+        LOG_INFO << ".";
         /*************************************************************/
         // Step 5
         // Remove the hits from any track that was found
@@ -877,15 +915,19 @@ class ForwardTrackMaker {
         if ( true == mConfig.get<bool>( hrmPath + ":active", true ) ){
             removeHits( hitmap, mRecoTracksThisItertion );
         }
+        LOG_INFO << ".";
+        // for (auto t : mRecoTracksThisItertion) {
+        //     fitTrack(t);
+        // }
+        LOG_INFO << " FITTING " << mRecoTracksThisItertion.size() << " now" << endm;
 
-        for (auto t : mRecoTracksThisItertion) {
-            trackFitting(t);
-        }
-
+        if ( mRecoTracksThisItertion.size() < 40 )
+            doTrackFitting( mRecoTracksThisItertion );
+        LOG_INFO << ".";
         if ( mGenHistograms ){
             mQualityPlotter->afterIteration( iIteration, mRecoTracksThisItertion );
         }
-
+        LOG_INFO << ".";
         // Add the set of all accepted tracks (this iteration) to our collection of found tracks from all iterations
         mRecoTracks.insert( mRecoTracks.end(), mRecoTracksThisItertion.begin(), mRecoTracksThisItertion.end() );
 

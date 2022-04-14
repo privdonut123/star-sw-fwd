@@ -1736,16 +1736,23 @@ Bfc_st BFC[] = { // standard chains
    "StFcsPointMaker","StFcsPointMaker,libMinuit","Fill FCS points",                                 kFALSE},
   // FTT
   {"ftt","fttChain","","FttDat,FttHitCalib,FttClu,FttPoint", "StMaker","StChain","FST chain"        ,kFALSE}, 
-  {"FttDat","","fttChain","StEvent","StFttRawHitMaker","StFttRawHitMaker,StEvent",
+  {"fttFastSim","","fttChain","StMcEvent,StEvent","StFttFastSimMaker","StFttSimMaker","FTT fast simulator", 
+                                                                                                    kFALSE},
+  {"fttDat","","fttChain","StEvent","StFttRawHitMaker","StFttRawHitMaker,StEvent",
                                                             "sTGC Raw hit maker",                   kFALSE},
-  {"FttHitCalib","","fttChain","StEvent,MuDST","StFttHitCalibMaker","StFttHitCalibMaker,StFttRawHitMaker,StEvent",
+  {"fttHitCalib","","fttChain","StEvent,MuDST","StFttHitCalibMaker","StFttHitCalibMaker,StFttRawHitMaker,StEvent",
                                                             "sTGC hit calib maker",                 kFALSE},
-  {"FttClu","","fttChain","StEvent,fttDb","StFttClusterMaker","StFttClusterMaker,StEvent,StFttDbMaker", 
+  {"fttClu","","fttChain","StEvent,fttDb","StFttClusterMaker","StFttClusterMaker,StEvent,StFttDbMaker", 
                                                                            "sTGC Cluster maker",    kFALSE},
-  {"FttPoint","","fttChain","StEvent,fttDb","StFttPointMaker","StFttPointMaker,StEvent,StFttDbMaker", 
+  {"fttPoint","","fttChain","StEvent,fttDb","StFttPointMaker","StFttPointMaker,StEvent,StFttDbMaker", 
                                                                              "sTGC Point maker",    kFALSE},
-  {"FttQA","","fttChain","","StFttQAMaker","StFttQAMaker", "sTGC Raw hit QA maker",                 kFALSE},
+  {"fttQA","","fttChain","","StFttQAMaker","StFttQAMaker", "sTGC Raw hit QA maker",                 kFALSE},
 
+
+  // forward track maker
+  {"fwdTrack","","","","StFwdTrackMaker",
+  "XMLIO.so,genfit2.so,KiTrack.so,StarGeneratorUtil.so,libMathMore.so,StEventUtilities.so,StEpdUtil,StFwdTrackMaker", 
+                                                            "Forward Track Maker",                  kFALSE},
 
 #if 0
   {"fpd"         ,"fpd","","",                  "StFpdMaker","StFpdMaker","FPD/BBC Data base chain",kFALSE},
