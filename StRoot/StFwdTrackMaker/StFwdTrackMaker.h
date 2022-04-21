@@ -38,10 +38,38 @@ class McTrack;
 #include <vector>
 #include <memory>
 
-const size_t MAX_TREE_ELEMENTS = 4000;
+
 
 class StFwdTrack;
 
+const size_t MAX_TREE_ELEMENTS = 4000;
+struct FwdTreeData {
+
+
+    // hits;
+    int hN;
+    vector<float> hX, hY, hZ, hPt;
+    vector<int> hTrackId, hVolumeId, hVertexId;
+
+    // RC tracks
+    int rcN;
+    vector<float> rcPt, rcEta, rcPhi, rcQuality;
+    vector<int> rcTrackId, rcNumFst, rcCharge;
+
+    // MC Tracks
+    int mcN;
+    vector<float> mcPt, mcEta, mcPhi;
+    vector<int> mcVertexId, mcCharge;
+
+    int vmcN;
+    vector<float> vmcX, vmcY, vmcZ;
+    int vrcN;
+    vector<float> vrcX, vrcY, vrcZ;
+
+    std::map<string, std::vector<float>> Crits;
+    std::map<string, std::vector<int>> CritTrackIds;
+
+};
 
 
 class StFwdTrackMaker : public StMaker {
@@ -65,6 +93,7 @@ class StFwdTrackMaker : public StMaker {
     }
     void SetGenerateHistograms( bool _genHisto ){ mGenHistograms = _genHisto; }
     void SetGenerateTree(bool _genTree) { mGenTree = _genTree; }
+    void SetVisualize( bool _viz ) { mVisualize = _viz; }
 
     vector<StFwdTrack*> mFwdTracks;
 
@@ -77,40 +106,47 @@ class StFwdTrackMaker : public StMaker {
     
     // for Wavefront OBJ export
     size_t eventIndex = 0;
+    
+
+    bool mGenHistograms = false;
+    bool mGenTree = false;
+    std::string mConfigFile;
+
+
+    std::map<std::string, TH1 *> mHistograms;
+    TFile *mTreeFile = nullptr;
+    TTree *mTree     = nullptr;
+    FwdTreeData mTreeData;
+
+    bool mVisualize = true;
     vector<TVector3> mFttHits;
     vector<TVector3> mFstHits;
     vector<TVector3> mFcsClusters;
     vector<TVector3> mFcsPreHits;
 
-    bool mGenHistograms = false;
-    std::map<std::string, TH1 *> mHistograms;
-    TFile *mTreeFile = nullptr;
-    TTree *mTree     = nullptr;
-    bool mGenTree = false;
-    std::string mConfigFile;
-    bool visualize = true;
-
-    // elements used only if the mGenTree = true
-    float mTreeX[MAX_TREE_ELEMENTS], mTreeY[MAX_TREE_ELEMENTS], mTreeZ[MAX_TREE_ELEMENTS], mTreeHPt[MAX_TREE_ELEMENTS];
-    int mTreeN, mTreeTID[MAX_TREE_ELEMENTS], mTreeVID[MAX_TREE_ELEMENTS], mTreeHSV[MAX_TREE_ELEMENTS];
-
-    int mTreeNTracks, mTreeRNTracks, mTreeRTID[MAX_TREE_ELEMENTS], mTreeVertID[MAX_TREE_ELEMENTS];
-    unsigned short mTreeRNumFst[MAX_TREE_ELEMENTS];
-    short mTreeQ[MAX_TREE_ELEMENTS], mTreeRQ[MAX_TREE_ELEMENTS];
-    float mTreePt[MAX_TREE_ELEMENTS], mTreeEta[MAX_TREE_ELEMENTS], mTreePhi[MAX_TREE_ELEMENTS];
-    float mTreeRPt[MAX_TREE_ELEMENTS], mTreeREta[MAX_TREE_ELEMENTS], mTreeRPhi[MAX_TREE_ELEMENTS], mTreeRQual[MAX_TREE_ELEMENTS];
-
-    // MC EVENT Vertices (Seed)
-    int mTreeNVert;
-    float mTreeVertX[MAX_TREE_ELEMENTS], mTreeVertY[MAX_TREE_ELEMENTS], mTreeVertZ[MAX_TREE_ELEMENTS];
-
-    // RC RAVE Verts
-    int mTreeNRave;
-    float mTreeRaveX[MAX_TREE_ELEMENTS], mTreeRaveY[MAX_TREE_ELEMENTS], mTreeRaveZ[MAX_TREE_ELEMENTS];
     std::vector< genfit::GFRaveVertex * > mRaveVertices;
 
-    std::map<string, std::vector<float>> mTreeCrits;
-    std::map<string, std::vector<int>> mTreeCritTrackIds;
+    // // elements used only if the mGenTree = true
+    // float mTreeX[MAX_TREE_ELEMENTS], mTreeY[MAX_TREE_ELEMENTS], mTreeZ[MAX_TREE_ELEMENTS], mTreeHPt[MAX_TREE_ELEMENTS];
+    // int mTreeN, mTreeTID[MAX_TREE_ELEMENTS], mTreeVID[MAX_TREE_ELEMENTS], mTreeHSV[MAX_TREE_ELEMENTS];
+
+    // int mTreeNTracks, mTreeRNTracks, mTreeRTID[MAX_TREE_ELEMENTS], mTreeVertID[MAX_TREE_ELEMENTS];
+    // unsigned short mTreeRNumFst[MAX_TREE_ELEMENTS];
+    // short mTreeQ[MAX_TREE_ELEMENTS], mTreeRQ[MAX_TREE_ELEMENTS];
+    // float mTreePt[MAX_TREE_ELEMENTS], mTreeEta[MAX_TREE_ELEMENTS], mTreePhi[MAX_TREE_ELEMENTS];
+    // float mTreeRPt[MAX_TREE_ELEMENTS], mTreeREta[MAX_TREE_ELEMENTS], mTreeRPhi[MAX_TREE_ELEMENTS], mTreeRQual[MAX_TREE_ELEMENTS];
+
+    // // MC EVENT Vertices (Seed)
+    // int mTreeNVert;
+    // float mTreeVertX[MAX_TREE_ELEMENTS], mTreeVertY[MAX_TREE_ELEMENTS], mTreeVertZ[MAX_TREE_ELEMENTS];
+
+    // // RC RAVE Verts
+    // int mTreeNRave;
+    // float mTreeRaveX[MAX_TREE_ELEMENTS], mTreeRaveY[MAX_TREE_ELEMENTS], mTreeRaveZ[MAX_TREE_ELEMENTS];
+    // std::vector< genfit::GFRaveVertex * > mRaveVertices;
+
+    // std::map<string, std::vector<float>> mTreeCrits;
+    // std::map<string, std::vector<int>> mTreeCritTrackIds;
 
     void ProcessFwdTracks();
 
