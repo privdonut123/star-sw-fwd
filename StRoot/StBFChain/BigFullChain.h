@@ -1734,7 +1734,7 @@ Bfc_st BFC[] = { // standard chains
                                                                            "sTGC Cluster maker",    kFALSE},
   {"fttPoint","","fttChain","StEvent,fttDb","StFttPointMaker","StFttPointMaker,StEvent,StFttDbMaker", 
                                                                              "sTGC Point maker",    kFALSE},
-  {"fttQA","","fttChain","","StFttQAMaker","StFttQAMaker", "sTGC Raw hit QA maker",                 kFALSE},
+  {"fttQA","","fttChain","","StFttQAMaker,fttDb","StFttQAMaker", "sTGC Raw hit QA maker",           kFALSE},
 
 
   // forward track maker

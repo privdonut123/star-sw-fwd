@@ -1,17 +1,22 @@
 # StFwdTrackMaker
+The `StFrwdTrackMaker` performs tracking with the forward silicon tracker (FST) and the forward sTGC tracker (FTT). The tracking consists of several stages:
+1. Load & sort space points from FST and FTT
+2. Find seed tracks using FTT
+3. Fit seed tracks using FTT + PV if available
+4. Refit tracks with FST hits if  available
+5. Fill StEvent structures
 
-## Chain Options
+# Chain Options
 - `fwdTrack` : the forward track maker
 - Simulation:
     - `fttFastSim` : Ftt fast simulator, produces space points directly
     - `fstFastSim` : Fst fast simulator, produces space points directly
     - `fcsSim` : Fcs simulator, produces raw data to be processed by standard offline chain
 
-
-## Development setup
+# Development setup
 1. Checkout the code 
 ```
-git clonse --no-checkout git@github.com:jdbrice/star-sw-1.git
+git clone --no-checkout git@github.com:jdbrice/star-sw-1.git
 cd star-sw-1
 git config core.sparseCheckout true
 
@@ -44,12 +49,12 @@ git checkout fwd-tracking
 ```
 source StRoot/StFwdTrackMaker/macro/env.sh
 ```
-Note: it doesnt have normal macro path, so you might need to add (for DEV):
+Note: this environment doesnt have the normal macro paths, so you might need to add (for DEV):
 ```
 gSystem->Load( "libStarRoot.so" );
 gROOT->SetMacroPath(".:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
 ```
-to your macros if they load others (e.g. 'bfc.C')
+to your macros if they load others (e.g. 'bfc.C').
 
 3. Build the geometry cache
 ```
@@ -90,3 +95,26 @@ ln -s StRoot/StFwdTrackMaker/macro/sim sim
 ln -s StRoot/StFwdTrackMaker/macro/daq daq
 ```
 
+
+
+# XML Configuration
+The forward tracker can be configured via an XML configuration file.
+The basic structure is:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+    <Output url="full_track.root" />
+    <Geometry>fGeom.root</Geometry>
+    <Source ... />
+    
+    <TrackFinder ... >
+        ...
+    </TrackFinder>
+    
+    <TrackFitter ... >
+        ...
+    </TrackFitter>
+</config>
+```
+
+where the `<Output url="..." />` attribute determines the name of the 
