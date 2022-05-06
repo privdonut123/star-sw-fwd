@@ -81,7 +81,7 @@ public:
       }
     }
 
-    static TVector3 trackPosition( genfit::Track * t, float z ){
+    static TVector3 trackPosition( genfit::Track * t, float z, float * cov = 0 ){
 
         try {
             auto plane = genfit::SharedPlanePtr(
@@ -101,6 +101,14 @@ public:
             float x = tst.getPos().X();
             float y = tst.getPos().Y();
             float _z = tst.getPos().Z();
+
+            if ( cov ){
+                cov[0] = TCM(0,0); cov[1] = TCM(1,0); cov[2] = TCM(2,0);
+                cov[3] = TCM(0,1); cov[4] = TCM(1,1); cov[5] = TCM(2,1);
+                cov[6] = TCM(0,2); cov[7] = TCM(1,2); cov[8] = TCM(2,2);
+            }
+
+
             return TVector3( x, y, _z );
         } catch ( genfit::Exception e ){
             LOG_INFO << "E: " << e.what() << endm;
