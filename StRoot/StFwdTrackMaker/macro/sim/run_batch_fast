@@ -1,6 +1,6 @@
 
 
-nEvents=5
+nEvents=1
 strongrandom=`od -vAn -N3 -tu4 < /dev/urandom | tr -d '[:space:]'`
 echo starsim -w 0 -b sim/testg.kumac g3id=5 seed=${strongrandom} nevents=${nEvents} ntrack=5 etamn=2.5 etamx=4.0 ptmn=0.2 ptmx=5.0 ofn=sim.fzd
 starsim -w 0 -b sim/testg.kumac g3id=5 seed=${strongrandom} nevents=${nEvents} ntrack=5 etamn=3.0 etamx=3.5 ptmn=9.5 ptmx=10.0 ofn=sim.fzd

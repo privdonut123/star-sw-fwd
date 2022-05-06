@@ -37,6 +37,7 @@
 #include "StEvent/StTriggerData.h"
 #include "StEvent/StFstHitCollection.h"
 #include "StEvent/StFstHit.h"
+#include "StEvent/StFwdTrackCollection.h"
 
 #include "StEventUtilities/StEventHelper.h"
 
@@ -61,6 +62,8 @@
 #include "StFcsDbMaker/StFcsDb.h"
 #include "StFstUtil/StFstCollection.h"
 
+#include "StEvent/StFwdTrack.h"
+
 #define DLOG(...) printf(__VA_ARGS__);
 
 FwdSystem* FwdSystem::sInstance = nullptr;
@@ -83,14 +86,7 @@ class GenfitUtils{
 }; // GenfitUtils
 
 
-class StFwdTrack : public StGlobalTrack {
-public:
-    StFwdTrack( genfit::Track *gt ) : mGenfitTrack( *gt ){
-
-    }
-    vector<TVector3> mProjections;
-    genfit::Track mGenfitTrack;
-};
+// 
 
 
 // Basic sanity cuts on genfit tracks
@@ -1254,41 +1250,33 @@ int StFwdTrackMaker::Make() {
         }
 
         // Now fill StEvent
-        FillEvent();
+        // FillEvent();
+        StFwdTrackCollection * ftc = stEvent->fwdTrackCollection();
+        if ( !ftc ){
+            ftc = new StFwdTrackCollection();
+            stEvent->setFwdTrackCollection( ftc );
+        }
 
-        LOG_INFO << "ProcessFwdTracks" << endm;
+        for ( auto *genfitTrack : genfitTracks ) {
+
+            LOG_INFO << "Adding FwdTrack to StEvent" << endm;
+            StFwdTrack *fwdTrack = new StFwdTrack( genfitTrack );
+            ftc->addTrack( fwdTrack );
+            // provide the projections to EPD, ECAL, HCAL
+            float cov[9];
+            auto tv3 = ObjExporter::trackPosition( genfitTrack, 375.0, cov );
+            fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // EPD
+
+            tv3 = ObjExporter::trackPosition( genfitTrack, 715.0, cov );
+            fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // ECAL
+
+            tv3 = ObjExporter::trackPosition( genfitTrack, 807.0, cov );
+            fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // HCAL
+        }
+
+        LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
         ProcessFwdTracks();
         LOG_INFO << "DONE ProcessFwdTracks" << endm;
-        LOG_INFO << "DONE ProcessFwdTracks" << endm;
-        LOG_INFO << "DONE ProcessFwdTracks" << endm;
-
-        // Now loop over the tracks and do printout
-        int nnodes = stEvent->trackNodes().size();
-
-        for ( int i = 0; i < nnodes; i++ ) {
-
-            const StTrackNode *node = stEvent->trackNodes()[i];
-            StGlobalTrack *track = (StGlobalTrack *)node->track(global);
-            StTrackGeometry *geometry = track->geometry();
-
-            StThreeVectorF origin = geometry->origin();
-            StThreeVectorF momentum = geometry->momentum();
-
-
-            StDcaGeometry *dca = track->dcaGeometry();
-            if ( dca ) {
-                origin = dca->origin();
-                momentum = dca->momentum();
-            }
-            else {
-                LOG_INFO << "d c a geometry missing" << endm;
-            }
-
-            int idtruth = track->idTruth();
-            
-            auto mctrack = mcTrackMap[ idtruth ];
-
-        } // loop on nnodes
 
     } // IAttr FillEvent
 
@@ -1512,624 +1500,15 @@ void StFwdTrackMaker::Clear(const Option_t *opts) {
     }
 }
 //________________________________________________________________________
-
-void StFwdTrackMaker::FillEvent()
-{
-    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-
-    // Track seeds
-    const auto &seed_tracks = mForwardTracker -> getRecoTracks();
-    // Reconstructed globals
-    const auto &genfitTracks = mForwardTracker -> globalTracks();
-
-    // Clear up somethings... (but does this interfere w/ Sti and/or Stv?)
-    StEventHelper::Remove(stEvent, "StSPtrVecTrackNode");
-    StEventHelper::Remove(stEvent, "StSPtrVecPrimaryVertex");
-
-    // StiStEventFiller fills track nodes and detector infos by reference... there
-    // has got to be a cleaner way to do this, but for now follow along.
-    auto &trackNodes         = stEvent->trackNodes();
-    auto &trackDetectorInfos = stEvent->trackDetectorInfo();
-
-    int track_count_total  = 0;
-    int track_count_accept = 0;
-
-    LOG_INFO << "Saving " << genfitTracks.size() << " tracks" << endm;
-    for ( auto *genfitTrack : genfitTracks ) {
-
-        // Get the track seed
-        const auto &seed = seed_tracks[track_count_total];
-
-        // Increment total track count
-        track_count_total++;
-
-        // Check to see if the track passes cuts (it should, for now)
-        // if ( !GenfitUtils::accept(genfitTrack) ) continue;
-
-        track_count_accept++;
-
-        // Create a detector info object to be filled
-        StTrackDetectorInfo *detectorInfo = new StTrackDetectorInfo;
-        // FillDetectorInfo( detectorInfo, genfitTrack, true );
-
-        // Create a new track node (on which we hang a global and, maybe, primary track)
-        // StTrackNode *trackNode = new StTrackNode;
-
-        // This is our global track, to be filled from the genfit::Track object "track"
-        StGlobalTrack *globalTrack = new StFwdTrack( genfitTrack );
-
-        // Fill the track with the good stuff
-        // FillTrack( dynamic_cast<StGlobalTrack*>(globalTrack), genfitTrack, seed, detectorInfo );
-        // FillTrackDcaGeometry( dynamic_cast<StGlobalTrack*>(globalTrack), genfitTrack );
-        
-        StFwdTrack * fwdTrack = dynamic_cast<StFwdTrack*>(globalTrack);
-        // fwdTrack->mGenfitTrack = genfitTrack->clone()
-        mFwdTracks.push_back( fwdTrack );
-
-
-        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 375.0 ) ); // EPD
-        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 715.0 ) ); // ECAL
-        fwdTrack->mProjections.push_back( ObjExporter::trackPosition( genfitTrack, 807.0 ) ); // HCAL
-        // trackNode->addTrack( globalTrack );
-
-        // On successful fill (and I don't see why we wouldn't be) add detector info to the list
-        // trackDetectorInfos.push_back( detectorInfo );
-
-
-        // trackNodes.push_back( trackNode );
-
-        // // Set relationships w/ tracker object and MC truth
-        // // globalTrack->setKey( key );
-        // // globalTrack->setIdTruth( idtruth, qatruth ); // StTrack is dominant contributor model
-
-        // // Add the track to its track node
-        // trackNode->addTrack( globalTrack );
-        // trackNodes.push_back( trackNode );
-
-        // NOTE: could we qcall here mForwardTracker->fitTrack( seed, vertex ) ?
-
-    } // end of loop over tracks
-
-    LOG_INFO << "  number visited  = " <<   track_count_total  << endm;
-    LOG_INFO << "  number accepted = " <<   track_count_accept << endm;
-}
-
-
-void StFwdTrackMaker::FillTrack( StTrack *otrack, const genfit::Track *itrack, const Seed_t &iseed, StTrackDetectorInfo *info )
-{
-    vector<double> fttZ = FwdGeomUtils( gGeoManager ).fttZ( {0.0, 0.0, 0.0, 0.0} );
-    if ( fttZ.size() < 4 || fttZ[0] < 200.0 ) { // check that valid z-locations were found
-        LOG_ERROR << "Could not load Ftt geometry, tracks will be invalid" << endm;
-    }
-
-    // otrack == output track
-    // itrack == input track (genfit)
-
-    otrack->setEncodedMethod(kUndefinedFitterId);
-
-    // Track length and TOF between first and last point on the track
-    // TODO: is this same definition used in StEvent?
-    double track_len = 0;
-    try {
-        itrack->getTrackLen();
-    } catch ( genfit::Exception &e ){
-        LOG_ERROR << "Exception getting track length: " << e.what() << endm;
-    }
-
-
-    //  double track_tof = itrack->getTrackTOF();
-    otrack->setLength( abs(track_len) );
-
-    // Get the so called track seed quality... the number of hits in the seed
-    int seed_qual = iseed.size();
-    otrack->setSeedQuality( seed_qual );
-
-    // Set number of possible points in each detector
-    // TODO: calcuate the number of possible points in each detector, for now set = 4
-    otrack->setNumberOfPossiblePoints( 4, kUnknownId );
-
-
-    // Calculate TheTruth from the track seed for now.   This will be fine as
-    // long as we do not "refit" the track, potentially removing original seed
-    // hits from the final reconstructed track.
-
-    // Apply dominant contributor model to the track seed
-    int idtruth, qatruth;
-    double fqatruth = 0;
-    idtruth = MCTruthUtils::dominantContribution( iseed, fqatruth );
-    qatruth = std::floor( fqatruth * 100 );
-
-    otrack->setIdTruth( idtruth, qatruth ); // StTrack is dominant contributor model
-
-
-    // Fill the inner and outer geometries of the track.  For now,
-    // always propagate the track to the first layer of the silicon
-    // to fill the inner geometry.
-    //
-    // TODO: We may need to extend our "geometry" classes for RK parameters
-    FillTrackGeometry( otrack, itrack, fttZ[0], kInnerGeometry );
-    FillTrackGeometry( otrack, itrack, fttZ[3], kOuterGeometry );
-
-    // Next fill the fit traits
-    FillTrackFitTraits( otrack, itrack );
-
-    // Set detector info
-    otrack->setDetectorInfo( info );
-
-    // NOTE:  StStiEventFiller calls StuFixTopoMap here...
-
-    // Fill the track flags
-    FillTrackFlags( otrack, itrack );
-
-    //covM[k++] = M(0,5); covM[k++] = M(1,5); covM[k++] = M(2,5); covM[k++] = M(3,5); covM[k++] = M(4,5); covM[k++] = M(5,5);
-}
-
-
-void StFwdTrackMaker::FillTrackFlags( StTrack *otrack, const genfit::Track *itrack )
-{
-
-    int flag = 0;
-    // StiStEventFiller::setFlag does two things.  1) it sets the track flags, indicating
-    // which detectors have participated in the track.  It is a four digit value encoded
-    // as follows (from StTrack.h):
-
-    /* --------------------------------------------------------------------------
-    *  The track flag (mFlag accessed via flag() method) definitions with ITTF
-    *  (flag definition in EGR era can be found at
-    *   http://www.star.bnl.gov/STAR/html/all_l/html/dst_track_flags.html)
-    *
-    *  mFlag= zxyy, where  z = 1 for pile up track in TPC (otherwise 0)
-    *                      x indicates the detectors included in the fit and
-    *                     yy indicates the status of the fit.
-    *  Positive mFlag values are good fits, negative values are bad fits.
-    *
-    *  The first digit indicates which detectors were used in the refit:
-    *
-    *      x=1 -> TPC only
-    *      x=3 -> TPC       + primary vertex
-    *      x=5 -> SVT + TPC
-    *      x=6 -> SVT + TPC + primary vertex
-    *      x=7 -> FTPC only
-    *      x=8 -> FTPC      + primary
-    *      x=9 -> TPC beam background tracks
-    *
-    *  The last two digits indicate the status of the refit:
-    *       = +x01 -> good track
-    *
-    *      = -x01 -> Bad fit, outlier removal eliminated too many points
-    *      = -x02 -> Bad fit, not enough points to fit
-    *      = -x03 -> Bad fit, too many fit iterations
-    *      = -x04 -> Bad Fit, too many outlier removal iterations
-    *      = -x06 -> Bad fit, outlier could not be identified
-    *      = -x10 -> Bad fit, not enough points to start
-    *
-    *      = +x11 -> Short track pointing to EEMC */
-
-    // NOTE: First digit will be used as follows for forward tracks
-    //
-    // x = 5 sTGC only
-    // x = 6 sTGC + primary vertex
-    // x = 7 sTGC + forward silicon
-    // x = 8 sTGC + forward silicon + primary vertex
-
-    if      ( global  == otrack->type() ) flag = 501;
-    else if ( primary == otrack->type() ) flag = 601;
-
-    // TODO: detect presence of silicon hits and add appropriately to the flag
-
-
-    // As for "bad" fits, I believe GenFit does not propagate fit information for
-    // failed fits.  (???).  So we will not publish bad track flags.
-    otrack->setFlag(flag);
-}
-
-
-void StFwdTrackMaker::FillTrackMatches( StTrack *otrack, const genfit::Track *itrack )
-{
-    // TODO:
-
-    // At midrapidity, we extend the track to the fast detectors and check to see whether
-    // the track matches an active element or not.  The fast detectors are the barrel time-
-    // of-flight, the barrel EM calorimeter and teh endcap EM calorimeter.
-
-    // We will be interested in matching FTS tracks to the following subsystems:
-    // 1) The event plane detector
-    // 2) Forward EM cal
-    // 3) Forward Hadronic cal
-
-    // We could adopt the following scheme to save the track fit information in a way that
-    // can be accessed later, without modification to the StEvent data model...
-
-    // Save the state of the fit (mapped to a helix) at the first silicon layer as the inner geometry.
-    // Save the state of the fit (mapped to a helix) at the event plane detector as the outer geometry.
-    // Save the state of the fit (mapped to a helix) at the front of the EM cal as the "Ext" geometry
-    // ... helix would have no curvature at that point and would be a straight line, as there is no b field.
-    // ... can easily get to the HCAL from there...
-}
-
-
-void StFwdTrackMaker::FillTrackFitTraits( StTrack *otrack, const genfit::Track *itrack )
-{
-
-    unsigned short g3id_pid_hypothesis = 6; // TODO: do not hard code this
-
-    // Set the chi2 of the fit.  The second element in the array is the incremental
-    // chi2 for adding the vertex to the primary track.
-    float chi2[] = {0, -999};
-    const auto *fit_status = itrack->getFitStatus();
-
-    if ( !fit_status ) {
-        LOG_WARN << "genfit track with no fit status" << endm;
-        return;
-    }
-
-    chi2[0] = fit_status->getChi2();
-    int ndf = fit_status->getNdf();
-
-    chi2[0] /= ndf; // TODO: Check if this is right
-
-    // ... odd that we make this determination based on the output track's type ...
-    if ( primary == otrack->type() ) {
-        // TODO: chi2[1] should hold the incremental chi2 of adding the vertex for the primary track
-        //       is this available from genfit?
-    }
-
-    // Covariance matrix is next.  This one should be fun.  StEvent assumes the helix
-    // model, but we have fit to the Runga Kutta track model.  The covariance matrix
-    // is different.  So... TODO:  Do we need to specify covM for the equivalent helix?
-    float covM[15] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-    // Obtain fitted state so we can grab the covariance matrix
-    genfit::MeasuredStateOnPlane state;
-    try {
-        state = itrack->getFittedState(0);
-    } catch (genfit::Exception &e) {
-        LOG_ERROR << "GenFit failed to get measured state on plane: " << e.what() << endm;
-    }
-
-    // For global tracks, we are evaluating the fit at the first silicon plane.
-    // Extrapolate the fit to this point so we can extract the covariance matrix
-    // there.  For primary track, point 0 should correspond to the vertex.
-    //
-    // TODO: verify first point on primary tracks is the vertex.
-
-    // Grab the covariance matrix
-    const auto &M = state.getCov();
-
-    // TODO: This is where we would do the math and transform from the Runga Kutta basis
-    //       to the helix basis... but do we need to?
-
-    int k = 0;
-    covM[k++] = M(0, 0);
-    covM[k++] = M(0, 1); covM[k++] = M(1, 1);
-    covM[k++] = M(0, 2); covM[k++] = M(1, 2); covM[k++] = M(2, 2);
-    covM[k++] = M(0, 3); covM[k++] = M(1, 3); covM[k++] = M(2, 3); covM[k++] = M(3, 3);
-    covM[k++] = M(0, 4); covM[k++] = M(1, 4); covM[k++] = M(2, 4); covM[k++] = M(3, 4); covM[k++] = M(4, 4);
-
-    StTrackFitTraits fit_traits(g3id_pid_hypothesis, 0, chi2, covM);
-
-    // Get number of hits in all detectors
-    int nhits[kMaxDetectorId] = {};
-
-    for ( const auto *point : itrack->getPoints() ) {
-
-        const auto *measurement = point->getRawMeasurement();
-        int detId = measurement->getDetId();
-        nhits[detId]++;
-
-    }
-
-    for ( int i = 0; i < kMaxDetectorId; i++ ) {
-        // if ( 0 == nhits[i] ) continue; // not sure why, but Sti skips setting zero hits
-
-        fit_traits.setNumberOfFitPoints( (unsigned char)nhits[i], (StDetectorId)i );
-    }
-
-    if ( primary == otrack->type() ) {
-        fit_traits.setPrimaryVertexUsedInFit( true );
-    }
-
-    otrack -> setFitTraits( fit_traits );
-
-}
-
-
-void StFwdTrackMaker::FillTrackGeometry( StTrack *otrack, const genfit::Track *itrack, double zplane, int io )
-{
-    int ipoint = 0;
-
-    if ( io == kInnerGeometry ) ipoint = 0; // hardcoded to sTGC only for now
-    else                        ipoint = 3;
-
-    // Obtain fitted state
-    genfit::MeasuredStateOnPlane measuredState = itrack->getFittedState(ipoint);
-
-    // Obtain the cardinal representation
-    genfit::AbsTrackRep *cardinal = itrack->getCardinalRep();
-
-    // We really don't want the overhead in the TVector3 ctor/dtor here
-    static TVector3 xhat(1, 0, 0), yhat(0, 1, 0), Z(0, 0, 0);
-
-    // Assign the z position
-    Z[2] = zplane;
-
-    // This is the plane for which we are evaluating the fit
-    const auto detectorPlane = genfit::SharedPlanePtr( new genfit::DetPlane(Z, xhat, yhat) );
-
-    // Update the state to the given plane
-    try {
-        cardinal->extrapolateToPlane( measuredState, detectorPlane, false, true );
-    } catch ( genfit::Exception &e ) {
-        LOG_WARN << e.what() << endm;
-        LOG_WARN << "Extraploation to inner/outer geometry point failed" << endm;
-        return;
-    }
-
-
-    static StThreeVector<double> momentum;
-    static StThreeVector<double> origin;
-
-    static TVector3 pos;
-    static TVector3 mom;
-    static TMatrixDSym cov;
-
-    measuredState.getPosMomCov(pos, mom, cov);
-
-    for ( int i = 0; i < 3; i++ ) momentum[i] = mom[i];
-    for ( int i = 0; i < 3; i++ ) origin[i]   = pos[i];
-
-    double charge = measuredState.getCharge();
-
-    // Get magnetic field
-    double X[] = { pos[0], pos[1], pos[2] };
-    double B[] = { 0, 0, 0 };
-    StarMagField::Instance()->Field( X, B );
-
-    // This is really an approximation, should be good enough for the inner
-    // geometry (in the Silicon) but terrible in the outer geometry ( sTGC)
-    double Bz = B[2];
-
-    // Temporary helix to get the helix parameters
-    StPhysicalHelix helix( momentum, origin, Bz*units::kilogauss, charge );
-    // StiStEventFiller has this as |curv|.
-    double curv = TMath::Abs(helix.curvature());
-    double h    = -TMath::Sign(charge * Bz, 1.0); // helicity
-
-    if ( charge == 0 ) h = 1;
-
-    //
-    // From StHelix::helix()
-    //
-    // phase = mPsi - h*pi/2
-    // so...
-    // psi = phase + h*pi/2
-    //
-    double psi = helix.phase() + h * TMath::Pi() / 2;
-    double dip  = helix.dipAngle();
-    short  q    = charge; assert( q == 1 || q == -1 || q == 0 );
-
-    // Create the track geometry
-    StTrackGeometry *geometry = new StHelixModel (q, psi, curv, dip, origin, momentum, h);
-
-    if ( kInnerGeometry == io ) otrack->setGeometry( geometry );
-    else                        otrack->setOuterGeometry( geometry );
-}
-
-
-void StFwdTrackMaker::FillTrackDcaGeometry( StGlobalTrack *otrack, const genfit::Track *itrack )
-{
-    // We will need the event
-    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-    assert(stEvent); // we warned ya
-
-    // And the primary vertex
-    const StPrimaryVertex* primaryVertex = stEvent->primaryVertex(0);
-
-    // Obtain fitted state from genfit track
-    genfit::MeasuredStateOnPlane measuredState;
-    try {
-        measuredState = itrack->getFittedState(1);
-    } catch ( genfit::Exception &e ) {
-        LOG_WARN << "Getting Measured State failed: " << e.what() << endm;
-        return;
-    }
-
-    // Obtain the cardinal representation
-    genfit::AbsTrackRep *cardinal =  itrack->getCardinalRep();
-
-    static TVector3 vertex;
-    double x = 0;
-    double y = 0;
-    double z = 0;
-    if ( primaryVertex ) {
-        x = primaryVertex->position()[0];
-        y = primaryVertex->position()[1];
-        z = primaryVertex->position()[2];
-    }
-    vertex.SetX(x); vertex.SetY(y); vertex.SetZ(z);
-
-    const static TVector3 direct(0., 0., 1.); // TODO get actual beamline slope
-
-    // Extrapolate the measured state to the DCA of the beamline
-    try {
-        cardinal->extrapolateToLine(  measuredState, vertex, direct, false, true );
-    }catch ( genfit::Exception &e ) {
-        LOG_WARN << e.what() << "\n"
-                    << "Extrapolation to beamline (DCA) failed." << "\n"
-                    << "... vertex " << x << " " << y << "  " << z << endm;
-        return;
-    }
-
-    static StThreeVector<double> momentum;
-    static StThreeVector<double> origin;
-
-    //
-    // These lines obtain the position, momentum and covariance matrix for the fit
-    //
-
-    static TVector3 pos;
-    static TVector3 mom;
-
-    measuredState.getPosMom(pos, mom);
-
-    for ( int i = 0; i < 3; i++ ) momentum[i] = mom[i];
-    for ( int i = 0; i < 3; i++ ) origin[i]   = pos[i];
-
-    double charge = measuredState.getCharge();
-
-    static TVectorD    state(5);
-    static TMatrixDSym cov(5);
-
-    //
-    //  this is the 5D state and covariance matrix
-    //  https://arxiv.org/pdf/1902.04405.pdf
-    //  state = { q/p, u', v', u, v }, where
-    //  q/p is charge over momentum
-    //  u,  v correspond to x, y (I believe)
-    //  u', v' are the direction cosines with respect to the plane
-    //  ... presume that
-    //      u' = cos(thetaX)
-    //      v' = cos(thetaY)
-    //
-
-    state = measuredState.getState();
-    cov   = measuredState.getCov();
-
-    // Below is one way to convert the parameters to a helix, using the
-    // StPhysicalHelix class
-
-    double pt     = momentum.perp();
-    double ptinv  = (pt != 0) ? 1.0 / pt : std::numeric_limits<double>::max();
-
-    // Get magnetic field
-    double X[] = { pos[0], pos[1], pos[2] };
-    double B[] = { 0, 0, 0 };
-    StarMagField::Instance()->Field( X, B );
-
-    // This is really an approximation, should be good enough for the inner
-    // geometry (in the Silicon) but terrible in the outer geometry ( sTGC)
-    double Bz = B[2];
-
-    // Temporary helix to get the helix parameters
-    StPhysicalHelix helix( momentum, origin, Bz*units::kilogauss, charge );
-
-    // StiStEventFiller has this as |curv|.
-    double curv =  TMath::Abs(helix.curvature());
-    double h    = -TMath::Sign(charge * Bz, 1.0); // helicity
-
-    if ( charge == 0 ) h = 1;
-
-    //
-    // From StHelix::helix()
-    //
-    // phase = mPsi - h*pi/2
-    // so...
-    // psi = phase + h*pi/2
-    //
-    double psi  = helix.phase() + h * TMath::Pi() / 2;
-    double dip  = helix.dipAngle();
-    double tanl = TMath::Tan(dip); 
-    short  q    = charge; assert( q == 1 || q == -1 || q == 0 );
-
-    // TODO:verify this and investigate numerical method for errors
-    double mImp  = origin.perp();
-    double mZ    = origin[2];
-    double mPsi  = psi;
-    double mPti  = ptinv;
-    double mTan  = tanl;
-    double mCurv = curv;
-
-    double p[] = { mImp, mZ, mPsi, mPti, mTan, mCurv };
-
-    // TODO: fill in errors... (do this numerically?)
-    double e[15] = {};
-
-    StDcaGeometry *dca = new StDcaGeometry;
-    otrack->setDcaGeometry(dca);
-    dca->set(p, e);
-}
-
-
-void StFwdTrackMaker::FillDetectorInfo( StTrackDetectorInfo *info, const genfit::Track *track, bool increment )
-{
-    //   // here is where we would fill in
-    //   // 1) total number of hits
-    //   // 2) number of sTGC hits
-    //   // 3) number of silicon hits
-    //   // 4) an StHit for each hit fit to the track
-    //   // 5) The position of the first and last hits on the track
-
-    int ntotal   = track->getNumPoints(); // vs getNumPointsWithMeasurement() ?
-
-    StThreeVectorF firstPoint(0, 0, 9E9);
-    StThreeVectorF lastPoint(0, 0, -9E9);
-
-    int count = 0;
-
-    for ( const auto *point : track->getPoints() ) {
-
-    const auto *measurement = point->getRawMeasurement();
-    if ( !measurement ) {
-        continue;
-    }
-
-    const TVectorD &xyz = measurement->getRawHitCoords();
-    float x = xyz[0];
-    float y = xyz[1];
-    float z = 0; // We get this from the detector plane...
-
-    // Get fitter info for the cardinal representation
-    const auto *fitinfo = point->getFitterInfo();
-    if ( !fitinfo ) {
-        continue;
-    }
-
-    const auto &plane = fitinfo->getPlane();
-    TVector3 normal = plane->getNormal();
-    const TVector3 &origin = plane->getO();
-
-    z = origin[2];
-
-    if ( z > lastPoint[2] ) {
-        lastPoint.setX(x);      lastPoint.setY(y);      lastPoint.setZ(z);
-    }
-
-    if ( z < firstPoint[2] ) {
-        firstPoint.setX(x);     firstPoint.setY(y);     firstPoint.setZ(z);
-    }
-
-    ++count;
-
-    //We should also convert (or access) StHit and add to the track detector info
-
-    }
-
-    info->setNumberOfPoints( (unsigned char)count, kUnknownId ); // TODO: Assign after StEvent is updated
-
-
-    assert(count);
-
-    info->setFirstPoint( firstPoint );
-    info->setLastPoint( lastPoint );
-    info->setNumberOfPoints( ntotal, kUnknownId ); // TODO: Assign after StEvent is updated
-}
-
-
-
-
 void StFwdTrackMaker::ProcessFwdTracks(  ){
 
-    for ( auto fwdTrack : mFwdTracks ){
-        auto atEPD = fwdTrack->mProjections[0];
+    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
+    StFwdTrackCollection * ftc = stEvent->fwdTrackCollection();
+    for ( auto fwdTrack : ftc->tracks() ){
+        auto atEPD  = fwdTrack->mProjections[0];
         auto atECAL = fwdTrack->mProjections[1];
         auto atHCAL = fwdTrack->mProjections[2];
-        try {
-            LOG_INFO << "Track crosses EPD @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atEPD.X(), atEPD.Y(), atEPD.Z() ) << endm;
-            LOG_INFO << "Track crosses ECAL @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atECAL.X(), atECAL.Y(), atECAL.Z() ) << endm;
-            LOG_INFO << "Track crosses HCAL @ " << TString::Format( "(%0.2f, %0.2f, %0.2f)", atHCAL.X(), atHCAL.Y(), atHCAL.Z() ) << endm;
-        } catch ( genfit::Exception e ) {
-            
-        }
-    }
 
+        LOG_INFO << "Track crosses EPD @ " << TString::Format( "(%0.2f+/-%0.2f, %0.2f+/-%0.2f, %0.2f+/-%0.2f)", atEPD.XYZ.x(), atEPD.dx(), atEPD.XYZ.y(), atEPD.dy(), atEPD.XYZ.z(), atEPD.dz() ) << endm;
+    }
 }
