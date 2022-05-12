@@ -3,6 +3,11 @@
 #include "GenFit/GFRaveVertexFactory.h"
 #include <math.h>
 
+#include "StEvent/StEvent.h"
+#include "StEvent/StFttCollection.h"
+#include "StEvent/StFttCluster.h"
+
+class StEvent;
 typedef struct{
   float x;
   float y;
@@ -27,6 +32,10 @@ public:
 
     void vert( ofstream &of, float x, float y, float z ){
         of << "v " << x << " " << y << " " << z << endl;
+        numVertices++;
+    }
+    void vert( ofstream &of, TVector3 v ){
+        of << "v " << v.X() << " " << v.Y() << " " << v.Z() << endl;
         numVertices++;
     }
 
@@ -79,6 +88,59 @@ public:
         fout << TString::Format("f %d %d %d\n", fVert-1, (j+2)+fVert,        (s+1)+fVert       ).Data();
         fout << TString::Format("f %d %d %d\n", fVert,   (s+1)+offLastVerts, (j+2)+offLastVerts).Data();
       }
+    } // sphere
+
+    void face( ofstream &fout, int anchor, int v0, int v1, int v2 ){
+        fout << TString::Format("f %d %d %d\n", anchor+v0, anchor+v1, anchor+v2).Data(); 
+    }
+    void face( ofstream &fout, int anchor, int v0, int v1, int v2, int v3 ){
+        fout << TString::Format("f %d %d %d %d\n", anchor+v0, anchor+v1, anchor+v2, anchor+v3).Data(); 
+    }
+    void prism( ofstream &fout, TVector3 po, TVector3 ds ){
+        int fVert = numVertices;    // Record the first vertex index for intermediate vertices.
+        // x-y at z=0
+        vert( fout, po.X(), po.Y(), po.Z() ); // 1
+        vert( fout, po.X() + ds.X(), po.Y(), po.Z() ); // 2
+        vert( fout, po.X() + ds.X(), po.Y() + ds.Y(), po.Z() ); // 3
+        vert( fout, po.X(), po.Y() + ds.Y(), po.Z() ); // 4
+
+        // x-y at z=+dz
+        vert( fout, po.X(), po.Y(), po.Z() + ds.Z() ); // 5
+        vert( fout, po.X() + ds.X(), po.Y(), po.Z() + ds.Z() ); // 6
+        vert( fout, po.X() + ds.X(), po.Y() + ds.Y(), po.Z() + ds.Z() ); // 7
+        vert( fout, po.X(), po.Y() + ds.Y(), po.Z() + ds.Z() ); // 8
+
+        face( fout, fVert, 1, 2, 3, 4 ); // bottom face 
+        face( fout, fVert, 5, 6, 7, 8 ); // top face
+        face( fout, fVert, 1, 2, 6, 5 ); // side 1
+        face( fout, fVert, 2, 3, 7, 6 ); // side 2
+        face( fout, fVert, 3, 4, 8, 7 ); // side 3
+        face( fout, fVert, 1, 4, 8, 5 ); // side 4
+    }
+
+    void tri( ofstream &fout, TVector3 v0, float dz, float w, float h, float phi ) {
+
+        int fVert = numVertices;
+        float dphi = 0.1/2;
+        float yp = v0.Y() + (sin( phi + dphi ) + cos( phi + dphi ) ) * h;
+        float yn = v0.Y() + (sin( phi - dphi ) + cos( phi - dphi ) ) * h;
+        float xp = v0.X() + (cos( phi + dphi ) - sin( phi + dphi)) * h;
+        float xn = v0.X() + (cos( phi - dphi ) - sin( phi - dphi)) * h;
+        // top face
+        vert( fout, v0.X(), v0.Y(), v0.Z() ); // 1
+        vert( fout, xp, yp, v0.Z() );
+        vert( fout, xn, yn, v0.Z() );
+
+        // top face
+        vert( fout, v0.X(), v0.Y(), v0.Z() - dz ); // 4
+        vert( fout, xp, yp, v0.Z() - dz );
+        vert( fout, xn, yn, v0.Z() - dz );
+
+        face( fout, fVert, 1, 2, 3 ); // top
+        face( fout, fVert, 4, 5, 6 ); // bottom
+        face( fout, fVert, 1, 2, 5, 4 ); // side 1
+        face( fout, fVert, 2, 3, 6, 5 ); // side 2
+        face( fout, fVert, 3, 1, 4, 6 ); // side 3
     }
 
     static TVector3 trackPosition( genfit::Track * t, float z, float * cov = 0 ){
@@ -117,15 +179,68 @@ public:
 
         return TVector3( -99, -99, -99 );
     }
+
+    void output_ftt_strips( 
+        ofstream &fout, 
+        StEvent * event ){
+
+        fout << "\n" << endl;
+        fout << "o fttStrips" << endl;
+        fout << "usemtl stgc_hits\n" << endl;
+        float pz[] = {280.90499, 303.70498, 326.60501, 349.40499};
+        TVector3 cp;
+        
+
+        for ( int i = 0; i < event->fttCollection()->numberOfClusters(); i++ ){
+            StFttCluster* c = event->fttCollection()->clusters()[i];
+            if ( c->nStrips() < 2 ) continue;
+            float dw = 0.05, dlh = 60.0, dlv = 60.0;
+            float mx = 0.0, my = 0.0;
+            float sx = 1.0, sy = 1.0;
+            
+            
+            if ( c->quadrant() == kFttQuadrantA ){
+                mx = 0; my = 0;
+                sx = 1.0; sy = 1.0;
+            } else if ( c->quadrant() == kFttQuadrantB ){
+                mx = 10.16*SCALE; my = 0.0*SCALE;
+                sy = -1;
+                dlv = -dlv;
+
+            } else if ( c->quadrant() == kFttQuadrantC ){
+                mx = -10.16*SCALE ; my = -00.0*SCALE;
+                sx = -1.0; sy = -1.0;
+                dlh = -dlh; dlv = -dlv;
+
+            } else if ( c->quadrant() == kFttQuadrantD ){
+                sx = -1;
+                dlh = -dlh;
+            }
+
+            cp.SetZ( -pz[ c->plane() ] * SCALE );
+            if ( c->orientation() == kFttHorizontal ){
+                cp.SetY( my + sy * c->x()/10.0 * SCALE );
+                cp.SetX( mx );
+                prism( fout, cp, TVector3( dlh * SCALE, dw, dw ) );
+            } else if ( c->orientation() == kFttVertical ){
+                cp.SetX( mx + sx * c->x()/10.0 * SCALE );
+                cp.SetY( my );
+                prism( fout, cp, TVector3( dw, dlv * SCALE, dw ) );
+            }
+        }
+    } // ftt_strips
     
     void output( std::string filename, 
+            StEvent * event,
             std::vector< Seed_t> seeds, 
             std::vector< genfit::Track *> tracks, 
             const std::vector< genfit::GFRaveVertex *> &vertices, 
             std::vector<TVector3> &fttHits,
             std::vector<TVector3> &fstHits,
             std::vector<TVector3> &fcsPreHits, // EPD = preshower
-            std::vector<TVector3> &fcsClusters ){
+            std::vector<TVector3> &fcsClusters,
+            std::vector<float>    &fcsClusterEnergy
+            ){
 		
 		LOG_INFO << "Writing: " << filename << endm;
         numVertices = 0;
@@ -134,6 +249,8 @@ public:
 
         ofile << "\nmtllib materials.mtl\n\n" << endl;
 
+
+        output_ftt_strips( ofile, event );
 
         TVector3 startPos;
         if ( vertices.size() > 0 ){
@@ -147,6 +264,7 @@ public:
             }
         }
 
+        LOG_INFO << "Viz has " << fttHits.size() << " FTT Hits" << endm;
         if ( fttHits.size() > 0 ){
             ofile << "\n" << endl;
             ofile << "o fttHits" << endl;
@@ -156,33 +274,46 @@ public:
             }
         }
 
-
+        LOG_INFO << "Viz has " << fstHits.size() << " FST Hits" << endm;
         if ( fstHits.size() > 0 ) {
             ofile << "\n" << endl;
             ofile << "o fstHits" << endl;
             ofile << "usemtl fst_hits\n" << endl;
             for ( auto p : fstHits ){
              
-                sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.15, 10, 10, ofile );
+                float fstphi = TMath::ATan2( p.Y(), p.X() );
+                printf( "FST PHI: %f \n", fstphi );
+                // tri( ofile, TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.1f, 0.1f, 3.0f, fstphi );
+                sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.3, 10, 10, ofile );
             }
         }
 
-        if ( fcsPreHits.size() > 0 || fcsClusters.size() > 0 ){ 
+        LOG_INFO << "Viz has " << fcsPreHits.size() << " EPD Hits" << endm;
+        if ( fcsPreHits.size() > 0 ){ 
+            ofile << "\n" << endl;
+            ofile << "o epd" << endl;
+            ofile << "usemtl fcs_hits\n" << endl;
+            for ( auto p : fcsPreHits ){
+                
+                sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.25, 10, 10, ofile );
+            }
+        }
+
+        LOG_INFO << "Viz has " << fcsClusters.size() << " FCS Hits" << endm;
+        if ( fcsClusters.size() > 0 ){ 
             ofile << "\n" << endl;
             ofile << "o fcs" << endl;
             ofile << "usemtl fcs_hits\n" << endl;
-            for ( auto p : fcsPreHits ){
-             
-                sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.25, 10, 10, ofile );
-            }
-            ofile << "\n\n";
+            int i = 0;
             for ( auto p : fcsClusters ){
-             
-                sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.75, 10, 10, ofile );
+                // sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.75, 10, 10, ofile );
+                TVector3 ds = TVector3( 1, 1, fcsClusterEnergy[i] );
+                prism( ofile, TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), ds );
+                i++;
             }
         }
         
-
+        LOG_INFO << "Viz has " << seeds.size() << " seeds" << endm;
         if ( seeds.size() > 0 ){
             ofile << "\n\no FwdSeeds\n" << endl;
             ofile << "usemtl seeds\n" << endl;
@@ -207,10 +338,11 @@ public:
         // numVertices = 0;
         // EXPORT TRACKS
 
+        LOG_INFO << "Viz has " << tracks.size() << " tracks Hits" << endm;
         if ( tracks.size() > 0 ){
             ofile << "\n\no FwdTracks\n" << endl;
             ofile << "usemtl tracks\n" << endl;
-            float zStep = 4.0; // cm
+            float zStep = 5.0; // cm
             for ( auto t : tracks ) {
                 size_t vStart = numVertices;
     
@@ -240,9 +372,9 @@ public:
                     if ( point.X() > -90 && point.Y() > -90 )
                         vert( ofile, point.X() * SCALE, point.Y() * SCALE, -point.Z() * SCALE );
     
-                } else {
+                } else if ( true ){
                     TVector3 lpoint;
-                    for ( float z = startPos.Z(); z < 800; z += zStep ){
+                    for ( float z = startPos.Z(); z < 875; z += zStep ){
                         TVector3 point = trackPosition( t, z );
                         // if ( point.X() == -99 && point.Y() == -99 && point.Z() == -99 ){
                         //     point = lpoint;

@@ -2,11 +2,13 @@
 <config>
     <Output url="fast.root" />
 	<Geometry>fGeom.root</Geometry>
-    <Source ftt="DATA" fttFilter="true" />
+    <Source ftt="DATA" />
+
+    <SiRasterizer r="3.0" phi="0.04" />
 
 
     <TrackFinder nIterations="1">
-        <Iteration nPhiSlices="8" > <!-- Options for first iteration -->
+        <Iteration nPhiSlices="32" > <!-- Options for first iteration -->
             <SegmentBuilder>
                 <Criteria name="Crit2_RZRatio" min="0" max="1.20" />
                 <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/>
@@ -16,15 +18,15 @@
 
             <ThreeHitSegments>
 				<Criteria name="Crit3_3DAngle" min="0" max="30" />
-                <!-- <Criteria name="Crit3_PT" min="0" max="100" /> -->
+                <Criteria name="Crit3_PT" min="0" max="100" />
 				<Criteria name="Crit3_ChangeRZRatio" min="0.8" max="1.21" />
 				<Criteria name="Crit3_2DAngle" min="0" max="30" />
             </ThreeHitSegments>
         </Iteration>
 
-        <Connector distance="2"/>
+        <Connector distance="1"/>
 
-        <SubsetNN active="false" min-hits-on-track="3" >
+        <SubsetNN active="true" min-hits-on-track="3" >
             <!-- <InitialTemp>2.1</InitialTemp> -->
             <!-- <InfTemp>0.1</InfTemp> -->
             <Omega>0.99</Omega>
@@ -34,7 +36,7 @@
         <HitRemover active="false" />
     </TrackFinder>
     
-	<TrackFitter refitSi="false" mcSeed="false" constB="true"  >
-        <Vertex sigmaXY="10" sigmaZ="200.0" includeInFit="false" smearMcVertex="false" />
+	<TrackFitter refitSi="true" mcSeed="false" zeroB="true"  >
+        <Vertex sigmaXY="3" sigmaZ="100.0" includeInFit="true" smearMcVertex="false" />
     </TrackFitter>
 </config>

@@ -48,6 +48,7 @@ git checkout fwd-tracking
 2. initialize the environment:
 ```
 source StRoot/StFwdTrackMaker/macro/env.sh
+cons # build the code if not done already
 ```
 Note: this environment doesnt have the normal macro paths, so you might need to add (for DEV):
 ```

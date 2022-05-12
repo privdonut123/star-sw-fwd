@@ -921,8 +921,11 @@ class ForwardTrackMaker {
         // }
         LOG_INFO << " FITTING " << mRecoTracksThisItertion.size() << " now" << endm;
 
-        if ( mRecoTracksThisItertion.size() < 40 )
+        if ( mRecoTracksThisItertion.size() < 4000 ){
             doTrackFitting( mRecoTracksThisItertion );
+        } else {
+            LOG_ERROR << "BAILING OUT of fit, too many track candidates" << endm;
+        }
         LOG_INFO << ".";
         if ( mGenHistograms ){
             mQualityPlotter->afterIteration( iIteration, mRecoTracksThisItertion );
