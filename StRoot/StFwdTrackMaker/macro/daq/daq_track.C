@@ -1,12 +1,9 @@
 //usr/bin/env root4star -l -b -q  $0; exit $?
 // that is a valid shebang to run script as executable
 
-TFile *output = 0;
-
-void daq_track(    int n = 500,
-                    // const char *inFile =  "tests/single_track.fzd",
+void daq_track(    int n = 1,
                     const char *inFile = "input.daq",
-                    std::string configFile = "daq_track.xml",
+                    std::string configFile = "daq/daq_track.xml",
                     const char *geom = "dev2022") {
     TString _geom = geom;
 
@@ -14,13 +11,14 @@ void daq_track(    int n = 500,
 
     TString _chain;
 
-    // gSystem->Load( "/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStarRoot.so" );
     gSystem->Load( "libStarRoot.so" );
 
     // NOTE "event" does not work in CMAKE StRoot wo network, it includes detDb - root problem. Swap to StEvent instead
-    _chain = Form("in, %s, db, StEvent, MuDST, FttDat, FttHitCalib, FttClu, FttPoint, FttQA, fstUtil, fstDb, ReverseField", _geom.Data());
-    // _chain = Form("in, %s, db, StEvent, MuDST, FttDat, FttHitCalib, FttClu, FttPoint, FttQA", _geom.Data());
-    // fstUtil, fstRawHit,fstCluster,fstHit,
+    
+    // Chain with fst, fcs and ftt
+    _chain = Form("in, %s, db, StEvent, MuDST, fcs, fst, FttDat, FttHitCalib, FttClu, FttPoint, FttQA, ReverseField", _geom.Data());
+    
+    // needed in this wonky spack environment 
     gROOT->SetMacroPath(".:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
 
     gROOT->LoadMacro("bfc.C");
@@ -42,32 +40,18 @@ void daq_track(    int n = 500,
     gSystem->Load("libStFwdTrackMaker.so");
 
     gSystem->Load("libStEpdUtil.so");
-    gSystem->Load("libStFstUtil.so");
     gSystem->Load("libStTpcDb.so");
-    gSystem->Load("libStFstDbMaker.so");
-    gSystem->Load("libStFstRawHitMaker.so");
-    gSystem->Load("libStFstClusterMaker.so");
-    gSystem->Load("libStFstHitMaker.so");
-
-
-    StFstRawHitMaker * fstRawHit = new StFstRawHitMaker();
-    chain->AddMaker(fstRawHit);
-
-    StFstClusterMaker * fstCluster = new StFstClusterMaker();
-    // fstCluster->SetDebug( 4 );
-    chain->AddMaker(fstCluster);
-
-    // StFstHitMaker * fstHit = new StFstHitMaker();
-    // chain->AddMaker(fstHit);
-
 
     //  Tracking
     if ( true ) {
         StFwdTrackMaker *gmk = new StFwdTrackMaker();
-        
         gmk->SetConfigFile( configFile );
+        
+        // write debug histograms and ttree?
         gmk->SetGenerateTree( true );
         gmk->SetGenerateHistograms( true );
+        // write out wavefront OBJ files
+        gmk->SetVisualize( false );
         
         chain->AddMaker(gmk);
     }
@@ -84,5 +68,4 @@ void daq_track(    int n = 500,
         if (kStOK != chain->Make())
             break;
     }
-
 }
