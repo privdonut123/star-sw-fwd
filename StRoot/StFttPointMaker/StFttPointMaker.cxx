@@ -117,12 +117,13 @@ void StFttPointMaker::MakeLocalPoints(){
 
     for ( StFttCluster* clu : mFttCollection->clusters() ) {
         UChar_t rob = mFttDb->rob( clu );
+        // LOG_INFO << "CLUSTER ROB:" << (int) rob << endm;
         if ( clu->nStrips() < 2 ) continue;
         clusters[ rob ][ clu->row() ][ clu->orientation() ].push_back( clu );
     } // loop on hit
 
     
-    for ( size_t iRob = 1; iRob < StFttDb::nRob; iRob ++ ){
+    for ( size_t iRob = 0; iRob < StFttDb::nRob; iRob ++ ){
         for ( size_t iRowH = 0; iRowH < 3; iRowH++ ){
             size_t nH = clusters[ iRob ][ iRowH ][ kFttHorizontal ].size();
             for ( size_t iRowV = 0; iRowV < 3; iRowV++ ){
@@ -205,14 +206,14 @@ void StFttPointMaker::clusterBounds( StFttCluster* clu, float &x1, float &y1, fl
     const float rowWidth = 176;
     if ( clu->orientation() == kFttHorizontal ){
         y1 = y2 = clu->x();
-        x1 = clu->row() * rowWidth; // rowWidth is a rough estimate of strip width
-        x2 = (clu->row() + 1) * rowWidth; // rowWidth is a rough estimate of strip width
+        x1 = clu->row() * rowWidth - 1; // rowWidth is a rough estimate of strip width
+        x2 = (clu->row() + 1) * rowWidth + 1; // rowWidth is a rough estimate of strip width
     }
 
     if ( clu->orientation() == kFttVertical ){
         x1 = x2 = clu->x();
-        y1 = clu->row() * rowWidth; // rowWidth is a rough estimate of strip width
-        y2 = (clu->row() + 1) * rowWidth; // rowWidth is a rough estimate of strip width
+        y1 = clu->row() * rowWidth - 1; // rowWidth is a rough estimate of strip width
+        y2 = (clu->row() + 1) * rowWidth + 1; // rowWidth is a rough estimate of strip width
     }
 } // cluster bounds
 
