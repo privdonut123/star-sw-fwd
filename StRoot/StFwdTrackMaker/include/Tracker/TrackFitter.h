@@ -68,9 +68,12 @@ class TrackFitter {
         // Determine which Magnetic field to use
         // Either constant field or real field from StarFieldAdaptor
         if (mConfig.get<bool>("TrackFitter:constB", false)) {
-            // mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 5.)); // 0.5 T Bz
-            mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 0.)); // ZERO FIELD
+            mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 5.)); // 0.5 T Bz
+            // mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 0.)); // ZERO FIELD
             LOG_INFO << "StFwdTrackMaker: Tracking with constant magnetic field" << endl;
+        } else if (mConfig.get<bool>("TrackFitter:zeroB", false)) {
+            mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 0.)); // ZERO FIELD
+            LOG_INFO << "StFwdTrackMaker: Tracking with ZERO magnetic field" << endl;
         } else {
             mBField = std::unique_ptr<genfit::AbsBField>(new StarFieldAdaptor());
             LOG_INFO << "StFwdTrackMaker: Tracking with StarFieldAdapter" << endl;
@@ -459,8 +462,8 @@ class TrackFitter {
         }
 
         // Setup the Track Reps
-        auto trackRepPos = new genfit::RKTrackRep(mPdgPiPlus);
-        auto trackRepNeg = new genfit::RKTrackRep(mPdgPiMinus);
+        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
 
         // get the space points on the original track
         auto trackPoints = originalTrack->getPointsWithMeasurement();
@@ -614,8 +617,8 @@ class TrackFitter {
     TVector3 fitSpacePoints( vector<genfit::SpacepointMeasurement*> spoints, TVector3 &seedPos, TVector3 &seedMom ){
         
         // setup track reps
-        auto trackRepPos = new genfit::RKTrackRep(mPdgPiPlus);
-        auto trackRepNeg = new genfit::RKTrackRep(mPdgPiMinus);
+        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
 
         // setup track for fit with positive and negative reps
         auto mFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
@@ -678,8 +681,8 @@ class TrackFitter {
         float curv = seedState(trackCand, seedPos, seedMom);
 
         // create the track representations
-        auto trackRepPos = new genfit::RKTrackRep(mPdgPiPlus);
-        auto trackRepNeg = new genfit::RKTrackRep(mPdgPiMinus);
+        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
 
         // If we use the PV, use that as the start pos for the track
         if (mIncludeVertexInFit) {
@@ -858,6 +861,8 @@ class TrackFitter {
     // PDG codes for the default plc type for fits
     const int mPdgPiPlus = 211;
     const int mPdgPiMinus = -211;
+    const int mPdgPositron = 11;
+    const int mPdgElectron = -11;
 
 
     // det z locations loaded from geom or config
