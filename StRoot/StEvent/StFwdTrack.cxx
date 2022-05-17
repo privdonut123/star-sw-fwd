@@ -10,8 +10,8 @@
  ***************************************************************************/
 
 #include "StEvent/StFwdTrack.h"
+#include "StEvent/StFcsCluster.h"
 #include "GenFit/Track.h"
-// #include "GenFit/Exception.h"
 #include "StMessMgr.h"
 
 ClassImp( StFwdTrack )
@@ -64,3 +64,11 @@ const unsigned int StFwdTrack::numberOfFitPoints() const {
         return 0;
     return mGenfitTrack->getNumPoints();
 }
+
+StPtrVecFcsCluster& StFwdTrack::ecalClusters() { return mEcalClusters; }
+const StPtrVecFcsCluster& StFwdTrack::ecalClusters() const { return mEcalClusters; }
+void StFwdTrack::addEcalCluster(StFcsCluster* p){mEcalClusters.push_back(p);}
+
+StPtrVecFcsCluster& StFwdTrack::hcalClusters() { return mHcalClusters; }
+const StPtrVecFcsCluster& StFwdTrack::hcalClusters() const { return mHcalClusters; }
+void StFwdTrack::addHcalCluster(StFcsCluster* p){mHcalClusters.push_back(p);}
