@@ -39,12 +39,7 @@ class StarFieldAdaptor : public genfit::AbsBField {
         double x[] = {position[0], position[1], position[2]};
         double B[] = {0, 0, 0};
 
-        // protect against this lookup
-        assert(0 && "This B-field accessor should never be called");
-
-        if (StarMagField::Instance()){
-            StarMagField::Instance()->Field(x, B);
-        }
+        get( position[0], position[1], position[2], B[0], B[1], B[2] );
 
         return TVector3(B);
     };
