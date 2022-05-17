@@ -11,6 +11,7 @@ The `StFrwdTrackMaker` performs tracking with the forward silicon tracker (FST) 
 - `fst` : Runs the FST offline chain
 - `fcs` : Runs the FCS offline chain
 - `ftt` : Runs the FTT offline chain
+- `fwdTrack` : Runs the forward tracking, make sure it is after the detector chains.
 - Simulation:
   - `fttFastSim` : Ftt fast simulator, produces space points directly
   - `fstFastSim` : Fst fast simulator, produces space points directly
@@ -103,7 +104,7 @@ ln -s StRoot/StFwdTrackMaker/macro/sim sim
 
 
 
-## For DAQ data files:
+## For data (DAQ files):
 ```
 ln -s StRoot/StFwdTrackMaker/macro/daq daq
 ```
@@ -119,6 +120,19 @@ or
 root4star -b -q -l 'daq/dac_track.C( "path_to_input_file.daq", "path_to_config.xml", "dev2022" )'
 ```
 
+the `daq_track.C` macro just loads necessary libraries and performs some setup to run the basic BFC chain:
+
+```sh
+in, dev2022, db, StEvent, MuDST, fcs, fst, ftt
+```
+
+Note: producing the event visualizations is very slow, so make sure to set:
+
+```c++
+fwdTrack->SetVisualize( false );
+``` 
+
+unless you want to make the event visualization files. The `StFwdTrackMaker` can also be configured to output QA and TTree files with the tracking info. 
 
 # XML Configuration
 The forward tracker can be configured via an XML configuration file.
@@ -239,6 +253,8 @@ The `<TrackFitter ... >` block can contain:
     <Vertex sigmaXY="3" sigmaZ="100.0" includeInFit="true" smearMcVertex="false" />
 </TrackFitter>
 ```
+
+Note: in data if the `<Vertex ... includeInFit="true" />` tag is used and a primary vertex from the TPC is not available then the vertex position is set to (0,0,0) - so it can be used more like an ideal beam-line constraint in the fits.
 
 
 
