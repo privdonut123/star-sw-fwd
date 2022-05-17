@@ -103,8 +103,8 @@ int StFcsTrackMatchMaker::Make(){
 			mHdr[ehp]->Fill(dr);
 		    }
 		    if(dr<mMaxDistance){
-			// if(ehp==0){trk->addEcalCluster(clu);}
-			// if(ehp==1){trk->addHcalCluster(clu);}
+			if(ehp==0){trk->addEcalCluster(clu);}
+			if(ehp==1){trk->addHcalCluster(clu);}
 			// clu->addTrack(trk);
 			nMatch[ehp]++;
 		    }

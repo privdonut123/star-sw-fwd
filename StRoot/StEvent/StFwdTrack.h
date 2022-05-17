@@ -21,12 +21,14 @@
 #include "StObject.h"
 #include <vector>
 #include "StThreeVectorD.hh"
-// #include "GenFit/Track.h"
+#include "StEvent/StContainers.h"
 
 
 namespace genfit {
     class Track;
 }
+
+class StFcsCluster;
 
 struct StFwdTrackProjection {
     StFwdTrackProjection() {}
@@ -61,7 +63,17 @@ public:
     const StThreeVectorD momentumAt(int _id = 1) const;
     const char charge() const;
 
+    StPtrVecFcsCluster& ecalClusters();
+    const StPtrVecFcsCluster& ecalClusters() const;
+    void addEcalCluster(StFcsCluster* p);
+
+    StPtrVecFcsCluster& hcalClusters();
+    const StPtrVecFcsCluster& hcalClusters() const;
+    void addHcalCluster(StFcsCluster* p);
+
 protected:
+    StPtrVecFcsCluster mEcalClusters;
+    StPtrVecFcsCluster mHcalClusters;
 
     ClassDef(StFwdTrack,1)
 

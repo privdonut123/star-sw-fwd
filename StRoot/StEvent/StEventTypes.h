@@ -332,4 +332,5 @@
 #include "StIstLadderHitCollection.h"
 #include "StIstHitCollection.h"
 #include "StFwdTrackCollection.h"
+#include "StFwdTrack.h"
 #endif

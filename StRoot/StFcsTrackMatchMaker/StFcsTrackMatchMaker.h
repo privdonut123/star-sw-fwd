@@ -8,6 +8,7 @@
 #define STAR_StFcsTrackMatchMaker_HH
 
 #include "StChain/StMaker.h"
+// #include "StEvent/StContainers.h"
 
 
 class StFwdTrackCollection;
@@ -45,9 +46,6 @@ private:
     TH1F* mHdr[2];
     TH1F* mNtrk[2];
     TH1F* mNclu[2];
-
-    // virtual const char *GetCVS() const
-    // {static const char cvs[]="Tag $Name:  $ $Id: StFcsTrackMatchMaker.h,v 1.1 2021/03/30 13:34:15 akio Exp $ built " __DATE__ " " __TIME__ ; return cvs;}
     
     ClassDef(StFcsTrackMatchMaker,1)
     
