@@ -114,10 +114,10 @@ public:
     void getGloablOffset( UChar_t plane, UChar_t quad, float &dx, float &sx, float &dy, float &sy, float &dz, float &sz );
 
     void getTimeCut( StFttRawHit * hit, int &mode, int &l, int &h ){
-      mode = 0;
+      mode = 1;
       // ideal; take +/- 3 bunch crossings
-      l = -3;
-      h = 3;
+      l = -70;
+      h = 30;
       // TODO: store in DB?
     }
 
