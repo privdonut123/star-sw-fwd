@@ -1049,6 +1049,7 @@ int StFwdTrackMaker::Make() {
 
     /**********************************************************************/
     // Load sTGC 
+    LOG_INFO << ">>StFwdTrackMaker::loadFttHits" << endm;
     if ( IAttr("useFtt") ) {
         loadFttHits( mcTrackMap, hitMap );
     }
@@ -1056,12 +1057,14 @@ int StFwdTrackMaker::Make() {
 
     /**********************************************************************/
     // Load FST
+    LOG_INFO << ">>StFwdTrackMaker::loadFstHits" << endm;
     if ( IAttr("useFst") ) {
         loadFstHits( mcTrackMap, fsiHitMap );
     }
 
     /**********************************************************************/
     // Load FCS
+    LOG_INFO << ">>StFwdTrackMaker::loadFcsHits" << endm;
     if ( IAttr("useFcs") ) {
         loadFcs();
     }
@@ -1145,14 +1148,14 @@ int StFwdTrackMaker::Make() {
             ftc->addTrack( fwdTrack );
             // provide the projections to EPD, ECAL, HCAL
             float cov[9];
-            auto tv3 = ObjExporter::trackPosition( genfitTrack, 375.0, cov );
-            fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // EPD
-
-            tv3 = ObjExporter::trackPosition( genfitTrack, 715.0, cov );
+            auto tv3 = ObjExporter::trackPosition( genfitTrack, 715.0, cov );
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // ECAL
 
             tv3 = ObjExporter::trackPosition( genfitTrack, 807.0, cov );
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // HCAL
+
+            tv3 = ObjExporter::trackPosition( genfitTrack, 375.0, cov );
+            fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // EPD
         }
 
         LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
@@ -1423,14 +1426,20 @@ void StFwdTrackMaker::Clear(const Option_t *opts) {
 }
 //________________________________________________________________________
 void StFwdTrackMaker::ProcessFwdTracks(  ){
-
+    LOG_INFO << "StFwdTrackMaker::ProcessFwdTracks" << endm;
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     StFwdTrackCollection * ftc = stEvent->fwdTrackCollection();
     for ( auto fwdTrack : ftc->tracks() ){
-        auto atEPD  = fwdTrack->mProjections[0];
-        auto atECAL = fwdTrack->mProjections[1];
-        auto atHCAL = fwdTrack->mProjections[2];
+        
+        auto atECAL = fwdTrack->mProjections[0];
+        auto atHCAL = fwdTrack->mProjections[1];
+        auto atEPD  = fwdTrack->mProjections[2];
 
-        LOG_INFO << "Track crosses EPD @ " << TString::Format( "(%0.2f+/-%0.2f, %0.2f+/-%0.2f, %0.2f+/-%0.2f)", atEPD.XYZ.x(), atEPD.dx(), atEPD.XYZ.y(), atEPD.dy(), atEPD.XYZ.z(), atEPD.dz() ) << endm;
+        const StThreeVectorF p = fwdTrack->momentum();
+        LOG_INFO << TString::Format("Track[ q=%d, p=(%f, %f, %f), nfp=%d]", fwdTrack->charge(), p.x(), p.y(), p.z(), fwdTrack->numberOfFitPoints() ).Data() << endm;
+        
+        
+
+        // LOG_INFO << "Track crosses EPD @ " << TString::Format( "(%0.2f+/-%0.2f, %0.2f+/-%0.2f, %0.2f+/-%0.2f) with p=(%f, %f, %f) vs. p=(%f, %f, %f)", atEPD.XYZ.x(), atEPD.dx(), atEPD.XYZ.y(), atEPD.dy(), atEPD.XYZ.z(), atEPD.dz(), fwdTrack->momentum().x(), fwdTrack->momentum().y(), fwdTrack->momentum().z(), pl.x(), pl.y(), pl.z() ) << endm;
     }
 }
