@@ -54,6 +54,12 @@ public:
     StFwdTrack( genfit::Track * );
     vector<StFwdTrackProjection> mProjections;
     genfit::Track *mGenfitTrack;
+
+    // momentum at the primary vertex
+    const StThreeVectorF momentum() const;
+    const StThreeVectorF momentumAt(int _id = 1) const;
+    const char charge() const;
+
 protected:
 
     ClassDef(StFwdTrack,1)
