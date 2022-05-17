@@ -101,7 +101,7 @@ StFttClusterMaker::Make()
     mFttDb = static_cast<StFttDb*>(GetDataSet("fttDb"));
     assert( mFttDb );
 
-    LOG_DEBUG << "Found " << mFttCollection->rawHits().size() << " Ftt Hits" << endm;
+    LOG_INFO << "StFttClusterMaker found " << mFttCollection->rawHits().size() << " raw Ftt hits to work with" << endm;
     ApplyHardwareMap();
 
     
@@ -145,7 +145,7 @@ StFttClusterMaker::Make()
     } // loop on hit
 
     size_t nClusters = 0;
-    LOG_DEBUG << "StFttClusterMaker::Make{ nStripsHit = " << nStripsHit << " }" << endm;
+    LOG_INFO << "StFttClusterMaker::Make{ nStripsHit = " << nStripsHit << " }" << endm;
     if ( nStripsHit > 0 ){ // could make more strict?
         for ( UChar_t iRob = 1; iRob < StFttDb::nRob+1; iRob++ ){
 
@@ -175,7 +175,7 @@ StFttClusterMaker::Make()
             }
         } // loop on iRob
     } // nStripsHit
-    LOG_DEBUG << "Found " << nClusters << " clusters this event" << endm;
+    LOG_INFO << "StFttClusterMaker Made " << nClusters << " clusters this event" << endm;
 
     return kStOk;
 } // Make
