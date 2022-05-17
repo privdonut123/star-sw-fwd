@@ -1723,7 +1723,7 @@ Bfc_st BFC[] = { // standard chains
   {"fcsPoint"   ,"","fcsChain", "StEvent,fcsDb",
    "StFcsPointMaker","StFcsPointMaker,libMinuit","Fill FCS points",                                 kFALSE},
   // FTT
-  {"ftt","fttChain","","FttDat,FttHitCalib,FttClu,FttPoint", "StMaker","StChain","FST chain"        ,kFALSE}, 
+  {"ftt","fttChain","","FttDat,FttHitCalib,FttClu,FttPoint", "StMaker","StChain","FTT (sTGC) chain",kFALSE}, 
   {"fttFastSim","","fttChain","StMcEvent,StEvent","StFttFastSimMaker","StFttSimMaker","FTT fast simulator", 
                                                                                                     kFALSE},
   {"fttDat","","fttChain","StEvent","StFttRawHitMaker","StFttRawHitMaker,StEvent",
