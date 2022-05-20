@@ -21,8 +21,7 @@
 #include "StObject.h"
 #include <vector>
 #include "StThreeVectorD.hh"
-#include "StEvent/StContainers.h"
-
+#include "StContainers.h"
 
 namespace genfit {
     class Track;
@@ -66,10 +65,12 @@ public:
     StPtrVecFcsCluster& ecalClusters();
     const StPtrVecFcsCluster& ecalClusters() const;
     void addEcalCluster(StFcsCluster* p);
+    void sortEcalClusterByET();
 
     StPtrVecFcsCluster& hcalClusters();
     const StPtrVecFcsCluster& hcalClusters() const;
     void addHcalCluster(StFcsCluster* p);
+    void sortHcalClusterByET();
 
 protected:
     StPtrVecFcsCluster mEcalClusters;
