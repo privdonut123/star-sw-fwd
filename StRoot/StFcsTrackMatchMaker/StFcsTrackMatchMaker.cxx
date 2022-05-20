@@ -8,6 +8,7 @@
 
 #include "StFcsTrackMatchMaker.h"
 #include "StEvent/StFwdTrack.h"
+#include "StEvent/StContainers.h"
 #include "StEvent/StEnumerations.h"
 #include "StMessMgr.h"
 #include "Stypes.h"
@@ -105,7 +106,7 @@ int StFcsTrackMatchMaker::Make(){
 		    if(dr<mMaxDistance){
 			if(ehp==0){trk->addEcalCluster(clu);}
 			if(ehp==1){trk->addHcalCluster(clu);}
-			// clu->addTrack(trk);
+			clu->addTrack(trk);
 			nMatch[ehp]++;
 		    }
 		}

@@ -11,7 +11,6 @@
  **************************************************************************/
 
 #include "StEvent/StFwdTrackCollection.h"
-
 #include "StEvent/StFwdTrack.h"
 
 ClassImp(StFwdTrackCollection)

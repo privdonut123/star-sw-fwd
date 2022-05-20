@@ -14,7 +14,7 @@
 #include "StObject.h"
 #include "StContainers.h"
 
-// class StFwdTrack;
+class StFwdTrack;
 
 class StFwdTrackCollection : public StObject {
 public:

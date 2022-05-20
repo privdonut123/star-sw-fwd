@@ -123,3 +123,5 @@ mkdir /star/data05/scratch/stgc_zf_calib
 ```
 
 then use that directory for restoring the DAQ files.
+
+For the time calibration we only need 2 files from every run between `23072003` to `23072023`.
