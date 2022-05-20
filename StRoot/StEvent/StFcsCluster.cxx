@@ -19,8 +19,7 @@
 #include "StMessMgr.h"
 #include "StFcsHit.h"
 #include "StFcsPoint.h"
-
-static const char rcsid[] = "$Id: StFcsCluster.cxx,v 2.1 2021/01/11 20:25:37 ullrich Exp $";
+#include "StFwdTrack.h"
 
 StFcsCluster::StFcsCluster(): StObject(), mFourMomentum(0.,0.,0.,0.) { /* no op */ }
 
@@ -40,6 +39,18 @@ void StFcsCluster::addPoint(StFcsPoint* p1, StFcsPoint* p2) {
     mPoints.push_back(p1);
     mPoints.push_back(p2);
 }
+
+
+void StFcsCluster::addTrack(StFwdTrack* p){
+    mTracks.push_back(p);
+}
+
+void StFcsCluster::sortTrackByPT() {
+    std::sort(mTracks.begin(), mTracks.end(), [](StFwdTrack* a, StFwdTrack* b) {
+	    return b->momentum().perp() < a->momentum().perp();
+	});
+}
+
 
 void StFcsCluster::print(Option_t *option) const {
     cout << Form(

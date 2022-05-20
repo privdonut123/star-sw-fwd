@@ -8,7 +8,6 @@
 #define STAR_StFcsTrackMatchMaker_HH
 
 #include "StChain/StMaker.h"
-// #include "StEvent/StContainers.h"
 
 
 class StFwdTrackCollection;
@@ -48,7 +47,6 @@ private:
     TH1F* mNclu[2];
     
     ClassDef(StFcsTrackMatchMaker,1)
-    
 };
 
 #endif
