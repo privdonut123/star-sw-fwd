@@ -130,7 +130,18 @@ const unsigned int StFwdTrack::numberOfFitPoints() const {
 StPtrVecFcsCluster& StFwdTrack::ecalClusters() { return mEcalClusters; }
 const StPtrVecFcsCluster& StFwdTrack::ecalClusters() const { return mEcalClusters; }
 void StFwdTrack::addEcalCluster(StFcsCluster* p){mEcalClusters.push_back(p);}
+void StFwdTrack::sortEcalClusterByET() {
+    std::sort(mEcalClusters.begin(), mEcalClusters.end(), [](StFcsCluster* a, StFcsCluster* b) {
+            return b->fourMomentum().perp() < a->fourMomentum().perp();
+        });
+}
 
 StPtrVecFcsCluster& StFwdTrack::hcalClusters() { return mHcalClusters; }
 const StPtrVecFcsCluster& StFwdTrack::hcalClusters() const { return mHcalClusters; }
 void StFwdTrack::addHcalCluster(StFcsCluster* p){mHcalClusters.push_back(p);}
+void StFwdTrack::sortHcalClusterByET() {
+    std::sort(mHcalClusters.begin(), mHcalClusters.end(), [](StFcsCluster* a, StFcsCluster* b) {
+            return b->fourMomentum().perp() < a->fourMomentum().perp();
+        });
+}
+

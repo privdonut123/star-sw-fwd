@@ -7,14 +7,15 @@
 #ifndef STAR_StFcsTrackMatchMaker_HH
 #define STAR_StFcsTrackMatchMaker_HH
 
-#include "StChain/StMaker.h"
-
+#include "StMaker.h"
 
 class StFwdTrackCollection;
 class StFwdTrack;
 class StFcsCollection;
 class StFcsDb;
 class StEpdGeom;
+class TH1F;
+class TH2F;
 
 class StFcsTrackMatchMaker : public StMaker{
 public: 
@@ -45,8 +46,15 @@ private:
     TH1F* mHdr[2];
     TH1F* mNtrk[2];
     TH1F* mNclu[2];
+    TH1F* mPtEt[2];
+    TH2F* mPtEt2[2];
+    TH1F* mCharge[2];
+
+    virtual const char *GetCVS() const
+    {static const char cvs[]="Tag $Name:  $ $Id: StFcsTrackMatchMaker.h,v 1.1 2021/03/30 13:34:15 akio Exp $ built " __DATE__ " " __TIME__ ; return cvs;}
     
-    ClassDef(StFcsTrackMatchMaker,1)
+    ClassDef(StFcsTrackMatchMaker,0)
+    
 };
 
 #endif

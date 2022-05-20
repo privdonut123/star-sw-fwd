@@ -7,7 +7,7 @@
 
 TFile *output = 0;
 
-void fwd_tracking(      int n = 50,
+void fwd_tracking(      int n = 500,
                 const char *inFile =  "simu/seed.fzd",
                 std::string configFile = "simu/seed.xml",
                 const char *geom = "dev2021") {
@@ -18,7 +18,7 @@ void fwd_tracking(      int n = 50,
 
     // Setup the chain for reading an FZD
     TString _chain;
-    _chain = Form("fzin %s sdt20181215 StEvent ReverseField agml usexgeom bigbig fstFastSim fttFastSim fcsSim fcsWFF fcsCluster fcsPoint fwdTrack", _geom.Data());
+    _chain = Form("fzin %s sdt20211016 StEvent ReverseField agml usexgeom bigbig fstFastSim fttFastSim fcsSim fcsWFF fcsCluster fwdTrack", _geom.Data());
 
     gSystem->Load( "libStarRoot.so" );
     gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
@@ -31,18 +31,19 @@ void fwd_tracking(      int n = 50,
 
     StFcsDbMaker* fcsdbmkr = (StFcsDbMaker*) chain->GetMaker("fcsDbMkr");  
     cout << "fcsdbmkr="<<fcsdbmkr<<endl;
-    fcsdbmkr->setDbAccess(0);
-
     StFcsDb* fcsdb = (StFcsDb*) chain->GetDataSet("fcsDb");  
-    cout << "fcsdb="<<fcsdb<<endl;
+    cout << "fcsdb="<<fcsdb<<endl;    
+    //fcsdbmkr->setDbAccess(1);
     
-    fcsdb->forceUniformGain(0.0053);
-    fcsdb->forceUniformGainCorrection(1.0);
-
     StFcsFastSimulatorMaker *fcssim = (StFcsFastSimulatorMaker*) chain->GetMaker("fcsSim");
-    fcssim->setDebug(1);
-    fcssim->setLeakyHcal(0);
+    //fcssim->setDebug(1);
+    //fcssim->setLeakyHcal(0);
 
+    StFcsWaveformFitMaker *fcsWFF= (StFcsWaveformFitMaker*) chain->GetMaker("StFcsWaveformFitMaker");
+    fcsWFF->setEnergySelect(0);
+
+    StFcsClusterMaker *fcsclu = (StFcsClusterMaker*) chain->GetMaker("StFcsClusterMaker");
+    fcsclu->setDebug(1);    
 
     // Configure FTT FastSim
         StFttFastSimMaker *fttFastSim = (StFttFastSimMaker*) chain->GetMaker( "fttSim" );
@@ -75,11 +76,15 @@ void fwd_tracking(      int n = 50,
         fwdTrack->SetGenerateHistograms( true );
         
         chain->AddMaker(fwdTrack);
+	
+	//FwdTrack and FcsCluster assciation
+	gSystem->Load("StFcsTrackMatchMaker");
+	StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
+	match->setMaxDistance(20);
+	match->setFileName("fcstrk.root");
+	match->SetDebug();
 
-
-
-
-    chain->Init();
+	chain->Init();
 
     //_____________________________________________________________________________
     //
