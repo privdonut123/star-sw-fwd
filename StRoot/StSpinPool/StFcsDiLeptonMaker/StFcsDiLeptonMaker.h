@@ -1,10 +1,7 @@
 #ifndef STAR_StFcsDiLeptonMaker
 #define STAR_StFcsDiLeptonMaker                              
 
-#include "StRoot/St_base/Stypes.h"
-#include "StRoot/StEvent/StEnumerations.h"
 #include "StMaker.h"
-#include <map>
 
 class StFcsDb;
 class StFcsCollection;
@@ -37,12 +34,14 @@ private:
   float mConeR=0.5;          //Isolation Cone Radius
   float mConeCut=0.6;        //E_lepton/Cone ratio cut
   float mSigmaMaxCut=0.7;    //Cluster Sigma Max cut
-  float mPTET=0.3;           //TrackPT/ET > thre
+  float mPTETCut=0.3;        //TrackPT/FcsET > Threshold
 
   TH1F *mETot[mNCut];
   TH1F *mHTot[mNCut];
   TH1F *mCone[mNCut];
   TH1F *mSigmax[mNCut];
+  TH1F *mPToverET[mNCut];
+  TH1F *mChargeSum[mNCut];
 
   TH1F *mET[mNCut]; 
   TH1F *mEZ[mNCut]; 
@@ -54,6 +53,7 @@ private:
   TH2F *mET12[mNCut]; 
   TH2F *mXFPT[mNCut]; 
   TH2F *mXY[mNCut]; 
+  TH2F *mPTET[mNCut]; 
 
   ClassDef(StFcsDiLeptonMaker,1)
 };

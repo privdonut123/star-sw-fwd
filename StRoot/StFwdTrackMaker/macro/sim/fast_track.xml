@@ -5,7 +5,7 @@
     <Source ftt="GEANT" fttFilter="true" />
     <!-- Missing <TrackFinder> means use MC Track finding -->
     
-	<TrackFitter refitSi="false" mcSeed="true" >
-        <Vertex sigmaXY="0.002" sigmaZ="1.0" includeInFit="false" smearMcVertex="true" />
+	<TrackFitter refitSi="true" mcSeed="true" >
+        <Vertex sigmaXY="0.002" sigmaZ="1.0" includeInFit="true" smearMcVertex="true" />
     </TrackFitter>
 </config>

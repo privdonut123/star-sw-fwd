@@ -38,22 +38,35 @@ int StFcsTrackMatchMaker::Init(){
   if(mFilename){
     LOG_INFO << "Opening " << mFilename << endm;
     mFile = new TFile(mFilename,"RECREATE");
+
     mHdx[0] = new TH1F("dx_EcalTrk","dx Ecal-Track",100,-50,50);
     mHdy[0] = new TH1F("dy_EcalTrk","dy Ecal-Track",100,-50,50);
     mHdr[0] = new TH1F("dr_EcalTrk","dr Ecal-Track",100,0,20);
     mNtrk[0]= new TH1F("NTrk_Ecal","NTrk_Ecal",10,0.0,10.0);
     mNclu[0]= new TH1F("NEcalClu_Trk","NEcalClu_Trk",10,0.0,10.0);
+
     mHdx[1] = new TH1F("dx_HcalTrk","dx Hcal-Track",100,-50,50);
     mHdy[1] = new TH1F("dy_HcalTrk","dy Hcal-Track",100,-50,50);	
     mHdr[1] = new TH1F("dr_HcalTrk","dr Ecal-Track",100,0,20);
     mNtrk[1]= new TH1F("NTrk_Hcal","NTrk_Hcal",10,0.0,10.0);
     mNclu[1]= new TH1F("NHcalClu_Trk","NHcalClu_Trk",10,0.0,10.0);
+
+    mNtrk[2]= new TH1F("NTrk","NTrk/evt",10,0.0,10.0);
+    mNclu[2]= new TH1F("NEcalClu","NEcalClu/evt",10,0.0,10.0);
+    mNclu[3]= new TH1F("NHcalClu","NHcalClu/evt",10,0.0,10.0);
+
     mPtEt[0] =new TH1F("ETovPT_E","ETovPT_E",50,0.0,2.0);
     mPtEt[1] =new TH1F("ETovPT_EH","ETovPT_E+H",50,0.0,2.0);
     mPtEt2[0]=new TH2F("ETPT_E", "ETovPT_E; ET(Ecal); TrkPT",50,0.0,8.0,50,0.0,8.0);
     mPtEt2[1]=new TH2F("ETPT_EH","ETovPT_E+H ET(E+H); TrkPT",50,0.0,8.0,50,0.0,8.0);
-    mCharge[0]=new TH1F("Charge_E","Charge_E",3,-1.0,2.0);
-    mCharge[1]=new TH1F("Charge_EH","Charge_E+H",3,-1.0,2.0);
+
+    mCharge[0]=new TH1F("Charge_E","Charge_E",3,-1.5,1.5);
+    mCharge[1]=new TH1F("Charge_H","Charge_H",3,-1.5,1.5);
+    mCharge[2]=new TH1F("Charge","Charge",3,-1.5,1.5);
+
+    mXY[0]=new TH2F("XY_E","XY_E",50,-130,130,50,-110,110);
+    mXY[1]=new TH2F("XY_H","XY_H",50,-130,130,50,-110,110);
+    mXY[2]=new TH2F("XY","XY",50,-130,130,50,-110,110);
   }
   return kStOK;
 }
@@ -95,11 +108,11 @@ int StFcsTrackMatchMaker::Make(){
     }
     //North or south from track
     int ns=0;
-    if(trk->mProjections[1].XYZ.x()>0.0) ns=1;
+    if(trk->mProjections[0].XYZ.x()>0.0) ns=1;
     //Look for a Ecal & Hcal match for a track
     for(int ehp=0; ehp<2; ehp++){
       StThreeVectorD proj = trk->mProjections[ehp].XYZ;
-      int det = ns*2+ehp;
+      int det = ehp*2 + ns;
       int nclu  = mFcsColl->numberOfClusters(det);
       for(int iclu=0; iclu<nclu; iclu++){
 	StFcsCluster* clu=mFcsColl->clusters(det)[iclu];
@@ -155,8 +168,11 @@ int StFcsTrackMatchMaker::Make(){
   
   //Filling hitograms if file is specified
   if(mFile){
+    mNtrk[2]->Fill(ntrk);
     for(int itrk=0; itrk<ntrk; itrk++){
       StFwdTrack* trk=mFwdTrkColl->tracks()[itrk];
+      mCharge[2]->Fill(trk->charge());
+      mXY[2]->Fill(trk->mProjections[0].XYZ.x(),trk->mProjections[0].XYZ.y());
       double pt=trk->momentum().perp();
       int ne=trk->ecalClusters().size();
       int nh=trk->hcalClusters().size();
@@ -169,6 +185,7 @@ int StFcsTrackMatchMaker::Make(){
 	mPtEt[0]->Fill(ete/pt);
 	mPtEt2[0]->Fill(ete,pt);
 	mCharge[0]->Fill(trk->charge());
+	mXY[0]->Fill(trk->mProjections[0].XYZ.x(),trk->mProjections[0].XYZ.y());
       }
       if(nh>0){
 	StFcsCluster* hclu=trk->hcalClusters()[0]; //Take top ET ones 
@@ -176,11 +193,15 @@ int StFcsTrackMatchMaker::Make(){
 	mPtEt[0]->Fill((ete+eth)/pt);
 	mPtEt2[0]->Fill(ete+eth,pt);
 	mCharge[1]->Fill(trk->charge());
+	mXY[1]->Fill(trk->mProjections[1].XYZ.x(),trk->mProjections[1].XYZ.y());
       }
     }
+
+    int nc[2]={0,0};
     for(int det=0; det<4; det++){
       int ehp=det/2;
       int nclu  = mFcsColl->numberOfClusters(det);
+      nc[ehp]+= nclu;
       for(int iclu=0; iclu<nclu; iclu++){
 	StFcsCluster* clu=mFcsColl->clusters(det)[iclu];
 	if(clu->energy() > mMinEnergy){
@@ -188,6 +209,9 @@ int StFcsTrackMatchMaker::Make(){
 	}
       }
     }
+    mNclu[2]->Fill(nc[0]);
+    mNclu[3]->Fill(nc[1]);
+
     LOG_INFO << Form("NTrack=%3d NEcalMatch=%3d NHcalMatch=%3d",ntrk,nMatch[0],nMatch[1])<<endm;
   }    
   return kStOK;

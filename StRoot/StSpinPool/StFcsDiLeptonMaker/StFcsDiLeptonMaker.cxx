@@ -4,12 +4,11 @@
 
 #include "StRoot/StEvent/StEvent.h"
 #include "StRoot/St_base/StMessMgr.h"
-#include "StRoot/StEvent/StTriggerData.h"
 #include "StRoot/StEvent/StFcsCollection.h"
 #include "StRoot/StEvent/StFcsHit.h"
 #include "StRoot/StEvent/StFcsCluster.h"
-#include "StRoot/StEvent/StFwdTrack.h"
 #include "StRoot/StFcsDbMaker/StFcsDb.h"
+#include "StRoot/StEvent/StFwdTrack.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -44,6 +43,8 @@ Int_t StFcsDiLeptonMaker::Init(){
     mHTot[cut]  = new TH1F(Form("RHTot_%s", nameCut[cut]),Form("Epair/HTOT_%s",nameCut[cut]),50,0.0,3.0);
     mCone[cut]  = new TH1F(Form("RCone_%s", nameCut[cut]),Form("Epair/Cone_%s (R=%3.1f)",nameCut[cut],mConeR),50,0.0,1.1);
     mSigmax[cut]= new TH1F(Form("Sigmax_%s",nameCut[cut]),Form("SigmaMax_%s",  nameCut[cut]),50,0.0,2.0);
+    mPToverET[cut] = new TH1F(Form("PToverET_%s",nameCut[cut]),Form("TrackPT/EcalET_%s",nameCut[cut]),50,0.0,3.0);
+    mChargeSum[cut]= new TH1F(Form("ChargeSum_%s",nameCut[cut]),Form("ChargeSum_%s",nameCut[cut]),5,-2.5,2.5); 
 
     mET[cut]   = new TH1F(Form("ET_%s"  ,nameCut[cut]),Form("ET_%s"   ,nameCut[cut]),50,0.0,5.0);
     mEZ[cut]   = new TH1F(Form("EZ_%s"  ,nameCut[cut]),Form("EZ_%s"   ,nameCut[cut]),50,0.0,120.0);
@@ -55,6 +56,7 @@ Int_t StFcsDiLeptonMaker::Init(){
     mXFPT[cut] = new TH2F(Form("XFPT_%s",nameCut[cut]),Form("XFPT12_%s;xF;ET",nameCut[cut]),50,0.0,0.5,50,0.0,8.0);
     mET12[cut] = new TH2F(Form("ET12_%s",nameCut[cut]),Form("ET12_%s;ET1;ET2",nameCut[cut]),50,0.0,8.0,50,0.0,8.0);
     mXY[cut]   = new TH2F(Form("XY_%s"  ,nameCut[cut]),Form("XY12_%s;X;Y"    ,nameCut[cut]),50,-130,130,50,-110,110);
+    mPTET[cut] = new TH2F(Form("PTET_%s",nameCut[cut]),Form("ETvsPT_%s; ET(Ecal); TrkPT",nameCut[cut]),50,0,8,50,0,8);
   }
   return kStOk;
 }
@@ -78,8 +80,7 @@ Int_t StFcsDiLeptonMaker::Make(){
   //Find highest ET clusters for north and south
   StFcsCluster* highest[2]={0,0};
   for(int ns=0; ns<2; ns++){
-    StSPtrVecFcsCluster& ecal= mFcsCollection->clusters(ns);    
-    
+    StSPtrVecFcsCluster& ecal= mFcsCollection->clusters(ns);        
     //sort by ET
     std::sort(ecal.begin(), ecal.end(), [](StFcsCluster* a, StFcsCluster* b) {
         return b->fourMomentum().perp() < a->fourMomentum().perp();
@@ -158,15 +159,32 @@ Int_t StFcsDiLeptonMaker::Make(){
   double ratioConeN = EN/cone[0];
   double ratioConeS = ES/cone[1];
   
+  //top pT associated track
+  StFwdTrack *trk1=0, *trk2=0;
+  float pt1=0,pt2=0,r1=0,r2=0;
+  int cg1=0, cg2=0;
+  if(highest[0]->tracks().size()>0) {
+    trk1=highest[0]->tracks()[0]; 
+    pt1=trk1->momentum().perp(); 
+    r1=pt1/ETN;
+    cg1=trk1->charge();
+  }
+  if(highest[1]->tracks().size()>0) {
+    trk2=highest[1]->tracks()[0]; 
+    pt2=trk2->momentum().perp(); 
+    r2=pt2/ETS;
+    cg2=trk2->charge();
+  } 
+  LOG_INFO << Form("trk1 pt=%6.2f et=%6.2f R=%6.4f cg=%2d",pt1,ETN,r1,cg1)<<endm;
+  LOG_INFO << Form("trk2 pt=%6.2f et=%6.2f R=%6.4f cg=%2d",pt2,ETS,r2,cg2)<<endm;
+
   for(int cut=0; cut<mNCut; cut++){
     if(cut==1 && ratioETOT<mETotCut) break;
     if(cut==2 && ratioHTOT<mHTotCut) break;
     if(cut==3 && (ratioConeN<mConeCut || ratioConeS<mConeCut)) break;    
     if(cut==4 && (SigmaMaxN > mSigmaMaxCut || SigmaMaxS > mSigmaMaxCut) ) break;
-    StFwdTrack* trk1=highest[0]->tracks()[0];
-    StFwdTrack* trk2=highest[1]->tracks()[0];
-    if(cut==5 && trk1->momentum().perp()/ETN > mPTET && trk2->momentum().perp()/ETS > mPTET) break;
-    if(cut==6 && trk1->charge()*trk2->charge() >= 0) break;
+    if(cut==5 && (r1 < mPTETCut || r2 < mPTETCut)) break;    
+    if(cut==6 && cg1 + cg2 != 0) break;
 
     mETot[cut]->Fill(ratioETOT);
     mHTot[cut]->Fill(ratioHTOT);
@@ -174,7 +192,10 @@ Int_t StFcsDiLeptonMaker::Make(){
     mCone[cut]->Fill(ratioConeS);
     mSigmax[cut]->Fill(SigmaMaxN); 
     mSigmax[cut]->Fill(SigmaMaxS); 
-    
+    if(trk1) mPToverET[cut]->Fill(r1);
+    if(trk2) mPToverET[cut]->Fill(r2);
+    if(trk1 && trk2) mChargeSum[cut]->Fill(cg1 + cg2);
+
     mET  [cut]->Fill(ET);
     mEZ  [cut]->Fill(EZ);
     mM   [cut]->Fill(M);
@@ -187,6 +208,8 @@ Int_t StFcsDiLeptonMaker::Make(){
     mXFPT[cut]->Fill(ES/255.0,ETS);
     mXY[cut]->Fill(VN.x(),VN.y());
     mXY[cut]->Fill(VS.x(),VS.y());
+    if(trk1) mPTET[cut]->Fill(ETN,pt1);
+    if(trk2) mPTET[cut]->Fill(ETS,pt2);
   }
 
   return kStOK; 
