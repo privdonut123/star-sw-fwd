@@ -41,14 +41,16 @@ private:
     float mMaxDistance=10.0;
     float mMinEnergy=0.1;
     
+    TH1F* mNtrk[3];
+    TH1F* mNclu[4];
+    TH1F* mCharge[3];
+    TH2F* mXY[3];
+
     TH1F* mHdx[2];
     TH1F* mHdy[2];
     TH1F* mHdr[2];
-    TH1F* mNtrk[2];
-    TH1F* mNclu[2];
     TH1F* mPtEt[2];
     TH2F* mPtEt2[2];
-    TH1F* mCharge[2];
 
     virtual const char *GetCVS() const
     {static const char cvs[]="Tag $Name:  $ $Id: StFcsTrackMatchMaker.h,v 1.1 2021/03/30 13:34:15 akio Exp $ built " __DATE__ " " __TIME__ ; return cvs;}
