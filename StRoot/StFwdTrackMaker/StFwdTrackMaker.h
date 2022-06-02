@@ -39,15 +39,14 @@ class McTrack;
 #include <memory>
 
 
-
+// 877-369-6347
 class StFwdTrack;
 
 
 
 const size_t MAX_TREE_ELEMENTS = 4000;
 struct FwdTreeData {
-
-
+  
     // hits;
     int fttN;
     vector<float> fttX, fttY, fttZ;
@@ -67,9 +66,14 @@ struct FwdTreeData {
     vector<int> mcVertexId, mcCharge;
 
     // MC Level vertex info
-    // maybe use for TPC vertex if available in data
+    // maybe use also for TPC vertex if available in data
     int vmcN;
     vector<float> vmcX, vmcY, vmcZ;
+
+    int tprojN;
+    vector<float> tprojX, tprojY, tprojZ;
+    vector<int> tprojIdD, tprojIdT;
+
     // RAVE reco vertices
     int vrcN;
     vector<float> vrcX, vrcY, vrcZ;
