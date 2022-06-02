@@ -332,6 +332,14 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("thdY",         &mTreeData. thdY  );
         mTree->Branch("thaZ",         &mTreeData. thaZ  );
 
+        // track projections
+        mTree->Branch("tprojN",       &mTreeData. tprojN,  "tprojN/I");
+        mTree->Branch("tprojIdD",     &mTreeData. tprojIdD);
+        mTree->Branch("tprojIdT",     &mTreeData. tprojIdT);
+        mTree->Branch("tprojX",       &mTreeData. tprojX);
+        mTree->Branch("tprojY",       &mTreeData. tprojY);
+        mTree->Branch("tprojZ",       &mTreeData. tprojZ);
+
 
     //     std::string path = "TrackFinder.Iteration[0].SegmentBuilder";
     //     std::vector<string> paths = mFwdConfig.childrenOf(path);
@@ -1105,14 +1113,10 @@ int StFwdTrackMaker::Make() {
     // mForwardTracker->getTrackFitter()->projectToFst( 0, genfitTracks[0] );
     FillTrackDeltas();
     // fill the ttree if we have it turned on (mGenTree)
-    FillTTree();
+    
 
     LOG_INFO << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
 
-
-    
-
-    
 
     if ( IAttr("fillEvent") ) {
 
@@ -1129,6 +1133,13 @@ int StFwdTrackMaker::Make() {
             stEvent->setFwdTrackCollection( ftc );
         }
 
+        mTreeData.tprojN = 0;
+        mTreeData.tprojX.clear();
+        mTreeData.tprojY.clear();
+        mTreeData.tprojZ.clear();
+        mTreeData.tprojIdD.clear();
+        mTreeData.tprojIdT.clear();
+        size_t indexTrack = 0; // todo, update with a real MC Track index
         for ( auto *genfitTrack : genfitTracks ) {
 
             // unsigned int ntp = genfitTrack->getNumPoints();
@@ -1149,21 +1160,35 @@ int StFwdTrackMaker::Make() {
             // provide the projections to EPD, ECAL, HCAL
             float cov[9];
             auto tv3 = ObjExporter::trackPosition( genfitTrack, 715.0, cov );
+            LOG_INFO << "ECAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endl;
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // ECAL
+            // Add Proj info to TTree
+            { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
+            mTreeData.tprojIdD.push_back( 0 ); mTreeData.tprojIdT.push_back( indexTrack ); }
 
+            
             tv3 = ObjExporter::trackPosition( genfitTrack, 807.0, cov );
+            LOG_INFO << "HCAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endl;
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // HCAL
+            // Add Proj info to TTree
+            { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
+            mTreeData.tprojIdD.push_back( 1 ); mTreeData.tprojIdT.push_back( indexTrack ); }
 
             tv3 = ObjExporter::trackPosition( genfitTrack, 375.0, cov );
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // EPD
+            { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
+            mTreeData.tprojIdD.push_back( 2 ); mTreeData.tprojIdT.push_back( indexTrack ); }
+            indexTrack ++;
         }
-
+        mTreeData.tprojN = mTreeData.tprojX.size();
         LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
         ProcessFwdTracks();
         LOG_INFO << "DONE ProcessFwdTracks" << endm;
 
     } // IAttr FillEvent
 
+
+    FillTTree();
     return kStOK;
 } // Make
 

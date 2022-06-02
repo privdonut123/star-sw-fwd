@@ -151,7 +151,7 @@ public:
                 new genfit::DetPlane(TVector3(0, 0, z), TVector3(1, 0, 0), TVector3(0, 1, 0) )
             );
 
-            genfit::MeasuredStateOnPlane tst = t->getFittedState(1);
+            genfit::MeasuredStateOnPlane tst = t->getFittedState(4);
             auto TCM = t->getCardinalRep()->get6DCov(tst);
             //  can get the track length if needed
             // double len = t->getCardinalRep()->extrapolateToPlane(tst, detSi, false, true);
