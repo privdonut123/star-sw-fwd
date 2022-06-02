@@ -20,10 +20,72 @@ StFwdTrack::StFwdTrack( genfit::Track *t ) : mGenfitTrack(t), mProjections(0) {
 
 }
 
+const bool StFwdTrack::didFitConverge() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->isFitConverged();
+}
+
+const bool StFwdTrack::didFitConvergeFully() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->isFitConvergedFully();
+}
+
+const int StFwdTrack::numberOfFailedPoints() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->getNFailedPoints();
+}
+
+const double StFwdTrack::chi2() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->getChi2();
+}
+
+const double StFwdTrack::ndf() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->getNdf();
+}
+
+const double StFwdTrack::pval() const {
+    if (!mGenfitTrack)
+        return false;
+    // uses the default track rep
+    auto fitStatus = mGenfitTrack->getFitStatus();
+    if ( !fitStatus ) 
+        return false;
+    return fitStatus->getPVal();
+}
+
 /* momentum
  * get the track momentum at the first point (PV if included)
  */
 const StThreeVectorD StFwdTrack::momentum() const{
+    if (!mGenfitTrack)
+        return StThreeVectorD( 0, 0, 0 );
     auto cr = mGenfitTrack->getCardinalRep();
     TVector3 p = cr->getMom(mGenfitTrack->getFittedState(0, cr));
     return StThreeVectorD( p.X(), p.Y(), p.Z() );
