@@ -1,120 +1,157 @@
 # StFwdTrackMaker
-The `StFrwdTrackMaker` performs tracking with the forward silicon tracker (FST) and the forward sTGC tracker (FTT). The tracking consists of several stages:
+The `StFrwdTrackMaker` performs tracking with the forward silicon tracker (FST) and the forward sTGC tracker (FTT).
+The tracking consists of several stages:
+
 1. Load & sort space points from FST and FTT
 2. Find seed tracks using FTT
 3. Fit seed tracks using FTT + PV if available
 4. Refit tracks with FST hits if  available
 5. Fill StEvent structures
 
-# Chain Options
-- `fwdTrack` : the forward track maker
-- `fst` : Runs the FST offline chain
-- `fcs` : Runs the FCS offline chain
-- `ftt` : Runs the FTT offline chain
-- `fwdTrack` : Runs the forward tracking, make sure it is after the detector chains.
-- Simulation:
-  - `fttFastSim` : Ftt fast simulator, produces space points directly
-  - `fstFastSim` : Fst fast simulator, produces space points directly
-  - `fcsSim` : Fcs simulator, produces raw data to be processed by standard offline chain
+## Table of Contents
 
-A basic chain for FWD detector reconstruction only:
-
-```sh
-in, dev2022, db, StEvent, MuDST, fcs, fst, ftt
-```
+- Running the code
+  - [Setup in Docker](#setup-in-docker)
+  - [Setup on RCF](#setup-on-rcf)
+  - [How to run tracking on simulation](#how-to-run-tracking-on-simulation)
+  - [How to run tracking on data from DAQ files](#run-tracking-on-data-from-daq-files) 
+- General info:
+  - [Products and artifacts provided by the StFwdTrackMaker](#products-and-artifacts)
+  - [XML configuration](#xml-configuration)
+  - [Known Issues](#known-issues-in-the-tracking)
+  - [Chain Options](#chain-options)
 
 
-# Development setup (on RCF)
-1. Checkout the code 
-```
-git clone --no-checkout git@github.com:jdbrice/star-sw-1.git
-cd star-sw-1
-git config core.sparseCheckout true
+## Setup in Docker
 
-touch .git/info/sparse-checkout
+this section is a WIP
 
-echo "StRoot/RTS/" >> .git/info/sparse-checkout
-echo "StRoot/StBFChain/" >> .git/info/sparse-checkout
-echo "StRoot/StEvent/" >> .git/info/sparse-checkout
-echo "StRoot/StFstClusterMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFstDbMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFstHitMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFstRawHitMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFstSimMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFstUtil/" >> .git/info/sparse-checkout
-echo "StRoot/StFttClusterMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFttDbMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFttHitCalibMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFttPointMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFttQAMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFttRawHitMaker/" >> .git/info/sparse-checkout
-echo "StRoot/StFwdTrackMaker/" >> .git/info/sparse-checkout
+## Setup on RCF
 
-echo "StDb" >> .git/info/sparse-checkout
-echo "StarDb" >> .git/info/sparse-checkout
+1. Checkout the code
 
-git checkout fwd-tracking
+    ```bash
+    git clone --no-checkout git@github.com:jdbrice/star-sw-1.git
+    cd star-sw-1
+    git config core.sparseCheckout true
 
-```
+    touch .git/info/sparse-checkout
+
+    echo "StRoot/RTS/" >> .git/info/sparse-checkout
+    echo "StRoot/StBFChain/" >> .git/info/sparse-checkout
+    echo "StRoot/StEvent/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstClusterMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstDbMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstHitMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstRawHitMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstSimMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFstUtil/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttClusterMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttDbMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttHitCalibMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttPointMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttQAMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFttRawHitMaker/" >> .git/info/sparse-checkout
+    echo "StRoot/StFwdTrackMaker/" >> .git/info/sparse-checkout
+
+    echo "StDb" >> .git/info/sparse-checkout
+    echo "StarDb" >> .git/info/sparse-checkout
+
+    git checkout fwd-tracking
+
+    ```
+
 2. initialize the environment:
-```
-source StRoot/StFwdTrackMaker/macro/env.sh
-cons # build the code if not done already
-```
-Note: this environment doesnt have the normal macro paths, so you might need to add (for DEV):
-```
-gSystem->Load( "libStarRoot.so" );
-gROOT->SetMacroPath(".:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
-```
-to your macros if they load others (e.g. 'bfc.C').
-This will be fixed once the libraries are integrated into an official STAR library
+
+    ```bash
+    source StRoot/StFwdTrackMaker/macro/env.sh
+    cons # build the code if not done already
+    ```
+
+    Note: this environment doesnt have the normal macro paths, so you might need to add (for DEV):
+
+    ```sh
+    gSystem->Load( "libStarRoot.so" );
+    gROOT->SetMacroPath(".:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
+    ```
+
+    to your macros if they load others (e.g. 'bfc.C').
+    This will be fixed once the libraries are integrated into an official STAR library
 
 3. Build the geometry cache
-```
-./StRoot/StFwdTrackMaker/macro/build_geom.C
-```
+
+    ```bash
+    ./StRoot/StFwdTrackMaker/macro/build_geom.C
+    ```
 
 4. Symlink macros for use. From project root
-```
-$ ls 
-StarDb
-StDb
-StRoot
-```
 
-## For simulation:
-```
+    ```sh
+    $ ls 
+    StarDb
+    StDb
+    StRoot
+    ```
+
+## How to run tracking on simulation
+
+Sim link the `sim` macro directory at project root
+
+```sh
 ln -s StRoot/StFwdTrackMaker/macro/sim sim
 ```
 
-### Test track seed finder
+There are three scripts that provide starsim + bfc:
+
+1. Test track seed finder only (no track fitting)
+
+    ```sh
+    ./sim/run_batch_seed <JOB_ID>
+    ```
+
+    Uses the `seed.xml` configuration file
+
+2. Test track fitting (with MC track finding)
+
+    ```sh
+    ./sim/run_batch_fast <JOB_ID>
+    ```
+
+    Uses the `fast_track.xml` configuration, check for exaxt options
+
+3. Test track finding + fitting (analog to running on data) 
+
+    ```sh
+    ./sim/run_batch_full <JOB_ID>
+    ```
+
+    NOTE: "full" does not necessarily mean FST and PV are included, check the config file "full_track.xml"
+
+## Run tracking on data from DAQ files
+
+The Forward upgrade group has shared disk space at:
+
+```sh
+/gpfs01/star/pwg_tasks/FwdCalib/
 ```
-./sim/run_batch_seed <JOB_ID>
-``` 
 
-### Test track fitting (MC track finding)
-```
-./sim/run_batch_fast <JOB_ID>
-``` 
-
-### Test track finding + fitting 
-```
-./sim/run_batch_full <JOB_ID>
-``` 
+Restored daq files can be found in the `DAQ` sub-directory (previously at my personal `/star/data03/pwg/jdb/FWD/daq/`).
+Feel free to add (and organize) any restored DAQ files into this location.
 
 
+In order to run on DAQ files, first sim link the `daq` macro directory at project root:
 
-## For data (DAQ files):
-```
+```sh
 ln -s StRoot/StFwdTrackMaker/macro/daq daq
 ```
 
 the run on a daq file named (or symlinked) `input.daq` with the config in `daq/daq_track.xml`:
-```
+
+```sh
 ./daq/daq_track.C >& LOG
 ```
 
-or 
+or specifying the optional parameters:
 
 ```sh
 root4star -b -q -l 'daq/dac_track.C( "path_to_input_file.daq", "path_to_config.xml", "dev2022" )'
@@ -126,13 +163,85 @@ the `daq_track.C` macro just loads necessary libraries and performs some setup t
 in, dev2022, db, StEvent, MuDST, fcs, fst, ftt
 ```
 
-Note: producing the event visualizations is very slow, so make sure to set:
+Note: producing the event visualizations is very slow, so make sure to turn it off if you dont need it:
 
-```c++
+```cpp
 fwdTrack->SetVisualize( false );
-``` 
+```
 
-unless you want to make the event visualization files. The `StFwdTrackMaker` can also be configured to output QA and TTree files with the tracking info. 
+## Products and artifacts
+
+The primary product of `StFwdTrackMaker` is the collection of `FwdTracks` stored in `StEvent/StFwdTrackCollection`. See the `StEvent/StFwdTrack.h` for the data included there. In principle it is everything needed for an analysis. And if not, feel free to make a pull request.
+
+The `StFwdTrackMaker` can also be configured to output QA histograms. These are mostly used to debug the tracking itself:
+
+```cpp
+fwdTrack->SetGenerateHistograms( true );
+```
+
+The output filename is specified in the configuration with the top-level node:
+
+```xml
+<Output url="qa_histogram_file.root" />
+```
+
+The `StFwdTrackMaker` can also be configured to output a simple `ROOT TTree`. This is very useful for simple analysis or for investigating the performance of the tracking:
+
+```cpp
+fwdTrack->SetGenerateTree( true );
+```
+
+The TTree data members are defined by the `struct FwdTreeData` at the top of `StFwdTrackMaker.h`
+
+```cpp
+struct FwdTreeData {
+  
+    // hits from the sTGC;
+    int fttN;
+    vector<float> fttX, fttY, fttZ;
+    vector<int> fttVolumeId;
+    // Only avalaible for hits if MC
+    vector<float> fttPt;
+    vector<int> fttTrackId, fttVertexId;
+
+    // todo: add FST hits
+
+    // RC tracks
+    int rcN;
+    vector<float> rcPt, rcEta, rcPhi, rcQuality;
+    vector<int> rcTrackId, rcNumFst, rcCharge;
+
+    // MC Tracks
+    int mcN;
+    vector<float> mcPt, mcEta, mcPhi;
+    vector<int> mcVertexId, mcCharge;
+
+    // MC Level vertex info
+    // maybe use also for TPC vertex if available in data
+    int vmcN;
+    vector<float> vmcX, vmcY, vmcZ;
+
+    // track projections (those stored in StFwdTrack)
+    int tprojN;
+    vector<float> tprojX, tprojY, tprojZ;
+    vector<int> tprojIdD, tprojIdT;
+
+    // RAVE reco vertices
+    int vrcN;
+    vector<float> vrcX, vrcY, vrcZ;
+
+    // Track hit deltas, useful for alignment checks
+    int thdN;
+    vector<float> thdX, thdY, thaZ;
+
+    // Track finding computed criteria 
+    // WIP, not filled as off 06-02-2022
+    std::map<string, std::vector<float>> Crits;
+    std::map<string, std::vector<int>> CritTrackIds;
+};
+```
+
+Finally, the tracking code can produce visualization data in the [Wavefront OBJ](https://en.wikipedia.org/wiki/Wavefront_.obj_file) file format for 3D graphics. If you are interested ask me for more details.
 
 # XML Configuration
 The forward tracker can be configured via an XML configuration file.
@@ -256,7 +365,25 @@ The `<TrackFitter ... >` block can contain:
 
 Note: in data if the `<Vertex ... includeInFit="true" />` tag is used and a primary vertex from the TPC is not available then the vertex position is set to (0,0,0) - so it can be used more like an ideal beam-line constraint in the fits.
 
+## Known issues in the tracking
 
+- Long distance projections fail due to a hard-coded condition in GenFit2 code, no work-around yet
+  - Specifically effects the HCAL matching (projections to HCAL almost always fail)
 
+## Chain Options
 
-# Known issues in the tracking
+- `fwdTrack` : the forward track maker
+- `fst` : Runs the FST offline chain
+- `fcs` : Runs the FCS offline chain
+- `ftt` : Runs the FTT offline chain
+- `fwdTrack` : Runs the forward tracking, make sure it is after the detector chains.
+- Simulation:
+  - `fttFastSim` : Ftt fast simulator, produces space points directly
+  - `fstFastSim` : Fst fast simulator, produces space points directly
+  - `fcsSim` : Fcs simulator, produces raw data to be processed by standard offline chain
+
+A basic chain for FWD detector reconstruction only:
+
+```sh
+in, dev2022, db, StEvent, MuDST, fcs, fst, ftt
+```
