@@ -57,8 +57,21 @@ public:
     vector<StFwdTrackProjection> mProjections;
     genfit::Track *mGenfitTrack;
 
-    // momentum at the primary vertex
+    // Quality of the fit
+    const bool   didFitConverge() const;
+    const bool   didFitConvergeFully() const;
+    const int    numberOfFailedPoints() const;
+    const double chi2() const;
+    const double ndf() const;
+    const double pval() const;
+
+    // Number of fit points used by GenFit
     const unsigned int   numberOfFitPoints() const;
+
+    // Number of points used in the track seed step
+    // const unsigned int   numberOfSeedPoints() const;
+
+    // momentum at the primary vertex
     const StThreeVectorD momentum() const;
     const StThreeVectorD momentumAt(int _id = 1) const;
     const char charge() const;
