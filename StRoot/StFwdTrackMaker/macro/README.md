@@ -57,6 +57,9 @@ this section is a WIP
     echo "StDb" >> .git/info/sparse-checkout
     echo "StarDb" >> .git/info/sparse-checkout
 
+    echo "StRoot/StFcs*" >> .git/info/sparse-checkout
+    (or don't do this but drop "fcs" from BFC option in macro)
+
     git checkout fwd-tracking
 
     ```
