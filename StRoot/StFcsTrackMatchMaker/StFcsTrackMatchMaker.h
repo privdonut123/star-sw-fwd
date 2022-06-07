@@ -41,7 +41,7 @@ private:
     float mMaxDistance=10.0;
     float mMinEnergy=0.1;
     
-    TH1F* mNtrk[3];
+    TH1F* mNtrk[4];
     TH1F* mNclu[4];
     TH1F* mCharge[3];
     TH2F* mXY[3];
