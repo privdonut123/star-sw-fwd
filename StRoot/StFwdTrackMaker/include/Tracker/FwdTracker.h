@@ -424,6 +424,12 @@ class ForwardTrackMaker {
             }
             /***********************************************/
 
+            if (mConfig.get<bool>("TrackFitter:refitGBL", true)) {
+                for (size_t i = 0; i < mGlobalTracks.size(); i++) {
+                    mTrackFitter->refitTrackWithGBL(mGlobalTracks[i]);
+                }
+            }
+
             if (mGenHistograms ){
                 mQualityPlotter->summarizeEvent(mRecoTracks, mcTrackMap, mFitMoms, mFitStatus);
             }
