@@ -1160,15 +1160,16 @@ int StFwdTrackMaker::Make() {
             // provide the projections to EPD, ECAL, HCAL
             float cov[9];
             auto tv3 = ObjExporter::trackPosition( genfitTrack, 715.0, cov );
-            LOG_INFO << "ECAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endl;
+            LOG_INFO << "ECAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endm;
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // ECAL
             // Add Proj info to TTree
             { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
             mTreeData.tprojIdD.push_back( 0 ); mTreeData.tprojIdT.push_back( indexTrack ); }
 
-            
-            tv3 = ObjExporter::trackPosition( genfitTrack, 807.0, cov );
-            LOG_INFO << "HCAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endl;
+            LOG_INFO << "Trying HCAL: " << endm;
+            // tv3 = ObjExporter::trackPosition( genfitTrack, 807.0, cov );
+            tv3 = ObjExporter::projectAsStraightLine( genfitTrack, 575.0, 625.0, 807.0, cov );
+            LOG_INFO << "HCAL: " <<  TString::Format( "(%f, %f, %f)", tv3.X(), tv3.Y(), tv3.Z() ) << endm;
             fwdTrack->mProjections.push_back( StFwdTrackProjection( StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), cov) ); // HCAL
             // Add Proj info to TTree
             { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
@@ -1179,6 +1180,18 @@ int StFwdTrackMaker::Make() {
             { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
             mTreeData.tprojIdD.push_back( 2 ); mTreeData.tprojIdT.push_back( indexTrack ); }
             indexTrack ++;
+
+            tv3 = ObjExporter::projectAsStraightLine( genfitTrack, 575.0, 625.0, 715.0, cov );
+            { mTreeData.tprojX.push_back( tv3.X() ); mTreeData.tprojY.push_back( tv3.Y() ); mTreeData.tprojZ.push_back( tv3.Z() );
+            mTreeData.tprojIdD.push_back( 3 ); mTreeData.tprojIdT.push_back( indexTrack ); }
+
+            // 
+            // tv3 = ObjExporter::trackPosition( genfitTrack, 575.0, cov );
+            // tv3 = ObjExporter::trackPosition( genfitTrack, 625.0, cov );
+            // tv3 = ObjExporter::trackPosition( genfitTrack, 675.0, cov );
+
+
+
         }
         mTreeData.tprojN = mTreeData.tprojX.size();
         LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;

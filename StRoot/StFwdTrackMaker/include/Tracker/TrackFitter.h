@@ -6,6 +6,8 @@
 #include "GenFit/Exception.h"
 #include "GenFit/FieldManager.h"
 #include "GenFit/KalmanFitStatus.h"
+#include "GenFit/GblFitter.h"
+
 #include "GenFit/KalmanFitter.h"
 #include "GenFit/KalmanFitterInfo.h"
 #include "GenFit/KalmanFitterRefTrack.h"
@@ -608,7 +610,81 @@ class TrackFitter {
             return p;
         }
         return pOrig;
-    }
+    } // refit with Si hits
+
+    TVector3 refitTrackWithGBL( genfit::Track *originalTrack ) {
+        // mem leak, global track is overwritten without delete.
+        TVector3 pOrig = originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
+        
+        // auto cardinalStatus = originalTrack->getFitStatus(originalTrack->getCardinalRep());
+
+        if (originalTrack->getFitStatus(originalTrack->getCardinalRep())->isFitConverged() == false) {
+            // in this case the original track did not converge so we should not refit. 
+            // probably never get here due to previous checks
+            return pOrig;
+        }
+
+        // Setup the Track Reps
+        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
+
+        // get the space points on the original track
+        auto trackPoints = originalTrack->getPointsWithMeasurement();
+        
+
+        TVectorD rawCoords = trackPoints[0]->getRawMeasurement()->getRawHitCoords();
+        TVector3 seedPos(rawCoords(0), rawCoords(1), rawCoords(2));
+        TVector3 seedMom = pOrig;
+
+        // Create the ref track using the seed state
+        auto pFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
+        pFitTrack->addTrackRep(trackRepNeg);
+
+        genfit::Track &fitTrack = *pFitTrack;
+
+        for (size_t i = 0; i < trackPoints.size(); i++) {
+            // clone the track points into this track
+            fitTrack.insertPoint(new genfit::TrackPoint(trackPoints[i]->getRawMeasurement(), &fitTrack));
+        }
+
+        auto gblFitter = std::unique_ptr<genfit::GblFitter>(new genfit::GblFitter());
+        try {
+            // check consistency of all points
+            fitTrack.checkConsistency();
+
+            // do the actual track fit
+            mFitter->processTrack(&fitTrack);
+
+            fitTrack.checkConsistency();
+
+            // this chooses the lowest chi2 fit result as cardinal
+            fitTrack.determineCardinalRep(); 
+
+        } catch (genfit::Exception &e) {
+            // will be caught below by converge check
+            LOG_WARN << "Track fit exception : " << e.what() << endm;
+        }
+
+        if (fitTrack.getFitStatus(fitTrack.getCardinalRep())->isFitConverged() == false) {
+            LOG_WARN << "GBL fit did not converge" << endm;
+            return pOrig;
+        } else { // we did converge, return new momentum
+            
+            try {
+                // causes seg fault
+                auto cardinalRep = fitTrack.getCardinalRep();
+                auto cardinalStatus = fitTrack.getFitStatus(cardinalRep);
+                mFitStatus = *cardinalStatus; // save the status of last fit
+            } catch (genfit::Exception &e) {
+                LOG_WARN << "Failed to get cardinal status from converged fit" << endm;
+            }
+
+            return fitTrack.getCardinalRep()->getMom(fitTrack.getFittedState(1, fitTrack.getCardinalRep()));
+        }
+        return pOrig;
+    } //refitwith GBL
+
+
 
     /* Generic method for fitting space points with GenFit
      *
