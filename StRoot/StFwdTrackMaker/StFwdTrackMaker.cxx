@@ -285,7 +285,7 @@ int StFwdTrackMaker::Init() {
     mFwdConfig.load( configFile );
 
     if (mGenTree) {
-        mTreeFile = new TFile("mltree.root", "RECREATE");
+        mTreeFile = new TFile("fwdtree.root", "RECREATE");
         mTree = new TTree("fwd", "fwd tracking tree");
         mTree->Branch("fttN",         &mTreeData. fttN, "fttN/I");
         mTree->Branch("fttX",         &mTreeData. fttX  );
