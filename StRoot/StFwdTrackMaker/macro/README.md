@@ -164,9 +164,24 @@ See the provided submission script: [StFwdTrackMaker/macro/daq/submit.xml](https
 
 You need to change:
 
-1. # of events to process
-2. Filelist as input
-3. output paths
+1. Number of events to process  (first argument in)
+   ```sh
+   root4star -b -q -l 'daq/daq_track.C( 2, "'$INPUTFILE0'" )'
+   ```
+3. Filelist as input (and num files)
+   ```xml
+   <input URL="filelist:/gpfs01/star/pwg_tasks/FwdCalib/DAQ/zeroField_Alignment.lis" nFiles="1" />
+   ```
+5. output paths
+   ```xml
+    <stdout URL="file:/star/data03/pwg/jdb/scratch/log/log_$JOBID.log" />
+    <stderr URL="file:/star/data03/pwg/jdb/scratch/log/err_$JOBID.err" />
+    <output fromScratch="job_*.root" toURL="file:/star/data03/pwg/jdb/scratch/" />
+
+    <Generator>
+      <Location>/star/data03/pwg/jdb/scratch/gen</Location>
+    </Generator>
+   ```
 
 Submit from the project root with:
 
