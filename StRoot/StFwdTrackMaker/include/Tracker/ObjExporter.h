@@ -143,6 +143,20 @@ public:
         face( fout, fVert, 3, 1, 4, 6 ); // side 3
     }
 
+
+    static TVector3 projectAsStraightLine( genfit::Track * t, float z0, float z1, float zf, float * cov = 0 ) {
+        TVector3 tv3A = trackPosition( t, z0 );
+        TVector3 tv3B = trackPosition( t, z1, cov );
+
+        double dxdz = ( tv3B.X() - tv3A.X() ) / ( tv3B.Z() - tv3A.Z() );
+        double dydz = ( tv3B.Y() - tv3A.Y() ) / ( tv3B.Z() - tv3A.Z() );
+
+        double dx = dxdz * ( zf - z1 );
+        double dy = dydz * ( zf - z1 );
+        TVector3 r( tv3B.X() + dx, tv3B.Y() + dy, zf );
+        return r;
+    }
+
     static TVector3 trackPosition( genfit::Track * t, float z, float * cov = 0 ){
 
         try {

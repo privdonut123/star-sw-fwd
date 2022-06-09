@@ -51,7 +51,9 @@ int StFcsTrackMatchMaker::Init(){
     mNtrk[1]= new TH1F("NTrk_Hcal","NTrk_Hcal",10,0.0,10.0);
     mNclu[1]= new TH1F("NHcalClu_Trk","NHcalClu_Trk",10,0.0,10.0);
 
-    mNtrk[2]= new TH1F("NTrk","NTrk/evt",10,0.0,10.0);
+    mNtrk[2]= new TH1F("NTrk","NTrk/evt",100,0.0,1000.0);
+    mNtrk[3]= new TH1F("NGoodTrk","NGoodTrk/evt",20,0.0,20.0);
+
     mNclu[2]= new TH1F("NEcalClu","NEcalClu/evt",10,0.0,10.0);
     mNclu[3]= new TH1F("NHcalClu","NHcalClu/evt",10,0.0,10.0);
 
@@ -98,14 +100,18 @@ int StFcsTrackMatchMaker::Make(){
   }
     
   int ntrk=mFwdTrkColl->numberOfTracks();
+  int ngoodtrk=0;
   int nMatch[2]={0,0};
   for(int itrk=0; itrk<ntrk; itrk++){
     StFwdTrack* trk=mFwdTrkColl->tracks()[itrk];
+    if(trk->didFitConvergeFully()==false) continue;
+    ngoodtrk++;
     if(Debug()){
       LOG_INFO << Form("Proj0 : %6.2f %6.2f %6.2f",trk->mProjections[0].XYZ.x(),trk->mProjections[0].XYZ.y(),trk->mProjections[0].XYZ.z())<<endm;
       LOG_INFO << Form("Proj1 : %6.2f %6.2f %6.2f",trk->mProjections[1].XYZ.x(),trk->mProjections[1].XYZ.y(),trk->mProjections[1].XYZ.z())<<endm;
       LOG_INFO << Form("Proj2 : %6.2f %6.2f %6.2f",trk->mProjections[2].XYZ.x(),trk->mProjections[2].XYZ.y(),trk->mProjections[2].XYZ.z())<<endm;
     }
+
     //North or south from track
     int ns=0;
     if(trk->mProjections[0].XYZ.x()>0.0) ns=1;
@@ -143,6 +149,7 @@ int StFcsTrackMatchMaker::Make(){
   //Sort by ET/PT 
   for(int itrk=0; itrk<ntrk; itrk++){
     StFwdTrack* trk=mFwdTrkColl->tracks()[itrk];
+    if(trk->didFitConvergeFully()==false) continue;
     trk->sortEcalClusterByET();
     trk->sortHcalClusterByET();
     if(Debug()){
@@ -169,8 +176,10 @@ int StFcsTrackMatchMaker::Make(){
   //Filling hitograms if file is specified
   if(mFile){
     mNtrk[2]->Fill(ntrk);
+    mNtrk[3]->Fill(ngoodtrk);
     for(int itrk=0; itrk<ntrk; itrk++){
       StFwdTrack* trk=mFwdTrkColl->tracks()[itrk];
+      if(trk->didFitConvergeFully()==false) continue;
       mCharge[2]->Fill(trk->charge());
       mXY[2]->Fill(trk->mProjections[0].XYZ.x(),trk->mProjections[0].XYZ.y());
       double pt=trk->momentum().perp();
@@ -212,7 +221,7 @@ int StFcsTrackMatchMaker::Make(){
     mNclu[2]->Fill(nc[0]);
     mNclu[3]->Fill(nc[1]);
 
-    LOG_INFO << Form("NTrack=%3d NEcalMatch=%3d NHcalMatch=%3d",ntrk,nMatch[0],nMatch[1])<<endm;
+    LOG_INFO << Form("NTrack=%5d NGoodTrack=%3d NEcalMatch=%3d NHcalMatch=%3d",ntrk,ngoodtrk,nMatch[0],nMatch[1])<<endm;
   }    
   return kStOK;
 }
