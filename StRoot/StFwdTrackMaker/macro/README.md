@@ -37,31 +37,17 @@ this section is a WIP
 
     touch .git/info/sparse-checkout
 
-    echo "StRoot/RTS/" >> .git/info/sparse-checkout
+    echo "StRoot/StFst*" >> .git/info/sparse-checkout
+    echo "StRoot/StFtt*" >> .git/info/sparse-checkout
+    echo "StRoot/StFcs*" >> .git/info/sparse-checkout 
+    # (or don't do this but drop "fcs" from BFC option in macro)
+    echo "StRoot/StFwdTrackMaker/" >> .git/info/sparse-checkout
     echo "StRoot/StBFChain/" >> .git/info/sparse-checkout
     echo "StRoot/StEvent/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstClusterMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstDbMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstHitMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstRawHitMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstSimMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFstUtil/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttClusterMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttDbMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttHitCalibMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttPointMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttQAMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFttRawHitMaker/" >> .git/info/sparse-checkout
-    echo "StRoot/StFwdTrackMaker/" >> .git/info/sparse-checkout
-
     echo "StDb" >> .git/info/sparse-checkout
     echo "StarDb" >> .git/info/sparse-checkout
 
-    echo "StRoot/StFcs*" >> .git/info/sparse-checkout
-    # (or don't do this but drop "fcs" from BFC option in macro)
-
     git checkout fwd-tracking
-
     ```
 
 2. initialize the environment:
@@ -170,6 +156,22 @@ Note: producing the event visualizations is very slow, so make sure to turn it o
 
 ```cpp
 fwdTrack->SetVisualize( false );
+```
+
+### Submitting jobs to condor
+
+See the provided submission script: [StFwdTrackMaker/macro/daq/submit.xml](https://github.com/jdbrice/star-sw-1/blob/fwd-tracking/StRoot/StFwdTrackMaker/macro/daq/submit.xml)
+
+You need to change:
+
+1. # of events to process
+2. Filelist as input
+3. output paths
+
+Submit from the project root with:
+
+```sh
+star-submit daq/submit.xml
 ```
 
 ## Products and artifacts
