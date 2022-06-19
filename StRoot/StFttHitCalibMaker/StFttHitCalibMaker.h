@@ -44,11 +44,23 @@ public:
     Int_t  Finish();
     Int_t  Make();
 
+    void WriteCalibrationToPlainText();
+
+    enum CalibMode {
+        Live = 0,
+        Production = 1,
+        Calibration = 2
+    };
+
+    void SetMode( StFttHitCalibMaker::CalibMode  mode ){
+        mCalibMode = mode;
+    }
 
     StEvent*             mEvent;
     StFttCollection*     mFttCollection;
     StFttDb*             mFttDb;
     HitCalibHelper*      mHelper;
+    StFttHitCalibMaker::CalibMode            mCalibMode;
 
     bool mDebug = false;
 
