@@ -113,8 +113,13 @@ public:
 
     void getGloablOffset( UChar_t plane, UChar_t quad, float &dx, float &sx, float &dy, float &sy, float &dz, float &sz );
 
+    enum TimeCutMode {
+      CalibratedBunchCrossingMode = 0,
+      TimebinMode = 1
+    };
+
     void getTimeCut( StFttRawHit * hit, int &mode, int &l, int &h ){
-      mode = 1;
+      mode = StFttDb::TimeCutMode::TimebinMode;
       // ideal; take +/- 3 bunch crossings
       l = -70;
       h = 30;

@@ -143,7 +143,7 @@ the run on a daq file named (or symlinked) `input.daq` with the config in `daq/d
 or specifying the optional parameters:
 
 ```sh
-root4star -b -q -l 'daq/dac_track.C( "path_to_input_file.daq", "path_to_config.xml", "dev2022" )'
+root4star -b -q -l 'daq/daq_track.C( "path_to_input_file.daq", "path_to_config.xml", "dev2022" )'
 ```
 
 the `daq_track.C` macro just loads necessary libraries and performs some setup to run the basic BFC chain:
