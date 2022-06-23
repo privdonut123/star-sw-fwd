@@ -1,0 +1,1 @@
+export LD_LIBRARY_PATH=".sl79_gcc485/LIB:$LD_LIBRARY_PATH"
