@@ -1,0 +1,7 @@
+
+
+MYSQL=$(dirname $(mysql_config --variable=pkgincludedir)) \
+    LIBXML2_DIR=$(xml2-config --prefix) \
+    GSL_DIR=$(gsl-config --prefix) \
+    FASTJET_DIR=$(fastjet-config --prefix) \
+    cons
