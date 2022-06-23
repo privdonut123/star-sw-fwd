@@ -299,37 +299,41 @@ int StFwdTrackMaker::Init() {
 
         // mc tracks
         mTree->Branch("mcN",        &mTreeData. mcN, "mcN/I");
-        mTree->Branch("mcPt",       &mTreeData. mcPt, "mcPt/F");
-        mTree->Branch("mcEta",      &mTreeData. mcEta, "mcEta/F");
-        mTree->Branch("mcPhi",      &mTreeData. mcPhi, "mcPhi/F");
-        mTree->Branch("mcCharge",   &mTreeData. mcCharge, "mcCharge/I");
-        mTree->Branch("mcVertexId", &mTreeData. mcVertexId, "mcVertexId/I");
+        mTree->Branch("mcPt",       &mTreeData. mcPt );
+        mTree->Branch("mcEta",      &mTreeData. mcEta );
+        mTree->Branch("mcPhi",      &mTreeData. mcPhi );
+        mTree->Branch("mcCharge",   &mTreeData. mcCharge );
+        mTree->Branch("mcVertexId", &mTreeData. mcVertexId );
 
         // mcverts
         mTree->Branch("vmcN",       &mTreeData. vmcN, "vmcN/I");
-        mTree->Branch("vmcX",       &mTreeData. vmcX, "vmcX/F");
-        mTree->Branch("vmcY",       &mTreeData. vmcY, "vmcY/F");
-        mTree->Branch("vmcZ",       &mTreeData. vmcZ, "vmcZ/F");
+        mTree->Branch("vmcX",       &mTreeData. vmcX );
+        mTree->Branch("vmcY",       &mTreeData. vmcY );
+        mTree->Branch("vmcZ",       &mTreeData. vmcZ );
 
         // rcverts
         mTree->Branch("vrcN",       &mTreeData. vrcN, "vrcN/I");
-        mTree->Branch("vrcX",       &mTreeData. vrcX, "vrcX/F");
-        mTree->Branch("vrcY",       &mTreeData. vrcY, "vrcY/F");
-        mTree->Branch("vrcZ",       &mTreeData. vrcZ, "vrcZ/F");
+        mTree->Branch("vrcX",       &mTreeData. vrcX );
+        mTree->Branch("vrcY",       &mTreeData. vrcY );
+        mTree->Branch("vrcZ",       &mTreeData. vrcZ );
 
         // rc tracks
         mTree->Branch("rcN",        &mTreeData. rcN, "rcN/I");
-        mTree->Branch("rcPt",       &mTreeData. rcPt, "rcPt/F");
-        mTree->Branch("rcEta",      &mTreeData. rcEta, "rcEta/F");
-        mTree->Branch("rcPhi",      &mTreeData. rcPhi, "rcPhi/F");
-        mTree->Branch("rcCharge",   &mTreeData. rcCharge, "rcCharge/I");
-        mTree->Branch("rcTrackId",  &mTreeData. rcTrackId, "rcTrackId/I");
-        mTree->Branch("rcNumFst",   &mTreeData. rcNumFst, "rcNumFst/I");
-        mTree->Branch("rcQuality",  &mTreeData. rcQuality, "rcQuality/F");
+        mTree->Branch("rcPt",       &mTreeData. rcPt );
+        mTree->Branch("rcEta",      &mTreeData. rcEta );
+        mTree->Branch("rcPhi",      &mTreeData. rcPhi );
+        mTree->Branch("rcCharge",   &mTreeData. rcCharge );
+        mTree->Branch("rcTrackId",  &mTreeData. rcTrackId );
+        mTree->Branch("rcNumFST",   &mTreeData. rcNumFST );
+        mTree->Branch("rcNumFTT",   &mTreeData. rcNumFTT );
+        mTree->Branch("rcNumPV",    &mTreeData. rcNumPV );
+        mTree->Branch("rcQuality",  &mTreeData. rcQuality );
 
         mTree->Branch("thdN",         &mTreeData. thdN, "thdN/I");
         mTree->Branch("thdX",         &mTreeData. thdX  );
         mTree->Branch("thdY",         &mTreeData. thdY  );
+        mTree->Branch("thaX",         &mTreeData. thaX  );
+        mTree->Branch("thaY",         &mTreeData. thaY  );
         mTree->Branch("thaZ",         &mTreeData. thaZ  );
 
         // track projections
@@ -341,66 +345,66 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("tprojZ",       &mTreeData. tprojZ);
 
 
-    //     std::string path = "TrackFinder.Iteration[0].SegmentBuilder";
-    //     std::vector<string> paths = mFwdConfig.childrenOf(path);
+        std::string path = "TrackFinder.Iteration[0].SegmentBuilder";
+        std::vector<string> paths = mFwdConfig.childrenOf(path);
 
-    //     for (string p : paths) {
-    //         string name = mFwdConfig.get<string>(p + ":name", "");
-    //         mTreeCrits[name]; // create the entry
-    //         mTree->Branch(name.c_str(), &mTreeCrits[name]);
-    //         mTree->Branch((name + "_trackIds").c_str(), &mTreeCritTrackIds[name]);
+        for (string p : paths) {
+            string name = mFwdConfig.get<string>(p + ":name", "");
+            mTreeData.Crits[name]; // create the entry
+            mTree->Branch(name.c_str(), &mTreeData.Crits[name]);
+            mTree->Branch((name + "_trackIds").c_str(), &mTreeData.CritTrackIds[name]);
 
-    //         if ( name == "Crit2_RZRatio" ){
-    //             string n = name + "_x1";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+            if ( name == "Crit2_RZRatio" ){
+                string n = name + "_x1";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_y1";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+                n = name + "_y1";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_z1";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+                n = name + "_z1";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_x2";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+                n = name + "_x2";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_y2";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+                n = name + "_y2";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_z2";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
+                n = name + "_z2";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
 
-    //             n = name + "_h1";
-    //             mTreeCritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeCritTrackIds[n]);
-    //             n = name + "_h2";
-    //             mTreeCritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeCritTrackIds[n]);
-    //             n = name + "_h3";
-    //             mTreeCritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeCritTrackIds[n]);
-    //         }
+                n = name + "_h1";
+                mTreeData.CritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeData.CritTrackIds[n]);
+                n = name + "_h2";
+                mTreeData.CritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeData.CritTrackIds[n]);
+                n = name + "_h3";
+                mTreeData.CritTrackIds[(n)]; mTree->Branch(n.c_str(), &mTreeData.CritTrackIds[n]);
+            }
 
-    //         if ( name == "Crit2_BDT" ){
-    //             string n = name + "_DeltaPhi";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
-    //             n = name + "_DeltaRho";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
-    //             n = name + "_RZRatio";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
-    //             n = name + "_StraightTrackRatio";
-    //             mTreeCrits[(n)]; mTree->Branch(n.c_str(), &mTreeCrits[n]);
-    //         }
-    //     }
+            if ( name == "Crit2_BDT" ){
+                string n = name + "_DeltaPhi";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
+                n = name + "_DeltaRho";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
+                n = name + "_RZRatio";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
+                n = name + "_StraightTrackRatio";
+                mTreeData.Crits[(n)]; mTree->Branch(n.c_str(), &mTreeData.Crits[n]);
+            }
+        }
 
-    //     // Three hit criteria
-    //     path = "TrackFinder.Iteration[0].ThreeHitSegments";
-    //     paths = mFwdConfig.childrenOf(path);
+        // Three hit criteria
+        path = "TrackFinder.Iteration[0].ThreeHitSegments";
+        paths = mFwdConfig.childrenOf(path);
 
-    //     for (string p : paths) {
-    //         string name = mFwdConfig.get<string>(p + ":name", "");
-    //         mTreeCrits[name]; // create the entry
-    //         mTree->Branch(name.c_str(), &mTreeCrits[name]);
-    //         mTree->Branch((name + "_trackIds").c_str(), &mTreeCritTrackIds[name]);
-    //     }
+        for (string p : paths) {
+            string name = mFwdConfig.get<string>(p + ":name", "");
+            mTreeData.Crits[name]; // create the entry
+            mTree->Branch(name.c_str(), &mTreeData.Crits[name]);
+            mTree->Branch((name + "_trackIds").c_str(), &mTreeData.CritTrackIds[name]);
+        }
 
-    //     mTree->SetAutoFlush(0);
+        mTree->SetAutoFlush(0);
     } // gen tree
 
 
@@ -561,10 +565,10 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     if ( col && col->numberOfPoints() > 0 ){
         LOG_INFO << "The Ftt Collection has " << col->numberOfPoints() << " points" << endm;
         TMatrixDSym hitCov3(3);
-        const double sigXY = 10; // 
+        const double sigXY = 1; // 
         hitCov3(0, 0) = sigXY * sigXY;
         hitCov3(1, 1) = sigXY * sigXY;
-        hitCov3(2, 2) = 20; // unused since they are loaded as points on plane
+        hitCov3(2, 2) = 1; // unused since they are loaded as points on plane
         for ( auto point : col->points() ){
             
             int plane_id = 0;
@@ -577,8 +581,8 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             hitMap[hit->getSector()].push_back(hit);
 
             if (mGenTree && mTreeData.fttN < MAX_TREE_ELEMENTS) {
-                LOG_INFO << "Adding FTT Point to TTrees" << endm;
-                LOG_INFO << "FttPoint( " << point->xyz().x()/10.0 << ", " << point->xyz().y()/10.0 << ", " << point->xyz().z() << " )" << endm;
+                LOG_DEBUG << "Adding FTT Point to TTrees" << endm;
+                LOG_DEBUG << "FttPoint( " << point->xyz().x()/10.0 << ", " << point->xyz().y()/10.0 << ", " << point->xyz().z() << " )" << endm;
                 mTreeData.fttX.push_back( point->xyz().x()/10.0 );
                 mTreeData.fttY.push_back( point->xyz().y()/10.0 );
                 mTreeData.fttZ.push_back( point->xyz().z() );
@@ -699,7 +703,7 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
     if ( fstHitCollection ){
         // reuse this to store cov mat
         TMatrixDSym hitCov3(3);
-        LOG_INFO << "Load FST hits from StEvent fstHitCollection, NOT NULL" << endm;
+        LOG_INFO << "StFstHitCollection is NOT NULL, loading hits" << endm;
         for ( unsigned int iw = 0; iw < kFstNumWedges; iw++ ){
             StFstWedgeHitCollection * wc = fstHitCollection->wedge( iw );
 
@@ -708,7 +712,7 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
 
                 StSPtrVecFstHit fsthits = sc->hits();
 
-                LOG_INFO << "fsthits.size() == " << fsthits.size() << endm;
+                LOG_DEBUG << "fsthits.size() == " << fsthits.size() << endm;
                 for ( int ih = 0; ih < fsthits.size(); ih++ ){
                     float vR = fsthits[ih]->localPosition(0);
                     float vPhi = fsthits[ih]->localPosition(1);
@@ -726,7 +730,7 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
                     float y0 = vR * sin( vPhi );
                     hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
 
-                    LOG_INFO << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;                
+                    LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;                
                     mFstHits.push_back( TVector3( x0, y0, vZ)  );
 
                     FwdHit *hit = new FwdHit(count++, x0, y0, vZ, d, 0, hitCov3, nullptr);
@@ -1118,7 +1122,7 @@ int StFwdTrackMaker::Make() {
     LOG_INFO << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
 
 
-    if ( IAttr("fillEvent") ) {
+    if ( false && IAttr("fillEvent") ) {
 
         if (!stEvent) {
             LOG_WARN << "No StEvent found. Forward tracks will not be saved" << endm;
@@ -1200,25 +1204,20 @@ int StFwdTrackMaker::Make() {
 
     } // IAttr FillEvent
 
-
+    LOG_INFO << "Filling fwd Tree for event: " << GetIventNumber() << endm;
     FillTTree();
     return kStOK;
 } // Make
 
 void StFwdTrackMaker::FillTrackDeltas(){
-    const auto &seedTracks = mForwardTracker -> getRecoTracks();
-    const auto &genfitTracks = mForwardTracker -> globalTracks();
+    LOG_INFO << "Filling Track Deltas for Alignment" << endm;
+    const auto &fittedTracks = mForwardTracker -> getTrackResults();
 
-    if ( seedTracks.size() != genfitTracks.size() ){
-        LOG_INFO << "THIS COULD BE A PROBLEM" << endm;
-        return;
-    }
+    for ( size_t i = 0; i < fittedTracks.size(); i++ ){
+        auto st = fittedTracks[i].trackSeed;
+        auto gt = fittedTracks[i].track;
 
-    for ( size_t i = 0; i < seedTracks.size(); i++ ){
-        auto st = seedTracks[i];
-        auto gt = genfitTracks[i];
-
-        if (gt->getFitStatus()->isFitConverged() == false){
+        if (fittedTracks[i].isFitConvergedFully == false){
             LOG_INFO << "Skipping track, failed fit" << endm;
             continue;
         }
@@ -1227,10 +1226,17 @@ void StFwdTrackMaker::FillTrackDeltas(){
             TVector3 htv3(hit->getX(), hit->getY(), hit->getZ());
 
             auto ttv3 = ObjExporter::trackPosition( gt, htv3.Z() );
+
+            // faile dproj
+            // if ( ttv3.X() < -90 ) {
+            //     continue;
+            // }
             // LOG_INFO << TString::Format( "DELTA: %f, %f, %f ", (ttv3.X() - htv3.X()), (ttv3.Y() - htv3.Y()), (ttv3.Z() - htv3.Z()) ) << endm;
 
             mTreeData.thdX.push_back( (ttv3.X() - htv3.X()) );
             mTreeData.thdY.push_back( (ttv3.Y() - htv3.Y()) );
+            mTreeData.thaX.push_back( htv3.X() );
+            mTreeData.thaY.push_back( htv3.Y() );
             mTreeData.thaZ.push_back( htv3.Z() );
             mTreeData.thdN++;
         }
@@ -1242,7 +1248,7 @@ void StFwdTrackMaker::FitVertex(){
     const auto &seed_tracks = mForwardTracker -> getRecoTracks();
     const auto &genfitTracks = mForwardTracker -> globalTracks();
 
-    if ( genfitTracks.size() > 2 ){
+    if ( genfitTracks.size() >= 2 ){
         genfit::GFRaveVertexFactory gfrvf;
 
         TMatrixDSym bscm(3);
@@ -1262,7 +1268,6 @@ void StFwdTrackMaker::FitVertex(){
         }
     }
 }
-
 
 void StFwdTrackMaker::FillTTree(){
 
@@ -1296,119 +1301,122 @@ void StFwdTrackMaker::FillTTree(){
 
 
 
-        // if (mForwardTracker->getSaveCriteriaValues()) {
-        //     for (auto crit : mForwardTracker->getTwoHitCriteria()) {
-        //         string name = crit->getName();
+        if (mForwardTracker->getSaveCriteriaValues()) {
+            for (auto crit : mForwardTracker->getTwoHitCriteria()) {
+                string name = crit->getName();
 
-        //         // special, save all hit info for this one
+                // special, save all hit info for this one
                 
 
-        //         if ( name == "Crit2_BDT" ){
-        //             mTreeCrits["Crit2_BDT_DeltaPhi"].clear(); 
-        //             mTreeCrits["Crit2_BDT_DeltaRho"].clear(); 
-        //             mTreeCrits["Crit2_BDT_RZRatio"].clear(); 
-        //             mTreeCrits["Crit2_BDT_StraightTrackRatio"].clear(); 
+                if ( name == "Crit2_BDT" ){
+                    mTreeData.Crits["Crit2_BDT_DeltaPhi"].clear(); 
+                    mTreeData.Crits["Crit2_BDT_DeltaRho"].clear(); 
+                    mTreeData.Crits["Crit2_BDT_RZRatio"].clear(); 
+                    mTreeData.Crits["Crit2_BDT_StraightTrackRatio"].clear(); 
 
-        //             for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
-        //                 mTreeCrits["Crit2_BDT_DeltaPhi"].push_back( kv["Crit2_BDT_DeltaPhi"] );
-        //                 mTreeCrits["Crit2_BDT_DeltaRho"].push_back( kv["Crit2_BDT_DeltaRho"] );
-        //                 mTreeCrits["Crit2_BDT_RZRatio"].push_back( kv["Crit2_BDT_RZRatio"] );
-        //                 mTreeCrits["Crit2_BDT_StraightTrackRatio"].push_back( kv["Crit2_BDT_StraightTrackRatio"] );
-        //             }
+                    for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
+                        mTreeData.Crits["Crit2_BDT_DeltaPhi"].push_back( kv["Crit2_BDT_DeltaPhi"] );
+                        mTreeData.Crits["Crit2_BDT_DeltaRho"].push_back( kv["Crit2_BDT_DeltaRho"] );
+                        mTreeData.Crits["Crit2_BDT_RZRatio"].push_back( kv["Crit2_BDT_RZRatio"] );
+                        mTreeData.Crits["Crit2_BDT_StraightTrackRatio"].push_back( kv["Crit2_BDT_StraightTrackRatio"] );
+                    }
 
-        //         }
+                }
 
-        //         if ( name == "Crit2_RZRatio" ){
-        //             LOG_INFO << "allValues.size() = " << mForwardTracker->getCriteriaAllValues(name).size() << " == " << mForwardTracker->getCriteriaTrackIds(name).size() << endm;
-        //             assert( mForwardTracker->getCriteriaAllValues(name).size() == mForwardTracker->getCriteriaTrackIds(name).size() && " Crit lengths must be equal" );
-        //             mTreeCrits["Crit2_RZRatio_x1"].clear();
-        //             mTreeCrits["Crit2_RZRatio_y1"].clear();
-        //             mTreeCrits["Crit2_RZRatio_z1"].clear();
-        //             mTreeCrits["Crit2_RZRatio_x2"].clear();
-        //             mTreeCrits["Crit2_RZRatio_y2"].clear();
-        //             mTreeCrits["Crit2_RZRatio_z2"].clear();
+                if ( name == "Crit2_RZRatio" ){
+                    LOG_INFO << "allValues.size() = " << mForwardTracker->getCriteriaAllValues(name).size() << " == " << mForwardTracker->getCriteriaTrackIds(name).size() << endm;
+                    assert( mForwardTracker->getCriteriaAllValues(name).size() == mForwardTracker->getCriteriaTrackIds(name).size() && " Crit lengths must be equal" );
+                    mTreeData.Crits["Crit2_RZRatio_x1"].clear();
+                    mTreeData.Crits["Crit2_RZRatio_y1"].clear();
+                    mTreeData.Crits["Crit2_RZRatio_z1"].clear();
+                    mTreeData.Crits["Crit2_RZRatio_x2"].clear();
+                    mTreeData.Crits["Crit2_RZRatio_y2"].clear();
+                    mTreeData.Crits["Crit2_RZRatio_z2"].clear();
 
-        //             mTreeCritTrackIds["Crit2_RZRatio_h1"].clear();
-        //             mTreeCritTrackIds["Crit2_RZRatio_h2"].clear();
-        //             mTreeCritTrackIds["Crit2_RZRatio_h3"].clear();
+                    mTreeData.CritTrackIds["Crit2_RZRatio_h1"].clear();
+                    mTreeData.CritTrackIds["Crit2_RZRatio_h2"].clear();
+                    mTreeData.CritTrackIds["Crit2_RZRatio_h3"].clear();
                     
 
-        //             for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
-        //                 mTreeCrits["Crit2_RZRatio_x1"].push_back( kv["Crit2_RZRatio_x1"] );
-        //                 mTreeCrits["Crit2_RZRatio_y1"].push_back( kv["Crit2_RZRatio_y1"] );
-        //                 mTreeCrits["Crit2_RZRatio_z1"].push_back( kv["Crit2_RZRatio_z1"] );
+                    for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
+                        mTreeData.Crits["Crit2_RZRatio_x1"].push_back( kv["Crit2_RZRatio_x1"] );
+                        mTreeData.Crits["Crit2_RZRatio_y1"].push_back( kv["Crit2_RZRatio_y1"] );
+                        mTreeData.Crits["Crit2_RZRatio_z1"].push_back( kv["Crit2_RZRatio_z1"] );
 
-        //                 mTreeCrits["Crit2_RZRatio_x2"].push_back( kv["Crit2_RZRatio_x2"] );
-        //                 mTreeCrits["Crit2_RZRatio_y2"].push_back( kv["Crit2_RZRatio_y2"] );
-        //                 mTreeCrits["Crit2_RZRatio_z2"].push_back( kv["Crit2_RZRatio_z2"] );
+                        mTreeData.Crits["Crit2_RZRatio_x2"].push_back( kv["Crit2_RZRatio_x2"] );
+                        mTreeData.Crits["Crit2_RZRatio_y2"].push_back( kv["Crit2_RZRatio_y2"] );
+                        mTreeData.Crits["Crit2_RZRatio_z2"].push_back( kv["Crit2_RZRatio_z2"] );
 
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h1"].push_back( kv["Crit2_RZRatio_h1"] );
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h2"].push_back( kv["Crit2_RZRatio_h2"] );
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h3"].push_back( -1 );
-        //             }
-        //         }
-
-
-        //         LOG_DEBUG << "Saving Criteria values from " << name << " in TTree" << endm;
-        //         mTreeCrits[name].clear();
-        //         mTreeCritTrackIds[name].clear();
-        //         // copy by value so ROOT doesnt get lost (uses pointer to vector)
-        //         for (float v : mForwardTracker->getCriteriaValues(name)) {
-        //             mTreeCrits[name].push_back(v);
-        //         }
-        //         for (int v : mForwardTracker->getCriteriaTrackIds(name)) {
-        //             mTreeCritTrackIds[name].push_back(v);
-        //         }
-        //     }
-
-        //     // three hit criteria
-        //     for (auto crit : mForwardTracker->getThreeHitCriteria()) {
-        //         string name = crit->getName();
-
-        //         // special, save all hit info for this one
-        //         if ( name == "Crit2_RZRatio" ){
-        //             LOG_INFO << "allValues.size() = " << mForwardTracker->getCriteriaAllValues(name).size() << " == " << mForwardTracker->getCriteriaTrackIds(name).size() << endm;
-        //             assert( mForwardTracker->getCriteriaAllValues(name).size() == mForwardTracker->getCriteriaTrackIds(name).size() && " Crit lengths must be equal" );
-
-        //             mTreeCritTrackIds["Crit2_RZRatio_h1"].clear();
-        //             mTreeCritTrackIds["Crit2_RZRatio_h2"].clear();
-        //             mTreeCritTrackIds["Crit2_RZRatio_h3"].clear();
-
-        //             for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h1"].push_back( kv["Crit2_RZRatio_h1"] );
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h2"].push_back( kv["Crit2_RZRatio_h2"] );
-        //                 mTreeCritTrackIds["Crit2_RZRatio_h3"].push_back( kv["Crit2_RZRatio_h3"] );
-        //             }
-        //         }
+                        mTreeData.CritTrackIds["Crit2_RZRatio_h1"].push_back( kv["Crit2_RZRatio_h1"] );
+                        mTreeData.CritTrackIds["Crit2_RZRatio_h2"].push_back( kv["Crit2_RZRatio_h2"] );
+                        mTreeData.CritTrackIds["Crit2_RZRatio_h3"].push_back( -1 );
+                    }
+                }
 
 
-        //         LOG_DEBUG << "Saving Criteria values from " << name << " in TTree" << endm;
-        //         mTreeCrits[name].clear();
-        //         mTreeCritTrackIds[name].clear();
-        //         // copy by value so ROOT doesnt get lost (uses pointer to vector)
-        //         for (float v : mForwardTracker->getCriteriaValues(name)) {
-        //             mTreeCrits[name].push_back(v);
-        //         }
-        //         for (int v : mForwardTracker->getCriteriaTrackIds(name)) {
-        //             mTreeCritTrackIds[name].push_back(v);
-        //         }
-        //     }
+                LOG_DEBUG << "Saving Criteria values from " << name << " in TTree" << endm;
+                mTreeData.Crits[name].clear();
+                mTreeData.CritTrackIds[name].clear();
+                // copy by value so ROOT doesnt get lost (uses pointer to vector)
+                for (float v : mForwardTracker->getCriteriaValues(name)) {
+                    mTreeData.Crits[name].push_back(v);
+                }
+                for (int v : mForwardTracker->getCriteriaTrackIds(name)) {
+                    mTreeData.CritTrackIds[name].push_back(v);
+                }
+            }
 
-        //     // clear them 
-        //     mForwardTracker->clearSavedCriteriaValues();
-        // }
+            // three hit criteria
+            for (auto crit : mForwardTracker->getThreeHitCriteria()) {
+                string name = crit->getName();
+
+                // special, save all hit info for this one
+                // if ( name == "Crit2_RZRatio" ){
+                //     LOG_INFO << "allValues.size() = " << mForwardTracker->getCriteriaAllValues(name).size() << " == " << mForwardTracker->getCriteriaTrackIds(name).size() << endm;
+                //     assert( mForwardTracker->getCriteriaAllValues(name).size() == mForwardTracker->getCriteriaTrackIds(name).size() && " Crit lengths must be equal" );
+
+                //     mTreeData.CritTrackIds["Crit2_RZRatio_h1"].clear();
+                //     mTreeData.CritTrackIds["Crit2_RZRatio_h2"].clear();
+                //     mTreeData.CritTrackIds["Crit2_RZRatio_h3"].clear();
+
+                //     for (auto kv : mForwardTracker->getCriteriaAllValues(name)) {
+                //         mTreeData.CritTrackIds["Crit2_RZRatio_h1"].push_back( kv["Crit2_RZRatio_h1"] );
+                //         mTreeData.CritTrackIds["Crit2_RZRatio_h2"].push_back( kv["Crit2_RZRatio_h2"] );
+                //         mTreeData.CritTrackIds["Crit2_RZRatio_h3"].push_back( kv["Crit2_RZRatio_h3"] );
+                //     }
+                // }
+
+
+                LOG_DEBUG << "Saving Criteria values from " << name << " in TTree" << endm;
+                mTreeData.Crits[name].clear();
+                mTreeData.CritTrackIds[name].clear();
+                // copy by value so ROOT doesnt get lost (uses pointer to vector)
+                for (float v : mForwardTracker->getCriteriaValues(name)) {
+                    mTreeData.Crits[name].push_back(v);
+                }
+                for (int v : mForwardTracker->getCriteriaTrackIds(name)) {
+                    mTreeData.CritTrackIds[name].push_back(v);
+                }
+            }
+
+            // clear them 
+            mForwardTracker->clearSavedCriteriaValues();
+        }
 
         // SAVE RECO tracks
 
         mTreeData.rcN = 0;
-        // Track seeds
-        const auto &seedTracks = mForwardTracker -> getRecoTracks();
-        const auto &fitMomenta = mForwardTracker -> getFitMomenta();
-        const auto &numFstHits = mForwardTracker -> getNumFstHits();
-        const auto &fitStatus  = mForwardTracker -> getFitStatus();
 
-        LOG_INFO << "Saving " << seedTracks.size() << " seed tracks in TTree" << endm;
-        for ( size_t i = 0; i < seedTracks.size(); i++ ){
+        const auto &fittedTracks = mForwardTracker -> getTrackResults();
+
+        LOG_INFO << "There are " << fittedTracks.size() << " seed tracks to save" << endm;
+        size_t maxToSave = fittedTracks.size();
+        if (maxToSave >= 200) {
+            maxToSave = 0;
+            LOG_INFO << "More than 200 tracks , not saving unfit tracks" << endm;
+        }
+        
+        for ( size_t i = 0; i < maxToSave; i++ ){
             if ( i >= MAX_TREE_ELEMENTS ){
                 LOG_WARN << "Truncating Reco tracks in TTree output" << endm;
                 break;
@@ -1416,35 +1424,39 @@ void StFwdTrackMaker::FillTTree(){
 
             int idt = 0;
             double qual = 0;
-            idt = MCTruthUtils::dominantContribution(seedTracks[i], qual);
+            idt = MCTruthUtils::dominantContribution(fittedTracks[i].trackSeed, qual);
+
+            if ( fittedTracks[i].track == nullptr || fittedTracks[i].trackRep == nullptr ) {
+                LOG_INFO << "Skip saving null track" << endm;
+                continue;
+            }
+
+            if ( fittedTracks[i].isFitConverged == false ){
+                LOG_INFO << "Skip saving track where fit did not converge" << endm;
+                continue;
+            }
 
             
             mTreeData.rcQuality.push_back( qual );
             mTreeData.rcTrackId.push_back( idt );
 
-            if ( seedTracks.size() == numFstHits.size() ){
-                mTreeData.rcNumFst.push_back( numFstHits[i] );
-                mTreeData.rcCharge.push_back( fitStatus[i].getCharge() );
-            }
+            mTreeData.rcCharge.push_back( fittedTracks[i].charge );
+            mTreeData.rcPt.push_back( fittedTracks[i].momentum.Pt() );
+            mTreeData.rcEta.push_back( fittedTracks[i].momentum.Eta() );
+            mTreeData.rcPhi.push_back( fittedTracks[i].momentum.Phi() );
 
-            if ( seedTracks.size() == fitMomenta.size() ){
-                mTreeData.rcPt.push_back( fitMomenta[i].Pt() );
-                mTreeData.rcEta.push_back( fitMomenta[i].Eta() );
-                mTreeData.rcPhi.push_back( fitMomenta[i].Phi() );
-            }
+
+            mTreeData.rcNumPV.push_back( fittedTracks[i].nPV );
+            mTreeData.rcNumFTT.push_back( fittedTracks[i].nFTT );
+            mTreeData.rcNumFST.push_back( fittedTracks[i].nFST );
 
             mTreeData.rcN ++;
         }
-
-        // only warn once, instead of on every iteration
-        if ( seedTracks.size() != fitMomenta.size() ){                
-            LOG_WARN << "Size mismatch between track seeds and track fits" << endm;
-        }
-
         LOG_INFO << "Filling TTree" << endm;
         mTree->Fill();
     } // if mGenTree
 }
+
 
 //________________________________________________________________________
 void StFwdTrackMaker::Clear(const Option_t *opts) {
@@ -1459,6 +1471,8 @@ void StFwdTrackMaker::Clear(const Option_t *opts) {
 
         mTreeData.thdX.clear();
         mTreeData.thdY.clear();
+        mTreeData.thaX.clear();
+        mTreeData.thaY.clear();
         mTreeData.thaZ.clear();
     }
 }

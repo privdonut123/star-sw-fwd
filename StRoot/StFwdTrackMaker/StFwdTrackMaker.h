@@ -20,6 +20,7 @@ namespace genfit {
 }
 
 class ForwardTracker;
+class ForwardTrackMaker;
 class FwdDataSource;
 class FwdHit;
 class StarFieldAdaptor;
@@ -58,7 +59,7 @@ struct FwdTreeData {
     // RC tracks
     int rcN;
     vector<float> rcPt, rcEta, rcPhi, rcQuality;
-    vector<int> rcTrackId, rcNumFst, rcCharge;
+    vector<int> rcTrackId, rcNumFST, rcCharge, rcNumFTT, rcNumPV;
 
     // MC Tracks
     int mcN;
@@ -79,13 +80,12 @@ struct FwdTreeData {
     vector<float> vrcX, vrcY, vrcZ;
 
     int thdN;
-    vector<float> thdX, thdY, thaZ;
+    vector<float> thdX, thdY, thaX, thaY, thaZ;
 
     std::map<string, std::vector<float>> Crits;
     std::map<string, std::vector<int>> CritTrackIds;
 
 };
-
 
 class StFwdTrackMaker : public StMaker {
 
