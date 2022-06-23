@@ -64,12 +64,76 @@ struct MCTruthUtils {
     };
 };
 
+class GenfitTrackResult {
+public:
+    GenfitTrackResult(   size_t nFTT, size_t nFST,
+                        Seed_t &seedTrack, genfit::Track *track ) {
+        this->nFST = nFST;
+        this->nFTT = nFTT;
+        this->trackSeed = seedTrack;
+
+        try {
+            this->track = new genfit::Track(*track);
+            this->status = *(this->track->getFitStatus());
+            this->trackRep = this->track->getCardinalRep();
+
+            this->isFitConverged = this->status.isFitConverged();
+            this->isFitConvergedFully = this->status.isFitConvergedFully();
+            this->isFitConvergedPartially = this->status.isFitConvergedPartially();
+            this->nFailedPoints = this->status.getNFailedPoints();
+            this->charge = this->status.getCharge();
+
+            this->nPV = this->track->getNumPoints() - (nFTT + nFST);
+
+            this->momentum = this->trackRep->getMom( this->track->getFittedState(0, this->trackRep) );
+
+        } catch ( genfit::Exception &e ) {
+            LOG_ERROR << "CANNOT GET TRACK" << endm;
+            this->track = nullptr;
+            this->trackRep = nullptr;
+
+            this->isFitConverged = false;
+            this->isFitConvergedFully = false;
+            this->isFitConvergedPartially = false;
+            this->nFailedPoints = nFST + nFTT;
+            this->charge = 0;
+        }
+    }
+
+    ~GenfitTrackResult() {
+        // MEMORY LEAK
+        // LOG_INFO << "~GenfitTrackResult" << endm;
+        // if (this->track)
+        //     delete this->track;
+        // this->track = nullptr;
+    }
+
+    Seed_t trackSeed;
+    TVector3 momentum;
+    double charge;
+    size_t nFST = 0;
+    size_t nFTT = 0;
+    size_t nPV = 0;
+    genfit::FitStatus status;
+    genfit::AbsTrackRep *trackRep = nullptr;
+    genfit::Track *track = nullptr;
+    bool isFitConverged = false;
+    bool isFitConvergedFully = false;
+    bool isFitConvergedPartially = false;
+    size_t nFailedPoints = 0;
+
+    void summary() {
+        LOG_INFO << TString::Format( "TrackResult[p=(%f, %f, %f)/(%f, %f, %f), q=%f, nFTT=%lu, nFST=%lu, nPV=%lu, isFitConvergedFully=%d]", momentum.X(), momentum.Y(), momentum.Z(), momentum.Pt(), momentum.Eta(), momentum.Phi(), charge, nFTT, nFST, nPV, isFitConvergedFully ).Data() << endm;
+    }
+};
+
 class ForwardTrackMaker {
   public:
     ForwardTrackMaker() : mConfigFile("config.xml"), mEventVertex(-999, -999, -999) {
         // noop
     }
     
+    const std::vector<GenfitTrackResult> &getTrackResults() const { return mTrackResults; }
     const std::vector<Seed_t> &getRecoTracks() const { return mRecoTracks; }
     const std::vector<TVector3> &getFitMomenta() const { return mFitMoms; }
     const std::vector<unsigned short> &getNumFstHits() const { return mNumFstHits; }
@@ -381,6 +445,11 @@ class ForwardTrackMaker {
             delete p;
 
         mGlobalTracks.clear();
+
+        // for (auto p : mTrackResults) {
+        //     delete p;
+        // }
+        mTrackResults.clear();
         /************** Cleanup **************************/
 
         if (mGenHistograms ){
@@ -438,7 +507,7 @@ class ForwardTrackMaker {
         /***********************************************/
 
         /***********************************************/
-        // Stand0ard Track Finding
+        // Standard Track Finding
         // plus initial fit
         LOG_INFO << "WOW " << endm;
         size_t nIterations = mConfig.get<size_t>("TrackFinder:nIterations", 0);
@@ -568,11 +637,31 @@ class ForwardTrackMaker {
                 }
             }
 
+
+            GenfitTrackResult gtr( track.size(), 0, track, mTrackFitter->getTrack() );
+            // gtr.nFST = 0;
+            // gtr.nFTT = track.size();
+            // gtr.trackSeed = track;
+            // gtr.status = mTrackFitter->getStatus();
+            // gtr.momentum = 
+            // gtr.track = new genfit::Track(*mTrackFitter->getTrack());
+            // gtr.trackRep = gtr.track->getCardinalRep();
+            // gtr.isFitConverged = gtr.status.isFitConverged();
+            // gtr.isFitConvergedFully = gtr.status.isFitConvergedFully();
+            // gtr.isFitConvergedPartially = gtr.status.isFitConvergedPartially();
+            // gtr.nFailedPoints = gtr.status.getNFailedPoints();
+            // gtr.charge = gtr.status.getCharge();
+            // gtr.summary();
+
             // assign the fit results to be saved
             fitStatus = mTrackFitter->getStatus();
             genTrack = new genfit::Track(*mTrackFitter->getTrack());
             trackRep = mTrackFitter->getTrackRep()->clone(); // Clone the track rep
             genTrack->setMcTrackId(idt);
+
+
+
+            // LOG_INFO << "Track Fit Summary[" << TString::Format( "p = (pt=%f, eta=%f, phi=%f), status = %d", p.Pt(), p.Eta(), p.Phi(), (int)fitStatus.isFitConverged() ).Data() << endm;
             
             if ( mGenHistograms && genTrack->getFitStatus(genTrack->getCardinalRep())->isFitConverged() && p.Perp() > 1e-3) {
                 mHist["FitStatus"]->Fill("GoodCardinal", 1);
@@ -586,6 +675,8 @@ class ForwardTrackMaker {
             mRecoTrackQuality.push_back(qual);
             mRecoTrackIdTruth.push_back(idt);
             mNumFstHits.push_back(0);
+
+            mTrackResults.push_back( gtr );
             
         } // if (mDoTrackFitting && !bailout)
     }
@@ -927,7 +1018,7 @@ class ForwardTrackMaker {
         // }
         LOG_INFO << " FITTING " << mRecoTracksThisItertion.size() << " now" << endm;
 
-        if ( mRecoTracksThisItertion.size() < 4000 ){
+        if ( mRecoTracksThisItertion.size() < 201 ){
             doTrackFitting( mRecoTracksThisItertion );
         } else {
             LOG_ERROR << "BAILING OUT of fit, too many track candidates" << endm;
@@ -1130,6 +1221,7 @@ class ForwardTrackMaker {
     std::string mConfigFile;
     size_t mTotalHitsRemoved;
     
+    std::vector<GenfitTrackResult> mTrackResults;
 
     std::vector<Seed_t> mRecoTracks; // the tracks recod from all iterations
     std::vector<Seed_t> mRecoTracksThisItertion;

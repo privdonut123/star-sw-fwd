@@ -46,6 +46,14 @@
  */
 class TrackFitter {
 
+// Accessors and options
+  public:
+    genfit::FitStatus getStatus() { return mFitStatus; }
+    genfit::AbsTrackRep *getTrackRep() { return mTrackRep; }
+    genfit::Track *getTrack() { return mFitTrack; }
+    void setGenerateHistograms( bool gen) { mGenHistograms = gen;}
+
+
   public:
     // ctor 
     // provide the main configuration object
@@ -756,12 +764,13 @@ class TrackFitter {
         TVector3 seedMom, seedPos;
         float curv = seedState(trackCand, seedPos, seedMom);
 
-        // create the track representations
-        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
-        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
+        if (McSeedMom != nullptr) {
+            seedMom = *McSeedMom;
+        }
 
         // If we use the PV, use that as the start pos for the track
         if (mIncludeVertexInFit) {
+            LOG_INFO << "Primary Vertex in fit (seed pos) @ " << TString::Format( "(%f, %f, %f)", pv[0], pv[1], pv[2] ).Data()  << endm;
             seedPos.SetXYZ(pv[0], pv[1], pv[2]);
         }
 
@@ -769,14 +778,16 @@ class TrackFitter {
             delete mFitTrack;
         }
 
-        if (McSeedMom != nullptr) {
-            seedMom = *McSeedMom;
-        }
+        // create the track representations
+        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
 
+        // Create the track
         mFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
         mFitTrack->addTrackRep(trackRepNeg);
 
-        LOG_DEBUG
+
+        LOG_INFO
             << "seedPos : (" << seedPos.X() << ", " << seedPos.Y() << ", " << seedPos.Z() << " )"
             << ", seedMom : (" << seedMom.X() << ", " << seedMom.Y() << ", " << seedMom.Z() << " )"
             << ", seedMom : (" << seedMom.Pt() << ", " << seedMom.Eta() << ", " << seedMom.Phi() << " )"
@@ -830,8 +841,12 @@ class TrackFitter {
             if (abs(h->getZ() - plane->getO().Z()) > 0.05) {
                 LOG_WARN << "Z Mismatch h->z = " << h->getZ() << ", plane->z = "<< plane->getO().Z() <<", diff = " << abs(h->getZ() - plane->getO().Z()) << endm;
             }
-        }
+        } // loop on trackCand
 
+
+        /******************************************************************************************************************
+		 * Do the fit
+		 ******************************************************************************************************************/
         try {
             // do the fit
             mFitter->processTrackWithRep(&fitTrack, trackRepPos);
@@ -843,6 +858,9 @@ class TrackFitter {
 
         TVector3 p(0, 0, 0);
 
+        /******************************************************************************************************************
+		 * Now check the fit
+		 ******************************************************************************************************************/
         try {
             //check
             fitTrack.checkConsistency();
@@ -859,6 +877,9 @@ class TrackFitter {
 
             // Clone the cardinal rep for persistency
             mTrackRep = cardinalRep->clone(); // save the result of the fit
+            if (fitTrack.getFitStatus(cardinalRep)->isFitConverged()) {
+                LOG_INFO << "Track Fit converged" << endm;
+            }
             if (fitTrack.getFitStatus(cardinalRep)->isFitConverged() && mGenHistograms ) {
                 this->mHist["FitStatus"]->Fill("GoodCardinal", 1);
             }
@@ -880,6 +901,8 @@ class TrackFitter {
             p = cardinalRep->getMom(fitTrack.getFittedState(1, cardinalRep));
             mQ = cardinalRep->getCharge(fitTrack.getFittedState(1, cardinalRep));
             mP = p;
+
+            LOG_INFO << "track fit p = " << TString::Format( "(%f, %f, %f), q=%f", p.X(), p.Y(), p.Z(), mQ ).Data() << endm;
 
         } catch (genfit::Exception &e) {
             LOG_WARN << "Exception on track fit: " << e.what() << endm;
@@ -909,10 +932,7 @@ class TrackFitter {
         return (int)mQ;
     }
 
-    genfit::FitStatus getStatus() { return mFitStatus; }
-    genfit::AbsTrackRep *getTrackRep() { return mTrackRep; }
-    genfit::Track *getTrack() { return mFitTrack; }
-    void setGenerateHistograms( bool gen) { mGenHistograms = gen;}
+    
 
     // Store the planes for FTT and FST
     vector<genfit::SharedPlanePtr> mFTTPlanes;
