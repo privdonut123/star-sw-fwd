@@ -187,7 +187,7 @@ public:
 
             return TVector3( x, y, _z );
         } catch ( genfit::Exception e ){
-            LOG_INFO << "E: " << e.what() << endm;
+            // LOG_INFO << "E: " << e.what() << endm;
             return TVector3( -990, -990, -990 );
         }
 

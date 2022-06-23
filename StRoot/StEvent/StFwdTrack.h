@@ -64,8 +64,12 @@ public:
     const double ndf() const;
     const double pval() const;
 
+    // error on pT upper and lower 1-sigma values
+    // add access to cov matrix
+
     // Number of fit points used by GenFit
     const unsigned int   numberOfFitPoints() const;
+    // const unsigned int   numberOfPossibleFitPoints() const;
 
     // Number of points used in the track seed step
     // const unsigned int   numberOfSeedPoints() const;
