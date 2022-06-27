@@ -297,6 +297,11 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("fttPt",        &mTreeData. fttPt        );
         mTree->Branch("fttVertexId",  &mTreeData. fttVertexId  );
 
+        mTree->Branch("fstN",         &mTreeData. fstN, "fstN/I");
+        mTree->Branch("fstX",         &mTreeData. fstX  );
+        mTree->Branch("fstY",         &mTreeData. fstY  );
+        mTree->Branch("fstZ",         &mTreeData. fstZ  );
+
         // mc tracks
         mTree->Branch("mcN",        &mTreeData. mcN, "mcN/I");
         mTree->Branch("mcPt",       &mTreeData. mcPt );
@@ -711,7 +716,7 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
                 StFstSensorHitCollection * sc = wc->sensor( is );
 
                 StSPtrVecFstHit fsthits = sc->hits();
-
+                mTreeData.fstN = 0;
                 LOG_DEBUG << "fsthits.size() == " << fsthits.size() << endm;
                 for ( int ih = 0; ih < fsthits.size(); ih++ ){
                     float vR = fsthits[ih]->localPosition(0);
@@ -736,6 +741,12 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
                     FwdHit *hit = new FwdHit(count++, x0, y0, vZ, d, 0, hitCov3, nullptr);
                     // Add the hit to the hit map
                     hitMap[hit->getSector()].push_back(hit);
+
+                    mTreeData.fstX.push_back( x0 );
+                    mTreeData.fstY.push_back( y0 );
+                    mTreeData.fstZ.push_back( vZ );
+
+                    mTreeData.fstN++;
                 }
             } // loop is
         } // loop iw
@@ -772,6 +783,7 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     // we will reuse this to hold the cov mat
     TMatrixDSym hitCov3(3);
     
+    mTreeData.fstN = 0;
     for (unsigned int fsthit_index = 0; fsthit_index < hits.size(); fsthit_index++) {
         StRnDHit *hit = hits[fsthit_index];
     
@@ -802,6 +814,12 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         hitMap[fhit->getSector()].push_back(fhit);
         mFstHits.push_back( TVector3( hit->position().x(), hit->position().y(), hit->position().z())  );
 
+        mTreeData.fstX.push_back( hit->position().x() );
+        mTreeData.fstY.push_back( hit->position().y() );
+        mTreeData.fstZ.push_back( hit->position().z() );
+
+        mTreeData.fstN++;
+
     }
 } //loadFstHitsFromStEvent
 
@@ -822,6 +840,7 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     if ( mGenHistograms ) this->mHistograms["nHitsFSI"]->Fill(nfsi);
     // LOG_INFO << "# fsi hits = " << nfsi << endm;
 
+    mTreeData.fstN = 0;
     for (int i = 0; i < nfsi; i++) {
 
         g2t_fts_hit_st *git = (g2t_fts_hit_st *)g2t_fsi_hits->At(i);
@@ -868,6 +887,12 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
         hitCov3 = makeSiCovMat( TVector3( x, y, z ), mFwdConfig );
         FwdHit *hit = new FwdHit(count++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
         mFstHits.push_back( TVector3( x, y, z )  );
+
+        mTreeData.fstX.push_back( x );
+        mTreeData.fstY.push_back( y );
+        mTreeData.fstZ.push_back( z );
+
+        mTreeData.fstN++;
 
         // Add the hit to the hit map
         hitMap[hit->getSector()].push_back(hit);
