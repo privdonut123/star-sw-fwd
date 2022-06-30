@@ -88,7 +88,7 @@ void fwd_tracking(      int n = 500,
         // FwdTrack and FcsCluster assciation
         gSystem->Load("StFcsTrackMatchMaker");
         StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
-        match->setMaxDistance(20);
+	match->setMaxDistance(6,10);
         match->setFileName("fcstrk.root");
         match->SetDebug();
     }

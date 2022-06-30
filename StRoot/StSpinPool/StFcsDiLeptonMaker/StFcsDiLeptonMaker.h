@@ -34,7 +34,8 @@ private:
   float mConeR=0.5;          //Isolation Cone Radius
   float mConeCut=0.6;        //E_lepton/Cone ratio cut
   float mSigmaMaxCut=0.7;    //Cluster Sigma Max cut
-  float mPTETCut=0.3;        //TrackPT/FcsET > Threshold
+  float mETPTCutLow=0.3;     //FcsET/TrackPT > ThresholdLow
+  float mETPTCutHigh=1.7;    //FcsET/TrackPT < ThresholdHigh
 
   TH1F *mETot[mNCut];
   TH1F *mHTot[mNCut];

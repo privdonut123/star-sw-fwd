@@ -124,7 +124,6 @@ void runSimBfc( Int_t nEvents=1000, Int_t run=1, const char* pid="JPsi", float v
   //FwdTrack and FcsCluster assciation
   gSystem->Load("StFcsTrackMatchMaker");
   StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
-  match->setMaxDistance(20);
   TString matchfile(outfile); matchfile.ReplaceAll(".root",".match.root");
   match->setFileName(matchfile.Data());
   match->SetDebug(debug);
