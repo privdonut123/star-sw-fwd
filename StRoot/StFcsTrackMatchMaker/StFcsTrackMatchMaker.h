@@ -26,8 +26,8 @@ public:
     int Finish();
 
     void setFileName(char* file){mFilename=file;} 
-    void setMaxDistance(float v) {mMaxDistance=v;}
-    void setMinEnergy(float v) {mMinEnergy=v;}
+    void setMaxDistance(float ecal, float hcal) {mMaxDistance[0]=ecal; mMaxDistance[1]=hcal;}
+    void setMinEnergy(float ecal, float hcal) {mMinEnergy[0]=ecal; mMinEnergy[1]=hcal;}
 
 private:
     StFwdTrackCollection* mFwdTrkColl=0;
@@ -38,8 +38,8 @@ private:
     TFile* mFile=0;
     char* mFilename=0;
 
-    float mMaxDistance=10.0;
-    float mMinEnergy=0.1;
+    float mMaxDistance[2];
+    float mMinEnergy[2];
     
     TH1F* mNtrk[4];
     TH1F* mNclu[4];

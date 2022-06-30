@@ -43,7 +43,7 @@ Int_t StFcsDiLeptonMaker::Init(){
     mHTot[cut]  = new TH1F(Form("RHTot_%s", nameCut[cut]),Form("Epair/HTOT_%s",nameCut[cut]),50,0.0,3.0);
     mCone[cut]  = new TH1F(Form("RCone_%s", nameCut[cut]),Form("Epair/Cone_%s (R=%3.1f)",nameCut[cut],mConeR),50,0.0,1.1);
     mSigmax[cut]= new TH1F(Form("Sigmax_%s",nameCut[cut]),Form("SigmaMax_%s",  nameCut[cut]),50,0.0,2.0);
-    mPToverET[cut] = new TH1F(Form("PToverET_%s",nameCut[cut]),Form("TrackPT/EcalET_%s",nameCut[cut]),50,0.0,3.0);
+    mPToverET[cut] = new TH1F(Form("EToverPT_%s",nameCut[cut]),Form("EcalET/TrackPT_%s",nameCut[cut]),50,0.0,3.0);
     mChargeSum[cut]= new TH1F(Form("ChargeSum_%s",nameCut[cut]),Form("ChargeSum_%s",nameCut[cut]),5,-2.5,2.5); 
 
     mET[cut]   = new TH1F(Form("ET_%s"  ,nameCut[cut]),Form("ET_%s"   ,nameCut[cut]),50,0.0,5.0);
@@ -166,13 +166,13 @@ Int_t StFcsDiLeptonMaker::Make(){
   if(highest[0]->tracks().size()>0) {
     trk1=highest[0]->tracks()[0]; 
     pt1=trk1->momentum().perp(); 
-    r1=pt1/ETN;
+    r1=ETN/pt1;
     cg1=trk1->charge();
   }
   if(highest[1]->tracks().size()>0) {
     trk2=highest[1]->tracks()[0]; 
     pt2=trk2->momentum().perp(); 
-    r2=pt2/ETS;
+    r2=ETS/pt2;
     cg2=trk2->charge();
   } 
   LOG_INFO << Form("trk1 pt=%6.2f et=%6.2f R=%6.4f cg=%2d",pt1,ETN,r1,cg1)<<endm;
@@ -183,7 +183,7 @@ Int_t StFcsDiLeptonMaker::Make(){
     if(cut==2 && ratioHTOT<mHTotCut) break;
     if(cut==3 && (ratioConeN<mConeCut || ratioConeS<mConeCut)) break;    
     if(cut==4 && (SigmaMaxN > mSigmaMaxCut || SigmaMaxS > mSigmaMaxCut) ) break;
-    if(cut==5 && (r1 < mPTETCut || r2 < mPTETCut)) break;    
+    if(cut==5 && (r1 < mETPTCutLow || r2 < mETPTCutLow || r1 > mETPTCutHigh || r2 > mETPTCutHigh )) break;    
     if(cut==6 && cg1 + cg2 != 0) break;
 
     mETot[cut]->Fill(ratioETOT);

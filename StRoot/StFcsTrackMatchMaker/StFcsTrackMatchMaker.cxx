@@ -24,7 +24,12 @@
 
 ClassImp(StFcsTrackMatchMaker)
 
-StFcsTrackMatchMaker::StFcsTrackMatchMaker(const char* name): StMaker(name) {}
+StFcsTrackMatchMaker::StFcsTrackMatchMaker(const char* name): StMaker(name) {
+  mMinEnergy[0]=0.1;   // ~1/3 MIP
+  mMinEnergy[1]=0.5;   // ~1/3 MIP
+  mMaxDistance[0]=6.0;
+  mMaxDistance[1]=10.0;
+}
 
 StFcsTrackMatchMaker::~StFcsTrackMatchMaker(){}
 
@@ -51,16 +56,16 @@ int StFcsTrackMatchMaker::Init(){
     mNtrk[1]= new TH1F("NTrk_Hcal","NTrk_Hcal",10,0.0,10.0);
     mNclu[1]= new TH1F("NHcalClu_Trk","NHcalClu_Trk",10,0.0,10.0);
 
-    mNtrk[2]= new TH1F("NTrk","NTrk/evt",100,0.0,1000.0);
+    mNtrk[2]= new TH1F("NTrk","NTrk/evt",50,0.0,100.0);
     mNtrk[3]= new TH1F("NGoodTrk","NGoodTrk/evt",20,0.0,20.0);
 
-    mNclu[2]= new TH1F("NEcalClu","NEcalClu/evt",10,0.0,10.0);
-    mNclu[3]= new TH1F("NHcalClu","NHcalClu/evt",10,0.0,10.0);
+    mNclu[2]= new TH1F("NEcalClu","NEcalClu/evt",30,0.0,30.0);
+    mNclu[3]= new TH1F("NHcalClu","NHcalClu/evt",30,0.0,30.0);
 
     mPtEt[0] =new TH1F("ETovPT_E","ETovPT_E",50,0.0,2.0);
     mPtEt[1] =new TH1F("ETovPT_EH","ETovPT_E+H",50,0.0,2.0);
-    mPtEt2[0]=new TH2F("ETPT_E", "ETovPT_E; ET(Ecal); TrkPT",50,0.0,8.0,50,0.0,8.0);
-    mPtEt2[1]=new TH2F("ETPT_EH","ETovPT_E+H ET(E+H); TrkPT",50,0.0,8.0,50,0.0,8.0);
+    mPtEt2[0]=new TH2F("ETPT_E", "ETvsPT_E; ET(Ecal); TrkPT",50,0.0,8.0,50,0.0,8.0);
+    mPtEt2[1]=new TH2F("ETPT_EH","ETvsPT_E+H ET(E+H); TrkPT",50,0.0,8.0,50,0.0,8.0);
 
     mCharge[0]=new TH1F("Charge_E","Charge_E",3,-1.5,1.5);
     mCharge[1]=new TH1F("Charge_H","Charge_H",3,-1.5,1.5);
@@ -123,7 +128,7 @@ int StFcsTrackMatchMaker::Make(){
       for(int iclu=0; iclu<nclu; iclu++){
 	StFcsCluster* clu=mFcsColl->clusters(det)[iclu];
 	float energy=clu->energy();
-	if(energy>mMinEnergy){
+	if(energy>mMinEnergy[ehp]){
 	  StThreeVectorD xyz=mFcsDb->getStarXYZfromColumnRow(det,clu->x(),clu->y());
 	  double dx = xyz.x() - proj.x();
 	  double dy = xyz.y() - proj.y();
@@ -131,11 +136,11 @@ int StFcsTrackMatchMaker::Make(){
 	  if(Debug()) LOG_INFO << Form("EHP=%1d dx = %6.2f - %6.2f  = %6.2f dy = %6.2f - %6.2f  = %6.2f dr=%6.2f",
 				       ehp,xyz.x(),proj.x(),dx,xyz.y(),proj.y(),dy,dr) << endm;
 	  if(mFile){
-	    if(fabs(dy)<mMaxDistance) mHdx[ehp]->Fill(dx);
-	    if(fabs(dx)<mMaxDistance) mHdy[ehp]->Fill(dy);
+	    if(fabs(dy)<mMaxDistance[ehp]) mHdx[ehp]->Fill(dx);
+	    if(fabs(dx)<mMaxDistance[ehp]) mHdy[ehp]->Fill(dy);
 	    mHdr[ehp]->Fill(dr);
 	  }
-	  if(dr<mMaxDistance){
+	  if(dr<mMaxDistance[ehp]){
 	    if(ehp==0){trk->addEcalCluster(clu);}
 	    if(ehp==1){trk->addHcalCluster(clu);}
 	    clu->addTrack(trk);
@@ -160,12 +165,13 @@ int StFcsTrackMatchMaker::Make(){
     }
   }
   for(int det=0; det<4; det++){
+    int ehp=det/2;
     int nclu  = mFcsColl->numberOfClusters(det);
     for(int iclu=0; iclu<nclu; iclu++){
       StFcsCluster* clu=mFcsColl->clusters(det)[iclu];
       clu->sortTrackByPT();
       if(Debug()){
-	if(clu->energy() > mMinEnergy){
+	if(clu->energy() > mMinEnergy[ehp]){
 	  LOG_INFO << Form("FCS DET=%d ET=%6.2f NTrk=%1d",
 			   clu->detectorId(), clu->fourMomentum().perp(), clu->tracks().size()) << endm;
 	}
@@ -198,9 +204,9 @@ int StFcsTrackMatchMaker::Make(){
       }
       if(nh>0){
 	StFcsCluster* hclu=trk->hcalClusters()[0]; //Take top ET ones 
-	double eth=hclu->fourMomentum().perp();
-	mPtEt[0]->Fill((ete+eth)/pt);
-	mPtEt2[0]->Fill(ete+eth,pt);
+	double eth=hclu->fourMomentum().perp() + ete;
+	mPtEt[1]->Fill(eth/pt);
+	mPtEt2[1]->Fill(eth,pt);
 	mCharge[1]->Fill(trk->charge());
 	mXY[1]->Fill(trk->mProjections[1].XYZ.x(),trk->mProjections[1].XYZ.y());
       }
@@ -213,7 +219,7 @@ int StFcsTrackMatchMaker::Make(){
       nc[ehp]+= nclu;
       for(int iclu=0; iclu<nclu; iclu++){
 	StFcsCluster* clu=mFcsColl->clusters(det)[iclu];
-	if(clu->energy() > mMinEnergy){
+	if(clu->energy() > mMinEnergy[ehp]){
 	  mNtrk[ehp]->Fill(clu->tracks().size());
 	}
       }
