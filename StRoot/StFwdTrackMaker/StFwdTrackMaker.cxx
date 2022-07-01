@@ -292,7 +292,7 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("fttY",         &mTreeData. fttY  );
         mTree->Branch("fttZ",         &mTreeData. fttZ  );
         
-        mTree->Branch("fttTrackId",   &mTreeData. fttTrackId,  "fttTrackId/I");
+        mTree->Branch("fttTrackId",   &mTreeData. fttTrackId   );
         mTree->Branch("fttVolumeId",  &mTreeData. fttVolumeId  );
         mTree->Branch("fttPt",        &mTreeData. fttPt        );
         mTree->Branch("fttVertexId",  &mTreeData. fttVertexId  );
@@ -301,6 +301,7 @@ int StFwdTrackMaker::Init() {
         mTree->Branch("fstX",         &mTreeData. fstX  );
         mTree->Branch("fstY",         &mTreeData. fstY  );
         mTree->Branch("fstZ",         &mTreeData. fstZ  );
+        mTree->Branch("fstTrackId",   &mTreeData. fstTrackId  );
 
         // mc tracks
         mTree->Branch("mcN",        &mTreeData. mcN, "mcN/I");
@@ -891,6 +892,7 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
         mTreeData.fstX.push_back( x );
         mTreeData.fstY.push_back( y );
         mTreeData.fstZ.push_back( z );
+        mTreeData.fstTrackId.push_back( track_id );
 
         mTreeData.fstN++;
 
