@@ -399,7 +399,7 @@ Int_t StFstQAMaker::Finish(){
   if(mDoTreeOutput)
   {
     if( !mOutFile ) {
-      LOG_WARN << "Error recreating file '" << mRootFilename << "'" << endl;
+      LOG_WARN << "Error recreating file" << endl;
       ierr = kStWarn;
     }
     mOutFile->cd();
