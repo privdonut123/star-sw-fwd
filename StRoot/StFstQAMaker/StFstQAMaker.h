@@ -24,6 +24,7 @@ class TH2F;
 class TH2S;
 class TProfile;
 class TTree;
+class TFile;
 
 class StFstQAMaker : public StMaker {
 public:
@@ -44,6 +45,7 @@ public:
 
 protected:
   // TFile* myRootFile;
+  TFile* mOutFile;
   TTree *fstRawHitTree;
   TTree *fstHitTree;
 

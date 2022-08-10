@@ -31,9 +31,9 @@
 
         mv OUTPUT.event.root ${FILEBASENAME}.event.root
         mv OUTPUT.MuDst.root ${FILEBASENAME}.MuDst.root
-        mv fttQA.root ${FILEBASENAME}.fttQA.root}
-        mv fttRawHitTime.dat ${FILEBASENAME}.fttRawHitTime.dat}
-        #fstQa should be named correctly already
+        mv fttQA.root ${FILEBASENAME}.fttQA.root
+        mv fttRawHitTime.dat ${FILEBASENAME}.fttRawHitTime.dat
+        mv OUTPUT.fstQa.root ${FILEBASENAME}.fstQa.root
     </command>
 
     <SandBox>
