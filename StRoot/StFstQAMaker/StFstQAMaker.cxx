@@ -399,7 +399,7 @@ Int_t StFstQAMaker::Finish(){
   if(mDoTreeOutput)
   {
     if( !mOutFile ) {
-      LOG_WARN << "Error recreating file" << endl;
+      LOG_WARN << "Error: No output file created!" << endl;
       ierr = kStWarn;
     }
     mOutFile->cd();
