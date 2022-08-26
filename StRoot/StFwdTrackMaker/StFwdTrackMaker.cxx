@@ -818,6 +818,7 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         mTreeData.fstX.push_back( hit->position().x() );
         mTreeData.fstY.push_back( hit->position().y() );
         mTreeData.fstZ.push_back( hit->position().z() );
+        mTreeData.fstTrackId.push_back( hit->idTruth() );
 
         mTreeData.fstN++;
 
@@ -1495,6 +1496,12 @@ void StFwdTrackMaker::Clear(const Option_t *opts) {
         mTreeData.fttX.clear();
         mTreeData.fttY.clear();
         mTreeData.fttZ.clear();
+        mTreeData.fttTrackId.clear();
+
+        mTreeData.fstX.clear();
+        mTreeData.fstY.clear();
+        mTreeData.fstZ.clear();
+        mTreeData.fstTrackId.clear();
 
         mTreeData.thdX.clear();
         mTreeData.thdY.clear();
