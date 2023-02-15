@@ -34,6 +34,7 @@ class StMuFmsCollection;
 class StMuFcsCollection;
 class StMuFttCollection;
 class StMuFstCollection;
+class StMuFwdTrackCollection;
 class StMuPmdCollection;
 
 class StEvent;
@@ -117,7 +118,8 @@ public:
 		    TClonesArray** fms_ptca=0, 
             TClonesArray** fcs_ptca=0, 
             TClonesArray** ftt_ptca=0, 
-            TClonesArray** fst_ptca=0, 
+            TClonesArray** fst_ptca=0,
+            TClonesArray** fwd_ptca=0, 
 		    TClonesArray** pmd_ptca=0, 
 		    TClonesArray** tof_ptca=0, 
 		    TClonesArray** btof_ptca=0,
@@ -132,6 +134,7 @@ public:
             StMuFcsCollection *fcs_col=0, 
             StMuFttCollection *ftt_col=0, 
             StMuFstCollection *fst_col=0, 
+            StMuFwdTrackCollection *fwd_track_col=0, 
 		    TClonesArray *pmd_tca=0, 
 		    StMuPmdCollection *pmd_col=0
 );
@@ -189,6 +192,8 @@ public:
   static TClonesArray** fttArrays;
   /// array of TClonesArrays for the stuff inherited from the Fst
   static TClonesArray** fstArrays;
+  /// array of TClonesArrays for the stuff inherited from the FWD Tracks 
+  static TClonesArray** fwdTrackArrays;
   /// array of TClonesArrays for the stuff inherited from the Pmd 
   static TClonesArray** pmdArrays;
   /// array of TClonesArrays for the stuff inherited from the TOF
@@ -217,6 +222,8 @@ public:
   static StMuFttCollection *mMuFttCollection; 
   /// pointer to FstCollection (manages the FstArrays)
   static StMuFstCollection *mMuFstCollection; 
+  /// pointer to FwdTrackCollection (manages the FwdTrackArrays)
+  static StMuFwdTrackCollection *mMuFwdTrackCollection; 
   /// pointer to PmdCollection (manages the PmdArrays)
   static StMuPmdCollection *mMuPmdCollection;
   /// pointer to EmcCollecion (for Emc clusterfinding etc)
@@ -372,6 +379,8 @@ public:
   static StMuFttCollection* muFttCollection() { return mMuFttCollection; }
   /// returns pointer to current StMuFstCollection
   static StMuFstCollection* muFstCollection() { return mMuFstCollection; }
+  /// returns pointer to current StMuFwdTrackCollection
+  static StMuFwdTrackCollection* muFwdTrackCollection() { return mMuFwdTrackCollection; }
   /// returns pointer to current StMuPmdCollection
   static StMuPmdCollection* pmdCollection() { if (mMuPmdCollectionArray)  return (StMuPmdCollection*) mMuPmdCollectionArray->UncheckedAt(0); else return mMuPmdCollection; }
   /// returns pointer to current StEmcCollection
