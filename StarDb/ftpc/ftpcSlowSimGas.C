@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/ftpcSlowSimGas Allocated rows: 132  Used rows: 132  Row size: 24 bytes
 //  Table: ftpcSlowSimGas_st[0]--> ftpcSlowSimGas_st[131]
@@ -1065,5 +1065,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.lorentzAngle	 =   0.130551; // lorentz angle of drift electrons ;
 tableSet->AddAt(&row,131);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

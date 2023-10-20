@@ -1203,6 +1203,7 @@ Bfc_st BFC[] = {
   {"StEvent" ,"","","globT,SCL,TRGDef,StBichsel,EmcUtil,TbUtil,detDb","","StEvent","Load StEvent",kFALSE},
   {"PxlUtil" ,"" ,"","","", "StPxlUtil","Load StPxlUtil",kFALSE},
   {"IstUtil" ,"" ,"","","", "StIstUtil","Load StIstUtil",kFALSE},
+  {"FstUtil" ,"" ,"","","", "StFstUtil","Load StFstUtil",kFALSE},
   {"SsdUtil" ,"" ,"","StarMagField,StEvent","" ,"Geom,StSsdUtil","Load SSD Util",kFALSE},
   {"SstUtil" ,"" ,"","StarMagField,StEvent","" ,"Geom,StSstUtil","Load SST Util",kFALSE},
   {"EmcUtil" ,"" ,"","emc_T,geomT,StDbT","" ,"StEmcUtil","Load StEmcUtil",kFALSE},
@@ -1213,7 +1214,7 @@ Bfc_st BFC[] = {
   {"l3Util" ,"","","" ,"","","WARNING *** Option is OBSOLETE ***",kFALSE},
   {"PmdUtil" ,"" ,"","","", "StPmdUtil","Load StPmdUtil",kFALSE},
   {"QUtils" ,"" ,"","PmdUtil,EmcUtil","", "","Load QA Libs dependencies",kFALSE},
-  {"Stu" ,"" ,"","","", "StEventUtilities","Load StEventUtilities",kFALSE},
+  {"Stu" ,"" ,"","","", "StTpcDb,StEventUtilities","Load StEventUtilities",kFALSE},
   {"MuDSTDeps" ,"","","StEvent,Stu,StBichsel",""
    , "StStrangeMuDstMaker,Tree","Load MuDST misc. dependencies",kFALSE},
   {"MuDST" ,"" ,"","MuDSTDeps,EmcUtil,TofUtil,BTofUtil,PmdUtil",""
@@ -1409,14 +1410,14 @@ Bfc_st BFC[] = {
   {"fst","fstChain","","fstRawHit,fstCluster,fstHit", "StMaker","StChain","FST chain" ,kFALSE},
   {"fstFastSim","","fstChain","StMcEvent,StEvent","StFstFastSimMaker","StFstSimMaker","FST fast simulator",
                                                                                                     kFALSE},
-  {"fstRawHit", "", "fstChain", "fstUtil,fstDb","StFstRawHitMaker", "StFstRawHitMaker","FST raw hit maker",
+  {"fstRawHit", "", "fstChain", "FstUtil,fstDb","StFstRawHitMaker", "StFstRawHitMaker","FST raw hit maker",
                                                                                                     kFALSE},
   {"fstCluster", "", "fstChain", "fstRawHit","StFstClusterMaker", "StFstClusterMaker","FST Cluster maker",
                                                                                                     kFALSE},
   {"fstHit", "", "fstChain", "event,fstCluster", "StFstHitMaker", "StFstHitMaker","FST Hit Maker",
                                                                                                     kFALSE},
-  {"fstUtil" , "", "", "", "", "StFstUtil", "Fst Utilities",
-                                                                                                    kFALSE},
+  {"fstEvtRawHit", "", "", "fstRawHit", "","","Store FST Raw Hit in StEvent", kFALSE},
+  {"fstMuRawHit", "", "", "CMuDST,fstEvtRawHit", "","","Store FST Raw Hit in MuDst", kFALSE},
   {"ssddat" ,"","","ssd_daq" ,"","","SSD full chain for Real Data",kFALSE},
   {"sstdat" ,"","","sst_daq" ,"","","SST full chain for Real Data",kFALSE},
   {"ssd_daq","","","ssdCalDb,svt_T,-sls,-spa,ssdUtil","StSsdDaqMaker","StSsdDaqMaker","... SSD Daq",kFALSE},
@@ -1687,7 +1688,8 @@ Bfc_st BFC[] = {
   {"EMCmDST" ,"","MuDSTChain","MuDst", "StEmcMicroDstMaker","","Creates EMC MuDST",kFALSE},
   {"CMuDST" ,"","MuDSTChain","MuDst,StrngMuDST,Tree", "StMuDstMaker","","Writes Common MuDST",kFALSE},
   {"RMuDST" ,"","","CMuDST" ,"","","reads Common MuDST, do not disactivate if no output files",kFALSE},
-  {"picoWrite" ,"","PicoChain","picoDst","StPicoDstMaker","" ,"Writes picoDST format",kFALSE},
+  {"trgSimu" ,"","","" ,"StTriggerSimuMaker","StTriggerUtilities","trigger simu maker",kFALSE},
+  {"picoWrite" ,"","PicoChain","trgSimu,picoDst","StPicoDstMaker","" ,"Writes picoDST format",kFALSE},
   {"picoRead" ,"","PicoChain","picoDst","StPicoDstMaker","" ,"WritesRead picoDST format",kFALSE},
   {"PicoVtxDefault" ,"","","" ,"" ,"","pico Vtx default mode",kFALSE},
   {"PicoVtxVpd" ,"","","-PicoVtxDefault" ,"" ,"","pico Vtx cut on Tof and VPD mode",kFALSE},
@@ -2932,6 +2934,7 @@ Bfc_st BFC[] = {
   {"StEvent" ,"","","globT,SCL,TRGDef,StBichsel,EmcUtil,TbUtil,detDb","","StEvent","Load StEvent",kFALSE},
   {"PxlUtil" ,"" ,"","","", "StPxlUtil","Load StPxlUtil",kFALSE},
   {"IstUtil" ,"" ,"","","", "StIstUtil","Load StIstUtil",kFALSE},
+  {"FstUtil" ,"" ,"","","", "StFstUtil","Load StFstUtil",kFALSE},
   {"SsdUtil" ,"" ,"","StarMagField,StEvent","" ,"Geom,StSsdUtil","Load SSD Util",kFALSE},
   {"SstUtil" ,"" ,"","StarMagField,StEvent","" ,"Geom,StSstUtil","Load SST Util",kFALSE},
   {"EmcUtil" ,"" ,"","emc_T,geomT,StDbT","" ,"StEmcUtil","Load StEmcUtil",kFALSE},
@@ -2942,7 +2945,7 @@ Bfc_st BFC[] = {
   {"l3Util" ,"","","" ,"","","WARNING *** Option is OBSOLETE ***",kFALSE},
   {"PmdUtil" ,"" ,"","","", "StPmdUtil","Load StPmdUtil",kFALSE},
   {"QUtils" ,"" ,"","PmdUtil,EmcUtil","", "","Load QA Libs dependencies",kFALSE},
-  {"Stu" ,"" ,"","","", "StEventUtilities","Load StEventUtilities",kFALSE},
+  {"Stu" ,"" ,"","","", "StTpcDb,StEventUtilities","Load StEventUtilities",kFALSE},
   {"MuDSTDeps" ,"","","StEvent,Stu,StBichsel",""
    , "StStrangeMuDstMaker,Tree","Load MuDST misc. dependencies",kFALSE},
   {"MuDST" ,"" ,"","MuDSTDeps,EmcUtil,TofUtil,BTofUtil,PmdUtil",""
@@ -3138,14 +3141,14 @@ Bfc_st BFC[] = {
   {"fst","fstChain","","fstRawHit,fstCluster,fstHit", "StMaker","StChain","FST chain" ,kFALSE},
   {"fstFastSim","","fstChain","StMcEvent,StEvent","StFstFastSimMaker","StFstSimMaker","FST fast simulator",
                                                                                                     kFALSE},
-  {"fstRawHit", "", "fstChain", "fstUtil,fstDb","StFstRawHitMaker", "StFstRawHitMaker","FST raw hit maker",
+  {"fstRawHit", "", "fstChain", "FstUtil,fstDb","StFstRawHitMaker", "StFstRawHitMaker","FST raw hit maker",
                                                                                                     kFALSE},
   {"fstCluster", "", "fstChain", "fstRawHit","StFstClusterMaker", "StFstClusterMaker","FST Cluster maker",
                                                                                                     kFALSE},
   {"fstHit", "", "fstChain", "event,fstCluster", "StFstHitMaker", "StFstHitMaker","FST Hit Maker",
                                                                                                     kFALSE},
-  {"fstUtil" , "", "", "", "", "StFstUtil", "Fst Utilities",
-                                                                                                    kFALSE},
+  {"fstEvtRawHit", "", "", "fstRawHit", "","","Store FST Raw Hit in StEvent", kFALSE},
+  {"fstMuRawHit", "", "", "CMuDST,fstEvtRawHit", "","","Store FST Raw Hit in MuDst", kFALSE},
   {"ssddat" ,"","","ssd_daq" ,"","","SSD full chain for Real Data",kFALSE},
   {"sstdat" ,"","","sst_daq" ,"","","SST full chain for Real Data",kFALSE},
   {"ssd_daq","","","ssdCalDb,svt_T,-sls,-spa,ssdUtil","StSsdDaqMaker","StSsdDaqMaker","... SSD Daq",kFALSE},
@@ -3416,7 +3419,8 @@ Bfc_st BFC[] = {
   {"EMCmDST" ,"","MuDSTChain","MuDst", "StEmcMicroDstMaker","","Creates EMC MuDST",kFALSE},
   {"CMuDST" ,"","MuDSTChain","MuDst,StrngMuDST,Tree", "StMuDstMaker","","Writes Common MuDST",kFALSE},
   {"RMuDST" ,"","","CMuDST" ,"","","reads Common MuDST, do not disactivate if no output files",kFALSE},
-  {"picoWrite" ,"","PicoChain","picoDst","StPicoDstMaker","" ,"Writes picoDST format",kFALSE},
+  {"trgSimu" ,"","","" ,"StTriggerSimuMaker","StTriggerUtilities","trigger simu maker",kFALSE},
+  {"picoWrite" ,"","PicoChain","trgSimu,picoDst","StPicoDstMaker","" ,"Writes picoDST format",kFALSE},
   {"picoRead" ,"","PicoChain","picoDst","StPicoDstMaker","" ,"WritesRead picoDST format",kFALSE},
   {"PicoVtxDefault" ,"","","" ,"" ,"","pico Vtx default mode",kFALSE},
   {"PicoVtxVpd" ,"","","-PicoVtxDefault" ,"" ,"","pico Vtx cut on Tof and VPD mode",kFALSE},
@@ -4084,12 +4088,12 @@ Int_t StBFChain::Instantiate()
     }
 
     if (maker == "StStrangeMuDstMaker" && GetOption("CMuDST")&& GetOption("StrngMuDST") ) {
-      TString cmd(Form("StStrangeMuDstMaker *pSMMk = (StStrangeMuDstMaker*) %p;",mk));
-      cmd += "pSMMk->DoV0();";                                 // Set StrangeMuDstMaker parameters
-      cmd += "pSMMk->DoXi();";
-      cmd += "pSMMk->DoKink();";
-      cmd += "pSMMk->SetNoKeep();";                            // Set flag for output OFF
-      ProcessLine(cmd);
+
+      mk -> SetAttr( "DoV0", 1 );
+      mk -> SetAttr( "DoXi", 1 );
+      mk -> SetAttr( "DoKink", 1 );
+      mk -> SetAttr( "SetNoKeep", 1 );
+
     }
 
     // Alex requested an option (not turned by default) to disable all
@@ -4100,6 +4104,16 @@ Int_t StBFChain::Instantiate()
     // Use status tables for raw BEMC data (helpful for QA)
     if ( maker == "StEmcRawMaker" && GetOption("BEmcChkStat"))
       mk->SetAttr("BEmcCheckStatus",kTRUE);
+      
+    // trigger simu maker
+    if ( maker == "StEmcRawMaker" && GetOption("picoWrite") ) {
+      mk->SetMode(10);  // picoDst production - save all BTOW hits for triggerSimuMaker
+    }
+
+    // trigger simu maker
+    if ( maker == "StTriggerSimuMaker" && GetOption("picoWrite") ) {
+      mk->SetMode(10);  // picoDst production
+    }
 
     // MuDST and ezTree. Combinations are
     //  ezTree         -> ezTree only
@@ -4110,6 +4124,16 @@ Int_t StBFChain::Instantiate()
       if ( ! GetOption("CMuDST")) cmd += "pMuMk->SetStatus(\"*\",0);";
       cmd += "pMuMk->SetStatus(\"EztAll\",1);";
       ProcessLine(cmd);
+    }
+
+    // FST Raw hits in StEvent
+    if (maker == "StFstRawHitMaker" && GetOption("fstEvtRawHit") ){
+      mk->SetAttr("fstEvtRawHit", kTRUE);
+    }
+
+    // FST Raw hits in MuDST
+    if (maker == "StMuDstMaker" && GetOption("fstMuRawHit") ){
+      mk->SetAttr("fstMuRawHit", kTRUE);
     }
 
     if ( maker == "StPicoDstMaker"){
@@ -4217,7 +4241,10 @@ Int_t StBFChain::Instantiate()
 	if( GetOption("OECap")      ) mk->SetAttr("OECap"      , kTRUE);
 	if( GetOption("OIFC")       ) mk->SetAttr("OIFC"       , kTRUE);
 	if( GetOption("OSpaceZ")    ) mk->SetAttr("OSpaceZ"    , kTRUE);
-	if( GetOption("OSpaceZ2")   ) mk->SetAttr("OSpaceZ2"   , kTRUE);
+	if( GetOption("OSpaceZ2")   ) {
+          if( GetOption("FXT")      ) mk->SetAttr("OSpaceFXT"  , kTRUE);
+          else                        mk->SetAttr("OSpaceZ2"   , kTRUE);
+        }
 	if( GetOption("OShortR")    ) mk->SetAttr("OShortR"    , kTRUE);
 	if( GetOption("OBMap2d")    ) mk->SetAttr("OBMap2d"    , kTRUE);
 	if( GetOption("OGridLeak")  ) mk->SetAttr("OGridLeak"  , kTRUE);

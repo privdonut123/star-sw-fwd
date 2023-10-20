@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/ftpcTrackingPars Allocated rows: 1  Used rows: 1  Row size: ??? bytes
 //  Table: ftpcTrackingPars_st[0]--> ftpcTrackingPars_st[0]
@@ -106,5 +106,5 @@ memset(&row,0,tableSet->GetRowSize());
 
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

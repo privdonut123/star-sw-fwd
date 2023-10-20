@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/svgpars/geom Allocated rows: 7  Used rows: 7 
 //  Table: svg_geom_st[0]--> svg_geom_st[7]
@@ -142,5 +142,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.x[2]	 =        -18;
 tableSet->AddAt(&row,6);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

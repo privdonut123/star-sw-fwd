@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/cal/org_ped_bsmde Allocated rows: 18000  Used rows: 18000  Row size: 4 bytes
 //  Table: emc_pedestal_st[0]--> emc_pedestal_st[17999]
@@ -10,5 +10,5 @@ TDataSet *CreateTable() {
   row.ped	 =          0; // pedestal for ADC channel ;
   for (Int_t i=0;i<18000;i++) tableSet->AddAt(&row,i);
   // ----------------- end of code ---------------
-  return (TDataSet *)tableSet;
+  return (St_DataSet *)tableSet;
 }

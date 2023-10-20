@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/sprpars/sprpar Allocated rows: 1  Used rows: 1  Row size: 8 bytes
 //  Table: spr_sprpar_st[0]--> spr_sprpar_st[0]
@@ -13,5 +13,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.p	 =          0; // momentum cut off for dE/dx in GeV/c ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

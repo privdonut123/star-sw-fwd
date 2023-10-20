@@ -14,6 +14,7 @@
 
 #include "TCanvas.h"
 #include "TCernLib.h"
+#include "TF1.h"
 #include "TH2F.h"
 #include "TLine.h"
 #include "TString.h"
@@ -30,7 +31,8 @@ namespace FttGlobal {
 }
 
 StFttSlowSimMaker::StFttSlowSimMaker(const Char_t *name)
-    : StMaker{name}, mDebug(kFALSE), mFttDb( nullptr )
+    : StMaker{name}
+    // : StMaker{name}, mDebug(kFALSE), mFttDb( nullptr )
     {
         LOG_DEBUG << "StFttSlowSimMaker start"  << endm;
         LOG_INFO << "******** StFttSlowSimMaker::StFttSlowSimMaker = "<<name<<endm;
@@ -89,7 +91,7 @@ int StFttSlowSimMaker::Init() {
     mTree->Branch("vmm",        &mTreeData. vmm);
     mTree->Branch("ch",         &mTreeData. ch);
     mTree->Branch("bcid",       &mTreeData. bcid);
-    mTree->Branch("dbcud",      &mTreeData. dbcud);
+    mTree->Branch("dbcud",      &mTreeData. dbcid);
     mTree->Branch("tb",         &mTreeData. tb);
     mTree->Branch("ADC",        &mTreeData. ADC);
     mTree->Branch("row",        &mTreeData. row);
@@ -153,7 +155,7 @@ Int_t StFttSlowSimMaker::Make() {
 
 
 
-    TSTring histoname;
+    TString histoname;
     LOG_INFO << "g2t_stg_hit table has " << nhits << endm;
     for (int i = 0; i < nhits; i++) {
         hit = (g2t_fts_hit_st *)hitTable->At(i);
@@ -208,9 +210,9 @@ Int_t StFttSlowSimMaker::Make() {
 
         // ----------- get the center strip --------------
         // get the local position
-        float xhit_local = -999;
-        float yhit_local = -999;
-        float zhit_local = -999;
+        double xhit_local = -999;
+        double yhit_local = -999;
+        double zhit_local = -999;
         Global2Local_2D(xhit_local,yhit_local,xhit,yhit,plane,quad); // convert the global position to sTGC module local position
 
         // get the strip information for center strip of MC point
@@ -227,9 +229,9 @@ Int_t StFttSlowSimMaker::Make() {
 
         //QA for the local X and local Y
         histoname = Form("LocalXY_Position_Plane_%d_Quad_%d",plane,quad);
-        mH2d[ histoname ]->Fill(xhit_local,yhit_local);
+        mH2d[ histoname.Data() ]->Fill(xhit_local,yhit_local);
         histoname = Form("LocalXY_Strip_Plane_%d_Quad_%d",plane,quad);
-        mH2d[ histoname ]->Fill(strip_x,strip_y);
+        mH2d[ histoname.Data() ]->Fill(strip_x,strip_y);
 
         //get the electronic information
         //get X, Y, diagnoalV, diagnoal H information separately 
@@ -240,7 +242,7 @@ Int_t StFttSlowSimMaker::Make() {
         mFttDb->reverseHardwareMap(feb, vmm, ch, row_x, strip_x);//strip and row
         SampleCluster(strip_x, xhit_local, row_x, sec, rdo, 0);
         // get the Y information
-        mFttDb->reverseHardwareMap(feb vmm, ch, row_x, strip_y);
+        mFttDb->reverseHardwareMap(feb, vmm, ch, row_x, strip_y);
         SampleCluster(strip_y, yhit_local, row_y, sec, rdo, 0);
         // get the Dv information
         double local_diag = sqrt(xhit_local*xhit_local+yhit_local*yhit_local);
@@ -261,13 +263,6 @@ Int_t StFttSlowSimMaker::Make() {
 
 
         // if ( feb % 2 != 0 ) { // odd
-        int feb = 0;
-
-        int vm = 0;
-        int vmm_ch = 0;
-        int bcid = 0;
-        int tb = 0;
-        int bcid_delta = 0;
         // below is the part write the tree and save some histograms for the QA
 
         hXY->Fill( xhit, yhit );
@@ -285,7 +280,7 @@ Int_t StFttSlowSimMaker::Make() {
 //     D(3) |  A(0)  
 //   ------------------
 //     C(4) |  B(1)  
-void StFttSlowSimMaker::Global2Local_2D(double &x_local, double &y_local, double x_global, double y_global, UChar_t i_plane, UChar_t i_quad)
+void StFttSlowSimMaker::Global2Local_2D(double &x_local, double &y_local, double x_global, double y_global, int i_plane, int i_quad)
 {
     // the input position is global position, do not need to add the quad information
 
@@ -332,7 +327,7 @@ bool StFttSlowSimMaker::is_Group5(int &row_x, int &row_y, double x, double y)
 }
 bool StFttSlowSimMaker::is_Group6(int &row_x, int &row_y, double x, double y)
 {
-    if( (360.09 <= x && x <= 504.2) && (172.29 <= y && y <= 315.4) ) {row_x = 1; row_y = 2; return kTRUE};
+    if( (360.09 <= x && x <= 504.2) && (172.29 <= y && y <= 315.4) ) {row_x = 1; row_y = 2; return kTRUE;}
     else return kFALSE;
 }
 bool StFttSlowSimMaker::is_Group7(int &row_x, int &row_y, double x, double y)
@@ -381,7 +376,7 @@ void StFttSlowSimMaker::GetStripandRow_Diag(float x_local, float y_local, int st
     strip_dh = -999;
 
     double intecpt = sqrt(x_local*x_local+y_local*y_local);
-    if ( x > y )
+    if ( x_local > y_local )
     {
         strip_dv = (intecpt-StFttDb::DiagStripShift)/StFttDb::stripPitch; //frist strip index is 0;
         strip_dh = (intecpt-StFttDb::DiagStripShift)/StFttDb::stripPitch; //frist strip index is 0;
@@ -392,7 +387,7 @@ void StFttSlowSimMaker::GetStripandRow_Diag(float x_local, float y_local, int st
             row_dh = 4;
         }
     }
-    else if ( x < y )
+    else if ( x_local < y_local )
     {
         strip_dv = (intecpt-StFttDb::DiagStripShift)/StFttDb::stripPitch; //frist strip index is 0;
         strip_dh = (intecpt-StFttDb::DiagStripShift)/StFttDb::stripPitch; //frist strip index is 0;
@@ -463,8 +458,8 @@ Int_t StFttSlowSimMaker::SampleCluster(int center_strip, int xhit_local, int row
                  << " integral_lowEdge = " << integral_lowEdge 
                  << " integral_higEdge = " << integral_higEdge 
                  << " ADC =  " << fClusterProfile->Integral(integral_lowEdge,integral_higEdge)
-                 << " factor = " << factor;
-                 << " Integral = " << Integral;
+                 << " factor = " << factor
+                 << " Integral = " << fClusterProfile->Integral(integral_lowEdge,integral_higEdge)
                  << endl;
 
             cout << " the information for the MC FttRawHit is ::" 
@@ -477,7 +472,7 @@ Int_t StFttSlowSimMaker::SampleCluster(int center_strip, int xhit_local, int row
          }
 
         //create a new raw hit
-        StFttRawHit *hit = new StFttRawHit( sec, rdo, feb, vm, ch, ADC, BCID, 1, 1 );// Zhen add it : now for the BCID, Tb, bcid_delta are set as a constant
+        StFttRawHit *hit = new StFttRawHit( sec, rdo, feb, vmm, ch, ADC, BCID, 1, 1 );// Zhen add it : now for the BCID, Tb, bcid_delta are set as a constant
         mFttCollection->addRawHit( hit ); //add it to the FttCollection
     }
 
@@ -508,7 +503,7 @@ void StFttSlowSimMaker::BookHistograms()
             mH2d[ name.Data() ] = new TH2D( name.Data(), title.Data(), 200, 0, 200, 200, 0, 200);
             name = Form("vmm_Plane%d_Quad%d",i,j);
             title = Form("vmm_Plane%d_Quad%d; vmm; Counts",i,j);
-            mH2d[ "feb" ] = new TH1D(name.Data(), title.Data(), 6,0,6,10,0,10);
+            mH2d[ "vmm" ] = new TH2D(name.Data(), title.Data(), 6,0,6,10,0,10);
 
             //TH1
             name = Form("feb_Plane%d_Quad%d",i,j);

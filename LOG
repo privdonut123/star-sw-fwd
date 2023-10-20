@@ -1,0 +1,484 @@
+JOB: TEST
+PID: 5
+Using existing sim.fzd
+root4star -b -q -l sim/fwd_tracking.C( 20, "sim.fzd", "sim/fast_track.xml" )
+
+Processing sim/fwd_tracking.C( 20, "sim.fzd", "sim/fast_track.xml" )...
+Load system libraries	 + liblog4cxx.so + libStStarLogger.so
+Create chain bfc
+BFC:WARN  - StBFChain::Setup	File BFC.C has been found as /direct/star+u/jdb/work/ssw/stgc-slow-sim/./StRoot/StBFChain/BFC.C
+QA :INFO  - ==============================================
+QA :INFO  - ============= You are in DEV ===============
+QA :INFO  - Requested chain bfc is :	fzin dev2022 sdt20211016 StEvent ReverseField geant gstar agml usexgeom bigbig fttDb
+QA :INFO  - sdt20211016 ... but still will be considered as a dynamic timestamp (Event Time) 20211016.0
+QA :INFO  -  Switch On               AgMLlib by AgML
+QA :INFO  -  Switch On                  AgML by Chain
+QA :INFO  -  Switch On                 StDbT by magF
+QA :INFO  -  Switch On                    db by magF
+QA :INFO  -  Switch On                 detDb by magF
+QA :INFO  -  Switch On                  magF by ReverseField
+QA :INFO  -  Switch On          ReverseField by Chain
+QA :INFO  -  Switch On                bigbig by Chain
+QA :INFO  -  Switch On                 globT by StEvent
+QA :INFO  -  Switch On                   SCL by StEvent
+QA :INFO  -  Switch On                 sim_T by TbUtil
+QA :INFO  -  Switch On                 tpc_T by TbUtil
+QA :INFO  -  Switch On                TbUtil by StEvent
+QA :INFO  -  Switch On             StBichsel by StEvent
+QA :INFO  -  Switch On                 emc_T by EmcUtil
+QA :INFO  -  Switch On                 geomT by EmcUtil
+QA :INFO  -  Switch On               EmcUtil by StEvent
+QA :INFO  -  Switch On                TRGDef by StEvent
+QA :INFO  -  Switch On               StEvent by Chain
+QA :INFO  -  Switch On                  Simu by gstar
+QA :INFO  -  Switch On                 gen_T by geantL
+QA :INFO  -  Switch On          StarMagField by geantL
+QA :INFO  -  Switch On                geantL by gstar
+QA :INFO  -  Switch On                 gstar by Chain
+QA :INFO  -  Switch Off                gstar by fzin
+QA :INFO  -  Switch On                  fzin by Chain
+QA :INFO  -  Switch On             xgeometry by UseXgeom
+QA :INFO  -  Switch On              UseXgeom by Chain
+QA :INFO  -  Switch On                 fttDb by Chain
+QA :INFO  -  Switch On                 geant by Chain
+QA :INFO  -  Switch On               dev2022 by Chain
+QA :INFO  - ==================               AgMLlib	is ON 	: AgML support
+QA :INFO  - ==================                  AgML	is ON 	: Alias VmcGeometry to AgiLGeometry
+QA :INFO  - ==================          ReverseField	is ON 	: Reverse Field option
+QA :INFO  - ==================                bigbig	is ON 	: Set NwGEANT =40Mwords
+QA :INFO  - ==================                  Simu	is ON 	: Simulated Data, force to use Db time stamp from used geometry
+QA :INFO  - ==================                 StDbT	is ON 	: Load StDb_Tables
+QA :INFO  - ==================                 emc_T	is ON 	: Load emc_Tables
+QA :INFO  - ==================                 gen_T	is ON 	: Load gen_Tables
+QA :INFO  - ==================                 geomT	is ON 	: Load geometry_Tables
+QA :INFO  - ==================                 globT	is ON 	: Load global_Tables
+QA :INFO  - ==================                 sim_T	is ON 	: Load sim_Tables
+QA :INFO  - ==================                 tpc_T	is ON 	: 8
+QA :INFO  - ==================          StarMagField	is ON 	: Load StarMagField
+QA :INFO  - ==================             xgeometry	is ON 	: AgML geometry-Mag.Field
+QA :INFO  - ==================                   SCL	is ON 	: Load StarClassLibrary
+QA :INFO  - ==================                TbUtil	is ON 	: Load StTableUtilities
+QA :INFO  - ==================             StBichsel	is ON 	: Load Bichsel model for dE/dx
+QA :INFO  - ==================               StEvent	is ON 	: Load StEvent
+QA :INFO  - ==================               EmcUtil	is ON 	: Load StEmcUtil
+QA :INFO  - ==================                geantL	is ON 	: Load GeantLibs
+QA :INFO  - ==================                  fzin	is ON 	: read gstar fz-file
+QA :INFO  - ==================              UseXgeom	is ON 	: suppress mortran version of geometry
+QA :INFO  - ==================                    db	is ON 	: 
+QA :INFO  - ==================                  magF	is ON 	: Mag.field map with scale factor from Db
+QA :INFO  - ==================                 detDb	is ON 	: Load StDetectorDbMaker library
+QA :INFO  - ==================                 fttDb	is ON 	: Load FttDbMaker
+QA :INFO  - ==================                 geant	is ON 	: passive GEANT
+QA :INFO  - ==================                TRGDef	is ON 	: Load StTriggerData
+QA :INFO  - ==================               dev2022	is ON 	: 
+QA :INFO  - Process [First=     1/Last=    -1/Total=    -1] Events
+QA :INFO  - Library libStarAgmlUtil        [        AgMLlib] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libStarAgmlUtil.so)	is loaded
+QA :INFO  - Library libStarAgmlLib         [        AgMLlib] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libStarAgmlLib.so)	is loaded
+QA :INFO  - Library libGeometry            [           AgML] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libGeometry.so)	is loaded
+QA :INFO  - Library libStarGeometry        [           AgML] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libStarGeometry.so)	is loaded
+QA :INFO  - Library libStDb_Tables         [          StDbT] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStDb_Tables.so)	is loaded
+QA :INFO  - Library libemc_Tables          [          emc_T] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libemc_Tables.so)	is loaded
+QA :INFO  - Library libgen_Tables          [          gen_T] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libgen_Tables.so)	is loaded
+QA :INFO  - Library libgeometry_Tables     [          geomT] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libgeometry_Tables.so)	is loaded
+QA :INFO  - Library libglobal_Tables       [          globT] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libglobal_Tables.so)	is loaded
+QA :INFO  - Library libsim_Tables          [          sim_T] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libsim_Tables.so)	is loaded
+QA :INFO  - Library libVMC                 [   StarMagField] (/cvmfs/star.sdcc.bnl.gov/star-spack/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/root-5.34.38-2xsbyl44rydmlzd6onmc6pamr2z7ujga/lib/libVMC.so)	is loaded
+QA :INFO  - Library libStarMagField        [   StarMagField] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStarMagField.so)	is loaded
+QA :INFO  - Library libxgeometry           [      xgeometry] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libxgeometry.so)	is loaded
+QA :INFO  - Library libStarClassLibrary    [            SCL] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStarClassLibrary.so)	is loaded
+QA :INFO  - Library libStTableUtilities    [         TbUtil] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStTableUtilities.so)	is loaded
+QA :INFO  - Library libStBichsel           [      StBichsel] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStBichsel.so)	is loaded
+QA :INFO  - Library libStEvent             [        StEvent] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStEvent.so)	is loaded
+QA :INFO  - Library libStEmcUtil           [        EmcUtil] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStEmcUtil.so)	is loaded
+QA :INFO  - Library libgeometry            [         geantL] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libgeometry.so)	is loaded
+QA :INFO  - Library libGeom                [         geantL] (/cvmfs/star.sdcc.bnl.gov/star-spack/spack/opt/spack/linux-rhel7-x86_64/gcc-4.8.5/root-5.34.38-2xsbyl44rydmlzd6onmc6pamr2z7ujga/lib/libGeom.so)	is loaded
+QA :INFO  - Library libSt_db_Maker         [         geantL] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libSt_db_Maker.so)	is loaded
+QA :INFO  - Library libSt_g2t              [         geantL] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libSt_g2t.so)	is loaded
+QA :INFO  - Library libSt_geant_Maker      [         geantL] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libSt_geant_Maker.so)	is loaded
+QA :INFO  - Library libStDbLib             [             db] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStDbLib.so)	is loaded
+QA :INFO  - Library libStDbBroker          [             db] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStDbBroker.so)	is loaded
+QA :INFO  - Library libStMagF              [           magF] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStMagF.so)	is loaded
+QA :INFO  - Library libStDetectorDbMaker   [          detDb] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStDetectorDbMaker.so)	is loaded
+QA :INFO  - Library libStFttDbMaker        [          fttDb] (/direct/star+u/jdb/work/ssw/stgc-slow-sim/.sl73_x8664_gcc485/lib/libStFttDbMaker.so)	is loaded
+QA :INFO  - Library libStTriggerDataMaker  [         TRGDef] (/afs/rhic.bnl.gov/star/packages/DEV/.sl73_x8664_gcc485/lib/libStTriggerDataMaker.so)	is loaded
+QA :INFO  - Input file name = sim.fzd
+QA :INFO  - Output root file name sim.root
+QA :INFO  - ProcessLine ((St_geant_Maker *) 0x88d2410)->SetNwGEANT(40);
+QA :INFO  - ProcessLine ((St_geant_Maker *) 0x88d2410)->SetInputFile("sim.fzd")
+(Int_t)0
+BFC:INFO  - Using DB flavors: sim+ofl
+QA :INFO  - StBFChain::SetDbOptions Switching to user chosen dynamic time-stamp (Start)20211016 0
+QA :INFO  - Chain may crash if time-stamp is not validated by db interface
+BFC:INFO  - St_db_Maker::SetDateTime : Setting Startup Date=20211016 Time=0
+QA :INFO  - blacklist tpc
+QA :INFO  - blacklist svt
+QA :INFO  - blacklist ssd
+QA :INFO  - blacklist sst
+QA :INFO  - blacklist eemc
+QA :INFO  - blacklist fms
+BFC:INFO  - ******** StFttDbMaker::StFttDbMaker = fttDbMkr
+BFC:INFO  - StBFChain::Instantiate ignore request for instantiation of St_geant_Maker("geant") because chain alreary has one.
+QA :INFO  - QAInfo:StBFChain            built Mar  3 2023 12:26:09 from Tag $Name:  $ $Id: StBFChain.h,v 1.59 2019/11/19 17:26:17 jeromel Exp $ 
+QA :INFO  - QAInfo:St_geant_Maker       built Mar  3 2023 12:29:49 from Tag $Name:  $ $Id: St_geant_Maker.h,v 1.60 2020/02/26 21:26:20 jwebb Exp $ 
+QA :INFO  - QAInfo:St_db_Maker          built Sep 30 2021 21:23:04 from Tag $Name:  $ $Id: St_db_Maker.h,v 1.46 2015/05/05 21:05:52 dmitry Exp $ 
+QA :INFO  - QAInfo:StMagFMaker          built Dec  1 2021 10:26:39 from Tag $Name:  $ $Id: StMagFMaker.h,v 1.8 2014/08/06 11:43:26 jeromel Exp $ 
+QA :INFO  - QAInfo:StDetectorDbMaker    built Dec 22 2022 01:09:40 from Tag $Name:  $ $Id: StDetectorDbMaker.h,v 1.5 2015/12/23 23:34:09 fisyak Exp $ 
+QA :INFO  - QAInfo:StFttDbMaker         built Nov 17 2022 01:09:56 from Tag $Name:  $ $Id: StMaker.h,v 1.101 2017/04/26 18:33:12 perev Exp $ 
+QA :INFO  -  StBFChain::bfc
+QA :INFO  -    St_geant_Maker::geant
+QA :INFO  -    St_db_Maker::db
+QA :INFO  -    StMagFMaker::MagField
+QA :INFO  -    StDetectorDbMaker::detDb
+QA :INFO  -    StFttDbMaker::fttDbMkr
+Adding StFttSlowSimMaker to chain
+BFC:INFO  - StBFChain::Init : Time=Fri Mar  3 15:10:46 2023 Cwd=/direct/star+u/jdb/work/ssw/stgc-slow-sim
+BFC:INFO  - TClass::TClass : no dictionary for class AgTransform is available
+BFC:INFO  - TClass::TClass : no dictionary for class AgParameterList<double> is available
+BFC:INFO  - Setting ideal geometry
+StChain:DEBUG - *** Call << St_geant_Maker:Init() ***
+QA :INFO  - QAInfo:St_geant_Maker       built Mar  3 2023 12:29:49 from Tag $Name:  $ $Id: St_geant_Maker.h,v 1.60 2020/02/26 21:26:20 jwebb Exp $ 
+ calling aginit 
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain fms
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain eemc
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain sst
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain ssd
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain svt
+St_db_Maker:INFO  - St_db_Maker::OpenMySQL : Block domain tpc
+St_db_Maker:INFO  - StDbManagerImpl::lookUpServers(): config file name is /afs/rhic.bnl.gov/star/packages/conf/dbLoadBalancerLocalConfig_BNL.xml
+There is no 1  /star/u/jdb/dbServers.xml
+ looking at 2 /afs/rhic.bnl.gov/star/packages/DEV/StDb/servers/dbServers.xml
+DB OVERRIDE default user with: jdb
+St_db_Maker:INFO  - StDbManagerImpl::lookUpServer() line=713 
+******** Order of Files searched for dbServers ********* 
+  3. /afs/rhic.bnl.gov/star/packages/DEV/StDb/servers/dbServers.xml
+********************************************************
+
+StHyperCacheManager: reading cache config from /afs/rhic.bnl.gov/star/packages/conf/hyperconfig.json
+St_db_Maker:INFO  - StDbLib: db server found in 3 iterations
+St_db_Maker:INFO  - MysqlDb::Connect: Load balancer took 0 ms, will use star-db05.rcf.bnl.gov:3316
+St_db_Maker:INFO  - Ssl_cipher = AES128-SHA
+St_db_Maker:INFO  - MysqlDb::Connect(host,user,pw,database,port) line=527 Server Connecting: DB=StarDb  Host=star-db05.rcf.bnl.gov:3316
+ --> Connection Time=0.0375009 sec    MysqlVersion=5.7.24
+StChain:DEBUG - *** Call << StMagFMaker:Init() ***
+StChain:DEBUG - *** Call << StDetectorDbMaker:Init() ***
+StChain:DEBUG - *** Call << StFttDbMaker:Init() ***
+StChain:DEBUG - *** Call << StFttSlowSimMaker:Init() ***
+St_geant_Maker:INFO  -  +++ New RunNumber found=1 (previous = -3)
+St_geant_Maker:INFO  - *********** Event Info **********************
+St_geant_Maker:INFO  - 	Run: 	    1  Event    -1  TimeStamp 20211016.     0  Bunch 0:0
+St_geant_Maker:INFO  - 	 EvtSize: 0 	InpTrig:    0 OutTrig:    0
+St_geant_Maker:INFO  - *********************************************
+St_geant_Maker:INFO  - St_geant_Maker::InitRun -- Do mag.field initialization
+St_geant_Maker:INFO  - St_geant_Maker::Init geom_gdata is found in fz-file ! St_geant_Maker::Init mfscale = 1
+St_geant_Maker:INFO  - St_geant_Maker::Init  SetFlavor("FullMagFPositive","MagFactor")
+StarMagField is locked, no modification from DB will be accepted
+StarMagField::ReadField  Reading  Magnetic Field  Measured Full Field,  Scale factor = 1.000000 
+StarMagField::ReadField  Filename is bfield_full_positive_2D.dat, Adjusted Scale factor = 1.000000 
+StarMagField::ReadField  Reading  2D Magnetic Field file: bfield_full_positive_2D.dat 
+StarMagField::ReadField  Reading 3D Magnetic Field file: bfield_full_positive_3D.dat 
+StarMagField::ReadField  Reading  3D Magnetic Field file: bfield_full_positive_2D.dat 
+StarMagField(0,0,0) = 4.9798St_geant_Maker:INFO  - St_geant_Maker::Init  Create StarMagField and lock it
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - StMagFMaker::InitRun passive mode. Don't update Mag.Field from DB
+StMagFMaker:INFO  - StMagFMaker::InitRun Bz(0) = 4.9798
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - StFttDbMaker::InitRun - run = 1
+StFttDbMaker:WARN  - StDbSql::QueryDb(table,time) line=439 fttDataWindows  has No data for query
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 180
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 180
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 180
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 186
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 186
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 186
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 149
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 149
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 149
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 171
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 171
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 171
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 165
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 165
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 165
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 174
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 174
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 174
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 172
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 172
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 172
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 251
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 251
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 251
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 158
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 158
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 158
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 171
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 171
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 171
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 175
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 175
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 175
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 172
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 172
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 172
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 127
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 127
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 127
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 191
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 191
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 191
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 172
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 172
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 172
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 187
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 187
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 187
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 172
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 172
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 172
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 200
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 200
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 200
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StOK(0) ***
+St_db_Maker:INFO  - *** St_db_Maker::Make() == StOK(0) ***
+StMagFMaker:INFO  - *** StMagFMaker::Make() == StOK(0) ***
+StDetectorDbMaker:INFO  - *** StDetectorDbMaker::Make() == StOK(0) ***
+StFttDbMaker:INFO  - *** StFttDbMaker::Make() == StOK(0) ***
+StFttSlowSimMaker:INFO  - StFttSlowSimMaker::Make
+N hits  = 148
+StFttSlowSimMaker:INFO  - g2t_stg_hit table has 148
+StFttSlowSimMaker:INFO  - mTreeData.x.size() == 148
+StFttSlowSimMaker:INFO  - *** StFttSlowSimMaker::Make() == StOK(0) ***
+St_geant_Maker:INFO  - *** St_geant_Maker::Make() == StEOF(2) ***
+QA :INFO  - =================================================================================
+QA :INFO  - QAInfo:Chain            StBFChain::bfc                  Ast =  1.51        Cpu =  1.01 
+QA :INFO  - QAInfo:Maker    StFttSlowSimMaker::fttSlowSim           Ast =  0.14( 9.0%) Cpu =  0.07( 6.9%) 
+QA :INFO  - QAInfo:Maker         StFttDbMaker::fttDbMkr             Ast =  0.00( 0.0%) Cpu =  0.00( 0.0%) 
+QA :INFO  - QAInfo:Maker    StDetectorDbMaker::detDb                Ast =  0.00( 0.0%) Cpu =  0.00( 0.0%) 
+QA :INFO  - QAInfo:Maker          StMagFMaker::MagField             Ast =  0.00( 0.0%) Cpu =  0.00( 0.0%) 
+QA :INFO  - QAInfo:Maker          St_db_Maker::db                   Ast =  0.82(54.0%) Cpu =  0.39(38.6%) 
+QA :INFO  - QAInfo:Maker       St_geant_Maker::geant                Ast =  0.56(36.9%) Cpu =  0.55(54.5%) 
+St_db_Maker::Init 
+Real time 0:00:00, CP time 0.150, 3 slices
+      MySQL::Init 
+Real time 0:00:00, CP time 0.240, 2 slices
+St_db_Maker::Make 
+Real time 0:00:00, CP time 0.010, 624 slices
+      MySQL::Make 
+Real time 0:00:00, CP time 0.000, 602 slices
+      MySQL::Data 
+Real time 0:00:00, CP time 0.000, 3 slices
+St_db_Maker:INFO  - St_db_Maker::dbStat : Evts = 20 dbEvts=1 Evts/dbEvts = 20.0
+
+St_db_Maker:INFO  - St_db_Maker::dbStat : dbData =       0.0 dbTime=0.00525091 dbData/dbTime=1.19122
+
+St_db_Maker:INFO  - St_db_Maker::dbStat : dbTime =       0.0 dbEvts=1 dbTime/dbEvts =0.00525091
+
+St_db_Maker:INFO  - St_db_Maker::dbStat : dbCpu  =       0.0 dbEvts=1  dbCpu/dbEvts =0
+
+St_db_Maker:INFO  - St_db_Maker::dbStat : dbTime/tot  =      0.41 dbCpu/tot=      0.00 
+
+QA :INFO  - St_geant_Maker summary -QA- total number of active volumes with hits: 11
+QA :INFO  - St_geant_Maker summary -QA- list of volumes with hits: 
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (ALL) nhits = 7174
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (BBCH:BPOL) nhits = 91
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (ECAH:ESCI) nhits = 2
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (EPDH:EPDT) nhits = 460
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (FSTH:FTUS) nhits = 1164
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (HCAH:HSCI) nhits = 968
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (STGH:STGL) nhits = 2143
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (STGH:STGP) nhits = 387
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (STGH:STGS) nhits = 791
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (WCAH:WSCI) nhits = 1164
+QA :INFO  - St_geant_Maker summary -QA- g2t hits (ZCAH:QSCI) nhits = 4
+QA :INFO  - St_geant_Maker summary -QA- energy deposition by container:
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (BBCH) Esum  = 0.0145582
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (ECAH) Esum  = 0.00104084
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (EPDH) Esum  = 0.0411694
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (FSTH) Esum  = 0.00852801
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (HCAH) Esum  = 0.461826
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (STGH) Esum  = 8.56842e-05
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (WCAH) Esum  = 1.54515
+QA :INFO  - St_geant_Maker summary -QA- g2t Esum (ZCAH) Esum  = 0.000201701
+StChain:INFO  - --------------Error Codes-------------------------
+StChain:INFO  -      nStOK   nStWarn    nStEOF    nStErr  nStFatal
+StChain:INFO  -        114         0         1         0         0
+StChain:INFO  - --------------------------------------------------
+               StMemStat::Summary(calls)        Min        Aver         Max         RMS 
+=============================================================================================
+
+This is the end of STAR ROOT -- Goodbye
+
+ ******************************************************
+ * Starting  starsim NwGEANT=  40000000 NwPAW=       0 *
+ **********************pid= 11315**********************
+ ******************************************************
+ *                                                    *
+ *            W E L C O M E    to   starsim           *
+ *                                                    *
+ *        Version INITIAL     17 May 2021             *
+ *                                                    *
+ ******************************************************
+ Version 1.29/04 of HIGZ started
+ CSINIT: CERNLIB_STDUNIX
+ CSINIT: CERNLIB_UNIX
+1*****  GEANT Version  3.21/08 Released on 230697
+0*****  Correction Cradle Version  0.0800
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+  AGZOPEN opening file sim.fzd
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+               : TOF version =   6.00000000      choice  =          13
+               : CALB patch  =          60          60
+               : ECAL version=   6.09999990      onoff   =           1           3
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+
+ FZIDIA.  LUN=  21  Unexpected EoF
+
+ FZIDIA.  LUN=  21 BAD DATA        
+          IQUEST(1/2/3)=  -3      90     103
+          IQUEST(11-) =   -3   0   3
+ AgZREAD error     3 entering NONE
+ *****  RZMAKE. OLD RZ format selected for RZDOC               
+ ***** event loop ends because the IQUEST flag set by program is      3
+

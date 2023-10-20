@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/ftpcFastSimPars Allocated rows: 1  Used rows: 1  Row size: 44 bytes
 //  Table: ftpcFastSimPars_st[0]--> ftpcFastSimPars_st[0]
@@ -22,5 +22,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.clusterChargeConversionFactor =        6.; // D= convert adc counts to charge;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

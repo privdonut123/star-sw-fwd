@@ -83,6 +83,7 @@ public:
     static const size_t nChPerVMM     = 64;
     static const size_t nStripGroupEdge = 8;
 
+    static double FirstStripEdge[2]; //mm
     static double X_shift_QuadA[nQuadPerPlane];//mm , x shift from pin hole to (0,0)
     static double X_shift_QuadB[nQuadPerPlane];//mm , x shift from pin hole to (0,0)
     static double X_shift_QuadC[nQuadPerPlane];//mm , x shift from pin hole to (0,0)
@@ -126,6 +127,7 @@ public:
     UChar_t getOrientation( int rob, int feb, int vmm, int row ) const;
     bool hardwareMap( int rob, int feb, int vmm, int ch, int &row, int &strip, UChar_t &orientation ) const;
     bool hardwareMap( StFttRawHit * rawHit ) const;
+    bool reverseHardwareMap( int &feb, int &vmm, int &ch, int row, int strip ) const;
 
     void getGloablOffset( UChar_t plane, UChar_t quad, float &dx, float &sx, float &dy, float &sy, float &dz, float &sz );
 

@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/tidpars/tdeparm Allocated rows: 1  Used rows: 1  Row size: 60 bytes
 //  Table: tdeparm_st[0]--> tdeparm_st[0]
@@ -27,7 +27,7 @@ memset(&row,0,tableSet->GetRowSize());
     row.truncfact	 =        0.3; // fraction of dedx values to truncate ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }
 
 

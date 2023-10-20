@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/tptpars/tpt_spars Allocated rows: 1  Used rows: 1  Row size: 216 bytes
 //  Table: tpt_spars_st[0]--> tpt_spars_st[0]
@@ -65,5 +65,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.outlimit	 =          4; // ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // params/ctf/ctg/tof_slat Allocated rows: 5400  Used rows: 5400  Row size: 32 bytes
 //  Table: ctg_slat_st[0]--> ctg_slat_st[5399]
@@ -23,5 +23,5 @@ St_ctg_slat *tableSet = new St_ctg_slat("tof_slat",5400);
    }
  }
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

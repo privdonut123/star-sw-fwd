@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/tidpars/tpipar Allocated rows: 1  Used rows: 1  Row size: 132 bytes
 //  Table: tpipar_st[0]--> tpipar_st[0]
@@ -44,5 +44,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.skew[7]	 =          0;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

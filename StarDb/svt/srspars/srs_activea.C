@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/srspars/srs_activea Allocated rows: 4  Used rows: 4  Row size: 44 bytes
 //  Table: srs_activea_st[0]--> srs_activea_st[3]
@@ -61,5 +61,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.param[9]	 =          0;
 tableSet->AddAt(&row,3);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

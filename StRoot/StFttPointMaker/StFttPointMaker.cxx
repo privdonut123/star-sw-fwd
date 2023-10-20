@@ -154,6 +154,7 @@ void StFttPointMaker::InjectTestData(){
     // hit->setMapping( plane, quadrant, row, strip ) 
 }
 
+//what's the unit it should be? mm or cm?
 void StFttPointMaker::MakeGlobalPoints() {
     for ( StFttPoint * p : mFttCollection->points() ){
 
@@ -167,7 +168,7 @@ void StFttPointMaker::MakeGlobalPoints() {
         // sx is only {1,-1} -> reflected or normal
         float sx = 0, sy = 0, sz = 0;
         mFttDb->getGloablOffset( p->plane(), p->quadrant(), dx, sx, dy, sy, dz, sz );
-        global.set( (x) * sx +dx, (y) * sy +dy, (z + dz) * sz );
+        global.set( (x) * sx +dx, (y) * sy +dy, (z +dz)* sz);
         p->setXYZ( global );
     }
 }

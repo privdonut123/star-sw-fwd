@@ -15,6 +15,7 @@ class StEvent;
 #include "TH2F.h"
 #include "TNtuple.h"
 
+class StFttDb;
 class StFttCollection;
 class StRnDHit;
 
@@ -76,9 +77,10 @@ class StFttSlowSimMaker : public StMaker {
 
 
   private:
-    void Global2Local(double &x_local, double &y_local, double x_global, double y_global, UChar_t i_plane, UChar_t i_quad);// transform the global mc information to the local "signal like" information
-    void GetStripandRow(float x_local, float y_local, int strip, int row);
-    Int_t SampleCluster(int center_strip, int xhit_local, int row_x, int sec, int rdo, int is_diag) // 0 for XY and 1 for diag
+    void Global2Local_2D(double &x_local, double &y_local, double x_global, double y_global, int i_plane, int i_quad);// transform the global mc information to the local "signal like" information
+    void GetStripandRow_XY(float x_local, float y_local, int &strip_x, int &strip_y, int &row_x, int &row_y);
+    void GetStripandRow_Diag(float x_local, float y_local, int strip_dv, int strip_dh, int row_dv, int row_dh);
+    Int_t SampleCluster(int center_strip, int xhit_local, int row_x, int sec, int rdo, int is_diag); // 0 for XY and 1 for diag
     void FillThinGapChambers(StEvent *event);
 
     int iEvent;
@@ -103,7 +105,7 @@ class StFttSlowSimMaker : public StMaker {
     StFttCollection*     mFttCollection;
     StFttDb*             mFttDb;
 
-    Bool_t  mDebug;
+    Bool_t  mDebug = kFALSE;
 
     //for QA
     TFile* mFile;
@@ -113,7 +115,7 @@ class StFttSlowSimMaker : public StMaker {
     void WriteHistograms(); // how to create a root files?
 
     //function to get the row of MC hit
-    bool is_Group1(int &row_x, int &row_y, double x, double y){};
+    bool is_Group1(int &row_x, int &row_y, double x, double y);
     bool is_Group2(int &row_x, int &row_y, double x, double y);
     bool is_Group3(int &row_x, int &row_y, double x, double y);
     bool is_Group4(int &row_x, int &row_y, double x, double y);

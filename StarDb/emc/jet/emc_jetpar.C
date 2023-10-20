@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/jet/emc_jetpar Allocated rows: 1  Used rows: 1  Row size: 76 bytes
 //  Table: emc_jetpar_st[0]--> emc_jetpar_st[0]
@@ -30,5 +30,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.eta_min	 =         -2; // maxinum eta for jet ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

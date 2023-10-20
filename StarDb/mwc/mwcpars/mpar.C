@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/mwcpars/mpar Allocated rows: 1  Used rows: 1  Row size: 32 bytes
 //  Table: mwc_mpar_st[0]--> mwc_mpar_st[0]
@@ -19,5 +19,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.min_ion	 =          0; // Minimum ionization ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

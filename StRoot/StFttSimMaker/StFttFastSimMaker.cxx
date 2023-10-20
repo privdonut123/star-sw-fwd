@@ -21,7 +21,7 @@
 #include "StarGenerator/UTIL/StarRandom.h"
 
 namespace FttGlobal {
-    const bool verbose = false;
+    const bool verbose = true;
 }
 
 StFttFastSimMaker::StFttFastSimMaker(const Char_t *name)
@@ -265,6 +265,7 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
     sTGCNRealPoints = 0;
     sTGCNGhostPoints = 0;
 
+    LOG_INFO << "FST+FTT Hits: " << nhits << endm;
     for (int i = 0; i < nhits; i++) {
         hit = (g2t_fts_hit_st *)hitTable->At(i);
         if (0 == hit)
@@ -276,11 +277,15 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
         int volume_id = hit->volume_id;
         // volume_id = (1 front | 2 back) + 10 * (quadrant 0-3) + 100 * (station 0-4)
         int disk = ((volume_id - 1) / 100) + 9 ; 
-        LOG_DEBUG << "sTGC hit: volume_id = " << volume_id << " disk = " << disk << endm;
+
+        LOG_INFO << "volume_id == " << volume_id << ", disk = " << disk << endm;
         
-        // Now that geometry has a front and back, we skip points on the back module for fast sim
-        if (disk < 9 || volume_id % 2 == 0)
+        
+        // TODO: average the front and back hit together, for now skip hits on the back plane
+        if ( disk < 9 || volume_id % 2 == 0){
+            LOG_INFO << "SKIPPING" << endm; 
             continue;
+        }   
 
         float theta = DiskRotation(disk);
 

@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/ems/control_toadc Allocated rows: 1  Used rows: 1  Row size: 224 bytes
 //  Table: control_toadc_st[0]--> control_toadc_st[0]
@@ -75,5 +75,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.c3[7]	 =          0;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

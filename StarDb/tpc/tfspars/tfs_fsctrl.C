@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/tfspars/tfs_fsctrl Allocated rows: 1  Used rows: 1  Row size: 32 bytes
 //  Table: tfs_fsctrl_st[0]--> tfs_fsctrl_st[0]
@@ -42,5 +42,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.sprf_ta[1]	 =      0.637;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }

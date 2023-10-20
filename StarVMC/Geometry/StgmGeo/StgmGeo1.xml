@@ -79,6 +79,7 @@
             <var name="hcdz" type="float" />
             <var name="bdz" type="float" />
             <var name="bs" type="float" />
+            <var name="rmin" type="float" />
         </Structure>
 
         <!-- Bracket Parameters -->
@@ -145,6 +146,7 @@
             <var name="hcdz" value="PENT_dz / 0.3" comment="z depth of honeycomb" />
             <var name="bdz"  value="PENT_hcdz * 2.0" comment="z depth of blue plastic support structure" />
             <var name="bs"   value="PENT_hcdz * 3.0" comment="width of blue plastic support structure" />
+            <var name="rmin"   value="4.0" comment="needs to be outside the beam pipe" />
         </Fill>
         <Use struct="PENT"  />
 
@@ -222,30 +224,30 @@
         <Volume name="STGM" comment="STGC Mother volume" assembly="true" >
             <Material name="Air" />
             <!-- STGM placement and params taken from old geometry -->
-            <Shape type="tube" rmin="0" rmax="95.0" dz="52.0" />
+            <Shape type="tube" rmin="PENT_rmin" rmax="95.0" dz="52.0" />
 
 
             <Create block="STFM"  />
             <!-- First z-plane station -->
             <!-- z relative to Mother zcenter -->
             zplane = -26.75; 
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  konly="MANY">
                 <Misalign table="Geometry/stgc/pentOnStation"  row="0" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="0" />
             </Placement>
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY" >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY">
                 <Rotation matrix="{0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="1" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="0" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM"  konly="MANY">
                 <Rotation matrix="{-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="2" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="0" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM"  konly="MANY">
                 <Rotation matrix="{0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="3" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="0" />
@@ -256,23 +258,23 @@
 
 
             zplane = -3.95; 
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Misalign table="Geometry/stgc/pentOnStation"  row="4" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="1" />
             </Placement>
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="5" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="1" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="6" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="1" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="7" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="1" />
@@ -282,23 +284,23 @@
             <Info format="Positioning sTGC {2I}">station</Info>
 
             zplane = +18.95; 
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Misalign table="Geometry/stgc/pentOnStation"  row="8" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="2" />
             </Placement>
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="9" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="2" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="10" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="2" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="11" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="2" />
@@ -308,23 +310,23 @@
             <Info format="Positioning sTGC {2I}">station</Info>
 
             zplane = +41.75; 
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Misalign table="Geometry/stgc/pentOnStation"  row="12" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="3" />
             </Placement>
-            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="0" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="13" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="3" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="-6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="14" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="3" />
             </Placement>
 
-            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM" konly="MANY"  >
+            <Placement in="STGM" y="0" x="6.5" z="zplane" block="STFM"  >
                 <Rotation matrix="{0.0, 1.0, 0.0, -1.0, 0.0, 0.0, 0.0, 0.0, 1.0}"  />
                 <Misalign table="Geometry/stgc/pentOnStation"  row="15" />
                 <Misalign table="Geometry/stgc/stationOnStgc"  row="3" />
@@ -337,7 +339,7 @@
         <Volume name="STFM" comment="STGC Full Module (single pentagon)" assembly="true" >
             <Material name="Air" />
             <Attribute for="STFM" seen="1" colo="3" />
-            <Shape type="tubs" rmin="0" rmax="85.0" dz="10.0" phi1="0" phi2="90" />
+            <Shape type="tubs" rmin="PENT_rmin" rmax="85.0" dz="10.0" phi1="0" phi2="90" />
 
             <Create block="STMP" />
             <Create block="STMG" />
@@ -361,8 +363,8 @@
         <!-- PCB Pentagon (Module) -->
         <Volume name="STMP" comment="STGC Module PCB (single pentagon)" >
             <Material name="Air" />
-            <Attribute for="STMP" seen="1" colo="3" />
-            <Shape type="tubs" rmin="0.0" rmax="85.0" dz="PENT_dz/2.0" phi1="0" phi2="90"/>
+            <Attribute for="STMP" seen="1" colo="1" />
+            <Shape type="tubs" rmin="PENT_rmin" rmax="85.0" dz="PENT_dz/2.0" phi1="0" phi2="90"/>
 
             <Create block="STPP"  />
             <Create block="STPL"  />
@@ -385,7 +387,7 @@
         <Volume name="STMG" comment="STGC Module Gas active volume (single pentagon)" >
             <Material name="Air" />
             <Attribute for="STMG" seen="1" colo="3" />
-            <Shape type="tubs" rmin="0.0" rmax="85.0" dz="PENT_gdz/2.0" phi1="0" phi2="90" />
+            <Shape type="tubs" rmin="PENT_rmin" rmax="85.0" dz="PENT_gdz/2.0" phi1="0" phi2="90" />
 
             <Create block="STGP"  />
             <Create block="STGL"  />
@@ -407,8 +409,8 @@
         <!-- Honeycomb Pentagon (Module) -->
         <Volume name="STMH" comment="STGC Module Honeycomb (single pentagon)" >
             <Material name="Air" />
-            <Attribute for="STMH" seen="1" colo="4" />
-            <Shape type="tubs" rmin="0.0" rmax="85.0" dz="PENT_hcdz/2.0" phi1="0" phi2="90"/>
+            <Attribute for="STMH" seen="1" colo="2" />
+            <Shape type="tubs" rmin="PENT_rmin" rmax="85.0" dz="PENT_hcdz/2.0" phi1="0" phi2="90"/>
 
             <Create block="STHP"  />
             <Create block="STHL"  />
@@ -527,19 +529,19 @@
         <!-- Sub-shhapes of the pentagon for the Honeycomb -->
         <Block name="STHP" comment="pgon triangle for pentagon shape honeycomb"  >
             <Material name="HoneyComb"  />
-            <Attribute for="STHP" lwid="2" seen="1" colo="kViolet"  />
+            <Attribute for="STHP" lwid="2" seen="1" colo="1"  />
             <Shape type="Pgon" phi1="0.0" rmx="{29.450262431173993, 29.450262431173993}" nz="2" npdiv="1" dphi="90.0" rmn="{0.0, 0.0}" zi="{0.0, PENT_hcdz}"  />
         </Block>
         
         <Block name="STHL" comment="long box for pentagon shape honeycomb"  >
             <Material name="HoneyComb"  />
-            <Attribute for="STHL" lwid="2" seen="1" colo="kViolet"  />
+            <Attribute for="STHL" lwid="2" seen="1" colo="1"  />
             <Shape type="BBox" dx="PENT_ls/2.0" dy="PENT_ss/2.0" dz="PENT_hcdz/2.0"  />
         </Block>
         
         <Block name="STHS" comment="short box for pentagon shape honeycomb"  >
             <Material name="HoneyComb"  />
-            <Attribute for="STHS" lwid="2" seen="1" colo="kViolet"  />
+            <Attribute for="STHS" lwid="2" seen="1" colo="1"  />
             <Shape type="BBox" dx="PENT_ss/2.0" dy="PENT_ms/2.0"  dz="PENT_hcdz/2.0" />
         </Block>
 

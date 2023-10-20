@@ -1,4 +1,4 @@
-TDataSet *CreateTable() { 
+St_DataSet *CreateTable() { 
 // -----------------------------------------------------------------
 // Top/sca/sca_filter_const Allocated rows: 1  Used rows: 1  Row size: 28 bytes
 //  Table: sca_filter_const_st[0]--> sca_filter_const_st[0]
@@ -18,5 +18,5 @@ memset(&row,0,tableSet->GetRowSize());
     row.nGoodTraks	 =         50; // total no. of good tracks    ;
 tableSet->AddAt(&row,0);
 // ----------------- end of code ---------------
- return (TDataSet *)tableSet;
+ return (St_DataSet *)tableSet;
 }
