@@ -1,0 +1,66 @@
+#!/bin/csh 
+set nev=$1
+set run=$2
+set particle=$3
+set vz=$4
+set indir=$5
+set outdir=$6
+set nogeant=$7
+
+echo  nev=$nev run=$run particle=$particle vz=$vz indir=$indir outdir=$outdir nogeant=$nogeant
+ 
+stardev
+source StRoot/StFwdTrackMaker/macro/env.sh
+set dir=$cwd
+set sys=$STAR_HOST_SYS
+set tmpdir=/tmp/$USER/fcs
+
+if ( ! -e $tmpdir ) then
+  mkdir -p $tmpdir
+endif
+cd $tmpdir
+
+if ( ! -e $dir/$outdir ) then
+    mkdir $dir/$outdir
+endif
+
+ln -sf $dir/.$sys 
+ln -sf $dir/StRoot
+ln -sf $dir/runPythia.C
+ln -sf $dir/runSimBfc.C
+ln -sf $dir/sim
+ln -sf $dir/fGeom.root
+#ln -sf $dir/fcs_daq_map.txt
+#ln -sf $dir/fcs_ecal_et_gains.txt
+#ln -sf $dir/fcs_hcal_et_gains.txt
+#ln -sf $dir/mask
+#ln -sf $dir/stage_params.txt
+
+pwd
+ls -ltra
+which root4star
+
+set name=pythia_${particle}_vz${vz}
+set filename=${name}_run${run}
+echo name=$name filename=$filename
+
+if ( $nogeant == 0 ) then 
+    echo root4star -b -q 'runPythia.C('$nev','$run',"'$particle'",'$vz')' 
+    root4star -b -q 'runPythia.C('$nev','$run',"'$particle'",'$vz')' 
+else
+    echo /bin/cp $dir/$indir/$filename.fzd $tmpdir/
+    /bin/cp $dir/$indir/$filename.fzd $tmpdir/
+endif
+
+pwd
+ls -ltra
+
+echo root4star -b -q 'runSimBfc.C('$nev','$run',"'$particle'",'$vz',".")'
+root4star -b -q 'runSimBfc.C('$nev','$run',"'$particle'",'$vz',".")'
+
+echo moving $tmpdir/$filename.dilep.root to $dir/$outdir/
+ls -ltra  $filename.*
+/bin/mv $filename.dilep.root $dir/$outdir/
+/bin/mv $filename.match.root $dir/$outdir/
+#/bin/rm $filename.*
+
