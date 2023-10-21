@@ -25,7 +25,7 @@ double StFttDb::rowLength = 180; // mm
 double StFttDb::lowerQuadOffsetX = 101.6; // mm
 // double StFttDb::idealPlaneZLocations[] = { 281.082,304.062,325.058,348.068 };//ideal position
 double StFttDb::idealPlaneZLocations[] = { 312.342,329.953,347.637,365.422 };//suvery data, cm or mm? now just use quad A's data
-double StFttDb::LocalStripZLocations[] = { 1.1,   ,1.53   ,2.18   ,2.61    };// from yingying's measurement, cm ,
+double StFttDb::LocalStripZLocations[] = { 1.1    ,1.53   ,2.18   ,2.61    };// from yingying's measurement, cm ,
 double StFttDb::HVStripShift = 15.95;//mm
 double StFttDb::DiagStripShift = 23.79;//mm
 double StFttDb::FirstStripEdge[] = {14.6, 23.79};
@@ -119,7 +119,7 @@ void StFttDb::loadDataWindowsFromDb( St_fttDataWindows * dataset ) {
 
         fttDataWindows_st *table = dataset->GetTable();
         for (Int_t i = 0; i < rows; i++) {
-            for ( int j = 0; j < StFttDb::nVMM; j++ ) {
+            for ( int j = 0; j < (int)StFttDb::nVMM; j++ ) {
                 // printf( "[feb=%d, vmm=%d, ch=%d] ==> [row=%d, strip%d]\n", table[i].feb[j], table[i].vmm[j], table[i].vmm_ch[j], table[i].row[j], table[i].strip[j] );
 
 

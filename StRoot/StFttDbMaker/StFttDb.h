@@ -75,6 +75,7 @@ public:
     static double DiagStripShift; // mm
     static double lowerQuadOffsetX; //mm
     static double idealPlaneZLocations[4];
+    static double LocalStripZLocations[4];
 
     static const size_t nPlane        = 4;
     static const size_t nQuadPerPlane = 4;
