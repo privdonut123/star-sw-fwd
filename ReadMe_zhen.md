@@ -23,6 +23,17 @@ echo "StRoot/StFcs*" >> .git/info/sparse-checkout
 git checkout ftt-slow-sim
 ```
 
-##How to run the StFttSimuMaker
+## How to run the StFttSimuMaker
+./sim/fast
+
+## Log
+Now there are some out puts for debug, change mDebug to kFalse to turn it off.
+
+### issue
+23.10.26
+
+global x v.s Strip ID in Y direction are not as expect, checking it.
+Add functions to set the parameters
+
 
 
