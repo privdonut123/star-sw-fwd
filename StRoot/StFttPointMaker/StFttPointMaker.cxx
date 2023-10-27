@@ -169,6 +169,7 @@ void StFttPointMaker::MakeGlobalPoints() {
         float sx = 0, sy = 0, sz = 0;
         mFttDb->getGloablOffset( p->plane(), p->quadrant(), dx, sx, dy, sy, dz, sz );
         global.set( (x) * sx +dx, (y) * sy +dy, (z +dz)* sz);
+        // global.set( (x) * sx +dx, (y) * sy +dy, (z +dz)* sz);
         p->setXYZ( global );
     }
 }

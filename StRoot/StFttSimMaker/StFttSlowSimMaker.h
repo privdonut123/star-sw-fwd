@@ -77,10 +77,12 @@ class StFttSlowSimMaker : public StMaker {
 
 
   private:
+    int GetQuad(double x_global, double y_global);
     void Global2Local_2D(double &x_local, double &y_local, double x_global, double y_global, int i_plane, int i_quad);// transform the global mc information to the local "signal like" information
-    void GetStripandRow_XY(float x_local, float y_local, int &strip_x, int &strip_y, int &row_x, int &row_y);
-    void GetStripandRow_Diag(float x_local, float y_local, int strip_dv, int strip_dh, int row_dv, int row_dh);
-    Int_t SampleCluster(int center_strip, int xhit_local, int row_x, int sec, int rdo, int is_diag); // 0 for XY and 1 for diag
+    bool GetStripandRow_XY(float x_local, float y_local, int &strip_x, int &strip_y, int &row_x, int &row_y);
+    void GetStripandRow_Diag(float x_local, float y_local, int &strip_dv, int &strip_dh, int &row_dv, int &row_dh);
+    Int_t SampleCluster(int center_strip, double xhit_local, int row_x, int sec, int rdo, int is_diag); // 0 for XY and 1 for diag
+    Int_t SampleCluster(int center_strip, double xhit_local, int row_x, int sec, int rdo, int is_diag, int i_evt); // 0 for XY and 1 for diag, for QA
     void FillThinGapChambers(StEvent *event);
 
     int iEvent;
@@ -105,7 +107,8 @@ class StFttSlowSimMaker : public StMaker {
     StFttCollection*     mFttCollection;
     StFttDb*             mFttDb;
 
-    Bool_t  mDebug = kFALSE;
+    Bool_t  mDebug = kTRUE;//for debug
+    // Bool_t  mDebug = kFALSE;
 
     //for QA
     TFile* mFile;
