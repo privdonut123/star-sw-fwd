@@ -1105,7 +1105,6 @@ void StFwdTrackMaker::loadFcs( ) {
     } // for det
 } // loadFcs
 
-
 //________________________________________________________________________
 int StFwdTrackMaker::Make() {
     // START time for measuring tracking
@@ -1172,7 +1171,6 @@ int StFwdTrackMaker::Make() {
 
     /**********************************************************************/
     
-    
     /**********************************************************************/
     // Output track visualization if configured to do so
     std::vector<genfit::Track *> genfitTracks;
@@ -1198,6 +1196,7 @@ int StFwdTrackMaker::Make() {
         LOG_DEBUG << "Skipping visualization, too many FWD tracks" << endm;
     }
 
+    LOG_DEBUG << "FillTrackDeltas" << endm;
     // Fill Track Deltas in ttree for helpful alignment info
     FillTrackDeltas();
 
@@ -1217,7 +1216,6 @@ int StFwdTrackMaker::Make() {
     FillTTree();
     return kStOK;
 } // Make
-
 
 StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t indexTrack ){
     LOG_DEBUG << "StFwdTrackMaker::makeStFwdTrack()" << endm;
@@ -1381,7 +1379,7 @@ void StFwdTrackMaker::FillEvent() {
 
     mTreeData.tprojN = mTreeData.tprojX.size();
     LOG_DEBUG << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
-    ProcessFwdTracks();
+    // ProcessFwdTracks();
 }
 
 void StFwdTrackMaker::FillTrackDeltas(){
@@ -1400,6 +1398,10 @@ void StFwdTrackMaker::FillTrackDeltas(){
         }
 
         for ( KiTrack::IHit * hit : combinedSeed ){
+            if ( !hit ){
+                LOG_ERROR << "Null hit in unexpected place, check track creation" << endm;
+                continue; // we should never have null hits, but guard 
+            } 
             TVector3 htv3(hit->getX(), hit->getY(), hit->getZ());
             TLorentzVector lvHit, lvTrack;
             lvHit.SetPxPyPzE( hit->getX(), hit->getY(), hit->getZ(), 1 );
@@ -1446,7 +1448,7 @@ void StFwdTrackMaker::FitVertex(){
             LOG_DEBUG << TString::Format( "RAVE vertex @(%f, %f, %f)\n\n", vert->getPos().X(), vert->getPos().Y(), vert->getPos().Z() ) << endm;
         }
     }
-}
+} // FitVertex
 
 void StFwdTrackMaker::FillTTree(){
 
@@ -1643,7 +1645,6 @@ void StFwdTrackMaker::FillTTree(){
         mTree->Fill();
     } // if mGenTree
 } // FillTree
-
 
 //________________________________________________________________________
 void StFwdTrackMaker::Clear(const Option_t *opts) {
