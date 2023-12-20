@@ -7,12 +7,12 @@
 
 TFile *output = 0;
 
-void sim( int n = 5, // nEvents to run
+void jpsi_ana( int n = 5, // nEvents to run
                 string outputName = "stFwdTrackMaker_ideal_jpsi.root",
                 bool useFstForSeedFinding = false, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
                 bool realisticSim = false, // enables data-like mode, real track finding and fitting without MC seed
-                char *inFile =  "sim.fzd"
+                char *inFile =  "jpsi.fzd"
             ) {
     cout << "Running " << n << " events from " << inFile << endl;
     const char *geom = "y2023";
