@@ -192,6 +192,7 @@ class StFwdTrackMaker : public StMaker {
     static std::string defaultConfigData;
     std::string defaultConfig;
     bool configLoaded = false;
+    TString mGeoCache;
 
     // Helper functions for modifying configuration
     // NOTE: to override configuration, call individual functions after setConfigForXXX
@@ -357,6 +358,11 @@ class StFwdTrackMaker : public StMaker {
     */
     void setSmearMcPrimaryVertex( bool pvs = true ) { mFwdConfig.set<bool>( "TrackFitter.Vertex:smearMcVertex", pvs ); }
   
+    /**
+     * @brief Sets geometry cache filename
+     * 
+     */
+    void setGeoCache( TString gc ) { mGeoCache = gc; }
 };
 
 #endif
