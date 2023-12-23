@@ -68,6 +68,11 @@
 #include "StEvent/StFwdTrack.h"
 #include "GenFit/AbsMeasurement.h"
 
+#include "StMuDSTMaker/COMMON/StMuDstMaker.h"
+#include "StMuDSTMaker/COMMON/StMuDst.h"
+#include "StMuDSTMaker/COMMON/StMuFstCollection.h"
+#include "StMuDSTMaker/COMMON/StMuFstHit.h"
+
 
 FwdSystem* FwdSystem::sInstance = nullptr;
 TMVA::Reader * BDTCrit2::reader = nullptr;
@@ -741,12 +746,96 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     }
 } // loadFttHits
 
+/**
+ * @brief Loads FST hits from various sources into the hitmap and McTrackMap (if availabale)
+ * 
+ * Order of precedence:
+ * MuDst StMuFstCollection (Data)
+ * StEvent StFstHitCollection (Data or slowsim)
+ * StEvent StRndHitCollection (fast sim)
+ * GEANT St_g2t_fts_hit (starsim only) - note if rasterizer is active this takes priority over FastSim
+ * 
+ * @param mcTrackMap : MC track map if running sim
+ * @param hitMap : FST hitmap to populate
+ * @param count  : number of hits loaded
+ */
 void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
-    StEvent *event = (StEvent *)GetDataSet("StEvent");
-    if (!event) {
-        LOG_ERROR << "No StEvent, cannot load FST hits" << endm;
+    
+    loadFstHitsFromMuDst(mcTrackMap, hitMap, count); 
+    if ( count > 0 ) return; // only load from one source at a time
+    
+    loadFstHitsFromStEvent(mcTrackMap, hitMap, count); 
+    if ( count > 0 ) return; // only load from one source at a time
+    
+    bool siRasterizer = mFwdConfig.get<bool>( "SiRasterizer:active", false );
+
+    if ( !siRasterizer ) loadFstHitsFromStEventFastSim( mcTrackMap, hitMap, count );
+    if ( count > 0 ) return; // only load from one source at a time
+
+    loadFstHitsFromGEANT( mcTrackMap, hitMap, count );    
+} // loadFstHits
+
+void StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+    StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
+    if(!mMuDstMaker) {
+        LOG_WARN << " No MuDstMaker ... bye-bye" << endm;
         return;
     }
+    StMuDst *mMuDst = mMuDstMaker->muDst();
+    if(!mMuDst) {
+        LOG_WARN << " No MuDst ... bye-bye" << endm;
+        return;
+    }
+    
+    StMuFstCollection * fst = mMuDst->muFstCollection();
+    if (!fst) {
+        LOG_WARN << "No StMuFstCollection ... bye-bye" << endm;
+        return;
+    }
+
+    LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
+    TMatrixDSym hitCov3(3);
+    for ( unsigned int index = 0; index < fst->numberOfHits(); index++){
+        StMuFstHit * muFstHit = fst->getHit( index );
+
+        float vR = muFstHit->localPosition(0);
+        float vPhi = muFstHit->localPosition(1);
+        float vZ = muFstHit->localPosition(2);
+
+        const float dz0 = fabs( vZ - 151.75 );
+        const float dz1 = fabs( vZ - 165.248 );
+        const float dz2 = fabs( vZ - 178.781 );
+
+        int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
+
+        float x0 = vR * cos( vPhi );
+        float y0 = vR * sin( vPhi );
+        hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
+
+        LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;                
+        mFstHits.push_back( TVector3( x0, y0, vZ)  );
+
+        // we use d+4 so that both FTT and FST start at 4
+        FwdHit *hit = new FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr);
+        // Add the hit to the hit map
+        hitMap[d+4].push_back(hit);
+
+        mTreeData.fstX.push_back( x0 );
+        mTreeData.fstY.push_back( y0 );
+        mTreeData.fstZ.push_back( vZ );
+
+        mTreeData.fstN++;
+        count++;
+    } // index
+} // loadFstHitsFromMuDst
+
+void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+    StEvent *event = (StEvent *)GetDataSet("StEvent");
+    if (!event) {
+        LOG_DEBUG << "No StEvent, cannot load FST hits from StEvent StFstHitCollection" << endm;
+        return;
+    }
+
     StFstHitCollection *fstHitCollection = event->fstHitCollection();
 
     if ( fstHitCollection ){
@@ -772,8 +861,6 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
 
                     int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
 
-
-
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
                     hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
@@ -791,33 +878,23 @@ void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
                     mTreeData.fstZ.push_back( vZ );
 
                     mTreeData.fstN++;
+                    count++;
                 }
             } // loop is
         } // loop iw
-        LOG_DEBUG << " FOUND " << mFstHits.size() << " FST HITS" << endm;
+        LOG_DEBUG << " FOUND " << mFstHits.size() << " FST HITS in StFstHitCollection" << endm;
         return;
     } // fstHitCollection
+} //loadFstHitsFromStEvent
 
-    StRnDHitCollection *rndCollection = nullptr;
-    if (nullptr != event) {
-        rndCollection = event->rndHitCollection();
-    }
-    bool siRasterizer = mFwdConfig.get<bool>( "SiRasterizer:active", false );
-    if ( siRasterizer || rndCollection == nullptr ){
-        LOG_DEBUG << "Loading Fst hits from GEANT with SiRasterizer" << endm;
-        loadFstHitsFromGEANT( mcTrackMap, hitMap, count );
-    } else {
-        LOG_DEBUG << "Loading Fst hits from StEvent" << endm;
-        loadFstHitsFromStEvent( mcTrackMap, hitMap, count );
-    }
-} // loadFstHits
-
-void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+void StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
 
     // Get the StEvent handle
     StEvent *event = (StEvent *)GetDataSet("StEvent");
-    if (!event) 
+    if (!event) {
+        LOG_DEBUG << "No StEvent, cannot load FST FastSim hits from StEvent StRndHitCollection" << endm;
         return;
+    }
 
     StRnDHitCollection *rndCollection = event->rndHitCollection();
 
@@ -860,6 +937,7 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         mTreeData.fstTrackId.push_back( hit->idTruth() );
 
         mTreeData.fstN++;
+        count++;
 
     }
 } //loadFstHitsFromStEvent
@@ -869,8 +947,10 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     // Load FSI Hits from GEANT
     St_g2t_fts_hit *g2t_fsi_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit");
 
-    if ( !g2t_fsi_hits )
+    if ( !g2t_fsi_hits ){
+        LOG_DEBUG << "No g2t_fts_hits, cannot load FST hits from GEANT" << endm;
         return;
+    }
 
     int nfsi = g2t_fsi_hits->GetNRows();
     
@@ -932,6 +1012,7 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
         mTreeData.fstTrackId.push_back( track_id );
 
         mTreeData.fstN++;
+        count++;
 
         // Add the hit to the hit map
         hitMap[hit->getSector()].push_back(hit);
@@ -1149,9 +1230,11 @@ int StFwdTrackMaker::Make() {
 
     /**********************************************************************/
     // Load FST
-    LOG_DEBUG << ">>StFwdTrackMaker::loadFstHits" << endm;
     if ( IAttr("useFst") ) {
-        loadFstHits( mcTrackMap, fsiHitMap );
+        LOG_DEBUG << ">>StFwdTrackMaker::loadFstHits" << endm;
+        int fstCount = 0;
+        loadFstHits( mcTrackMap, fsiHitMap, fstCount );
+        LOG_DEBUG << "Loaded " << fstCount << " FST hits" << endm;
     }
 
     /**********************************************************************/
