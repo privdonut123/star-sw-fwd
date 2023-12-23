@@ -832,10 +832,9 @@ void StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrack
 void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
     StEvent *event = (StEvent *)GetDataSet("StEvent");
     if (!event) {
-        LOG_DEBUG << "No StEvent, cannot load FST hits from StEvent StFstHitCollection" << endm;
+        LOG_ERROR << "No StEvent, cannot load FST hits" << endm;
         return;
     }
-
     StFstHitCollection *fstHitCollection = event->fstHitCollection();
 
     if ( fstHitCollection ){
