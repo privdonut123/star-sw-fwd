@@ -2529,58 +2529,6 @@ void StPicoDstMaker::fillFwdTracks() {
       StPicoFwdTrack picoFwdTrack;
       picoFwdTrack.setMomentum( evTrack->momentum().x(), evTrack->momentum().y(), evTrack->momentum().z() );
       picoFwdTrack.setNumberOfFitPoints( evTrack->numberOfFitPoints() * evTrack->charge() );
-      int counter = mPicoArrays[StPicoArrays::FwdTrack]->GetEntries();
-      picoFwdTrack.setId( counter );
-      new((*(mPicoArrays[StPicoArrays::FwdTrack]))[counter]) StPicoFwdTrack(picoFwdTrack);
-    }
-  } else {
-    LOG_WARN << "Cannot get Fwd Tracks from StEvent" << endm;
-  }
-}
-
-//_________________
-void StPicoDstMaker::fillFwdTracks() {
-
-  StEvent *evt = (StEvent *)GetDataSet("StEvent");
-  if ( evt ){
-    StFwdTrackCollection * evc = evt->fwdTrackCollection();
-    if ( !evc ){
-      LOG_ERROR << "null FwdTrackCollection" << endm;
-      return;
-    }
-    const StSPtrVecFwdTrack& evTracks = evc->tracks();
-    LOG_INFO << "Adding " << evc->numberOfTracks() << " StMuFwdTracks to MuDSt" << endm; 
-    for ( size_t i = 0; i < evc->numberOfTracks(); i++ ){
-      StFwdTrack * evTrack = evTracks[i];
-      StPicoFwdTrack picoFwdTrack;
-      picoFwdTrack.setMomentum( evTrack->momentum().x(), evTrack->momentum().y(), evTrack->momentum().z() );
-      picoFwdTrack.setNumberOfFitPoints( evTrack->numberOfFitPoints() * evTrack->charge() );
-      int counter = mPicoArrays[StPicoArrays::FwdTrack]->GetEntries();
-      picoFwdTrack.setId( counter );
-      new((*(mPicoArrays[StPicoArrays::FwdTrack]))[counter]) StPicoFwdTrack(picoFwdTrack);
-    }
-  } else {
-    LOG_WARN << "Cannot get Fwd Tracks from StEvent" << endm;
-  }
-}
-
-//_________________
-void StPicoDstMaker::fillFwdTracks() {
-
-  StEvent *evt = (StEvent *)GetDataSet("StEvent");
-  if ( evt ){
-    StFwdTrackCollection * evc = evt->fwdTrackCollection();
-    if ( !evc ){
-      LOG_ERROR << "null FwdTrackCollection" << endm;
-      return;
-    }
-    const StSPtrVecFwdTrack& evTracks = evc->tracks();
-    LOG_INFO << "Adding " << evc->numberOfTracks() << " StMuFwdTracks to MuDSt" << endm; 
-    for ( size_t i = 0; i < evc->numberOfTracks(); i++ ){
-      StFwdTrack * evTrack = evTracks[i];
-      StPicoFwdTrack picoFwdTrack;
-      picoFwdTrack.setMomentum( evTrack->momentum().x(), evTrack->momentum().y(), evTrack->momentum().z() );
-      picoFwdTrack.setNumberOfFitPoints( evTrack->numberOfFitPoints() * evTrack->charge() );
       picoFwdTrack.setNumberOfSeedPoints( evTrack->numberOfSeedPoints() );
       picoFwdTrack.setChi2( evTrack->chi2() );
       int counter = mPicoArrays[StPicoArrays::FwdTrack]->GetEntries();
