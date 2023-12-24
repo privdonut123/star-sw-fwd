@@ -1255,6 +1255,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     // set total number of seed points
     fwdTrack->setNumberOfSeedPoints( nSeedPoints );
+    int idt = 0;
+    double qual = 0;
+    idt = MCTruthUtils::dominantContribution(gtr.trackSeed, qual);
+    fwdTrack->setMc( idt, qual );
 
     // compute projections to z-planes of various detectors
     vector<float> zPlanes = {
