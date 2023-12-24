@@ -747,38 +747,39 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
  * @param hitMap : FST hitmap to populate
  * @param count  : number of hits loaded
  */
-void StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+int StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
     
-    loadFstHitsFromMuDst(mcTrackMap, hitMap, count); 
-    if ( count > 0 ) return; // only load from one source at a time
-    
-    loadFstHitsFromStEvent(mcTrackMap, hitMap, count); 
-    if ( count > 0 ) return; // only load from one source at a time
+    int count = loadFstHitsFromMuDst(mcTrackMap, hitMap); 
+    if ( count > 0 ) return count; // only load from one source at a time
+    LOG_INFO << "StEvent Next, I guess" << endm;
+    count += loadFstHitsFromStEvent(mcTrackMap, hitMap); 
+    if ( count > 0 ) return count; // only load from one source at a time
     
     bool siRasterizer = mFwdConfig.get<bool>( "SiRasterizer:active", false );
 
-    if ( !siRasterizer ) loadFstHitsFromStEventFastSim( mcTrackMap, hitMap, count );
-    if ( count > 0 ) return; // only load from one source at a time
+    if ( !siRasterizer ) count += loadFstHitsFromStEventFastSim( mcTrackMap, hitMap );
+    if ( count > 0 ) return count; // only load from one source at a time
 
-    loadFstHitsFromGEANT( mcTrackMap, hitMap, count );    
+    return loadFstHitsFromGEANT( mcTrackMap, hitMap );    
 } // loadFstHits
 
-void StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+int StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    int count = 0;
     StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(!mMuDstMaker) {
         LOG_WARN << " No MuDstMaker ... bye-bye" << endm;
-        return;
+        return 0;
     }
     StMuDst *mMuDst = mMuDstMaker->muDst();
     if(!mMuDst) {
         LOG_WARN << " No MuDst ... bye-bye" << endm;
-        return;
+        return 0;
     }
     
     StMuFstCollection * fst = mMuDst->muFstCollection();
     if (!fst) {
         LOG_WARN << "No StMuFstCollection ... bye-bye" << endm;
-        return;
+        return 0;
     }
 
     LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
@@ -815,13 +816,15 @@ void StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrack
         mTreeData.fstN++;
         count++;
     } // index
+    return count;
 } // loadFstHitsFromMuDst
 
-void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    int count = 0;
     StEvent *event = (StEvent *)GetDataSet("StEvent");
     if (!event) {
         LOG_DEBUG << "No StEvent, cannot load FST hits from StEvent StFstHitCollection" << endm;
-        return;
+        return 0;
     }
 
     StFstHitCollection *fstHitCollection = event->fstHitCollection();
@@ -871,17 +874,17 @@ void StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             } // loop is
         } // loop iw
         LOG_DEBUG << " FOUND " << mFstHits.size() << " FST HITS in StFstHitCollection" << endm;
-        return;
     } // fstHitCollection
+    return count;
 } //loadFstHitsFromStEvent
 
-void StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
-
+int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    int count = 0;
     // Get the StEvent handle
     StEvent *event = (StEvent *)GetDataSet("StEvent");
     if (!event) {
         LOG_DEBUG << "No StEvent, cannot load FST FastSim hits from StEvent StRndHitCollection" << endm;
-        return;
+        return 0;
     }
 
     StRnDHitCollection *rndCollection = event->rndHitCollection();
@@ -928,16 +931,18 @@ void StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t
         count++;
 
     }
+    return count;
 } //loadFstHitsFromStEvent
 
-void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+int StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
+    int count = 0;
     /************************************************************/
     // Load FSI Hits from GEANT
     St_g2t_fts_hit *g2t_fsi_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit");
 
     if ( !g2t_fsi_hits ){
         LOG_DEBUG << "No g2t_fts_hits, cannot load FST hits from GEANT" << endm;
-        return;
+        return 0;
     }
 
     int nfsi = g2t_fsi_hits->GetNRows();
@@ -1015,6 +1020,7 @@ void StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
             LOG_ERROR << "Cannot find MC track for GEANT hit (FTT), track_id = " << track_id << endm;
         }
     }
+    return count;
 } // loadFstHitsFromGEANT
 
 size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
@@ -1220,8 +1226,7 @@ int StFwdTrackMaker::Make() {
     // Load FST
     if ( IAttr("useFst") ) {
         LOG_DEBUG << ">>StFwdTrackMaker::loadFstHits" << endm;
-        int fstCount = 0;
-        loadFstHits( mcTrackMap, fsiHitMap, fstCount );
+        int fstCount = loadFstHits( mcTrackMap, fsiHitMap );
         LOG_DEBUG << "Loaded " << fstCount << " FST hits" << endm;
     }
 
@@ -1451,7 +1456,7 @@ void StFwdTrackMaker::FillEvent() {
 
 
     mTreeData.tprojN = mTreeData.tprojX.size();
-    LOG_DEBUG << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
+    LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
     // ProcessFwdTracks();
 }
 
