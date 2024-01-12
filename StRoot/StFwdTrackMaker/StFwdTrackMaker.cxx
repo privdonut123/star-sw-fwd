@@ -763,7 +763,7 @@ int StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDa
     
     int count = loadFstHitsFromMuDst(mcTrackMap, hitMap); 
     if ( count > 0 ) return count; // only load from one source at a time
-    LOG_INFO << "StEvent Next, I guess" << endm;
+    
     count += loadFstHitsFromStEvent(mcTrackMap, hitMap); 
     if ( count > 0 ) return count; // only load from one source at a time
     
@@ -840,16 +840,16 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
     }
     StFstHitCollection *fstHitCollection = event->fstHitCollection();
 
-    if ( fstHitCollection ){
+    if ( fstHitCollection && fstHitCollection->numberOfHits() > 0){
         // reuse this to store cov mat
         TMatrixDSym hitCov3(3);
         LOG_DEBUG << "StFstHitCollection is NOT NULL, loading hits" << endm;
         for ( unsigned int iw = 0; iw < kFstNumWedges; iw++ ){
             StFstWedgeHitCollection * wc = fstHitCollection->wedge( iw );
-
+            if ( !wc ) continue;
             for ( unsigned int is = 0; is < kFstNumSensorsPerWedge; is++ ){
                 StFstSensorHitCollection * sc = wc->sensor( is );
-
+                if ( !sc ) continue;
                 StSPtrVecFstHit fsthits = sc->hits();
                 mTreeData.fstN = 0;
                 for ( unsigned int ih = 0; ih < fsthits.size(); ih++ ){
@@ -899,6 +899,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
     }
 
     StRnDHitCollection *rndCollection = event->rndHitCollection();
+    if (!rndCollection) return 0;
 
     const StSPtrVecRnDHit &hits = rndCollection->hits();
 
@@ -1369,9 +1370,12 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     // set total number of seed points
     fwdTrack->setNumberOfSeedPoints( nSeedPoints );
+    Seed_t combinedSeed;
+    combinedSeed.insert( combinedSeed.begin(), gtr.fstSeed.begin(), gtr.fstSeed.end() ); // this is goofed but will fix
+    combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() );
     int idt = 0;
     double qual = 0;
-    idt = MCTruthUtils::dominantContribution(gtr.trackSeed, qual);
+    idt = MCTruthUtils::dominantContribution(combinedSeed, qual);
     fwdTrack->setMc( idt, qual );
 
     // compute projections to z-planes of various detectors

@@ -1272,7 +1272,11 @@ class ForwardTrackMaker {
                 combinedSeed.insert( combinedSeed.end(), fttHitsForThisTrack.begin(), fttHitsForThisTrack.end() );
 
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
-                LOG_DEBUG << "Using previous fit momentum as the seed: " << TString::Format( "(pt=%f, eta=%f, phi=%f)", gtr.momentum.Pt(), gtr.momentum.Eta(), gtr.momentum.Phi() ) << endm;
+                LOG_DEBUG << "Using previous fit momentum as the seed: " << endm;
+                LOG_DEBUG << TString::Format( "(px=%f, py=%f, pz=%f)", gtr.momentum.Px(), gtr.momentum.Py(), gtr.momentum.Pz() ) << endm;
+                if ( fabs(gtr.momentum.Pz()) > 100000 )
+                    gtr.momentum.SetZ( 10000 );
+                LOG_DEBUG << TString::Format( "(pt=%f, eta=%f, phi=%f)", gtr.momentum.Pt(), gtr.momentum.Eta(), gtr.momentum.Phi() ) << endm;
 
                 mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum) );
 
