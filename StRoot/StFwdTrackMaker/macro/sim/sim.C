@@ -23,8 +23,8 @@ void sim( int n = 5, // nEvents to run
     bool useConstBz = false;
     bool useFCS = true;
 
-    // to use the geom cache (skip agml which is faster)
-    // set the _geom string to ""
+    // to use the geom cache (skip agml build which is faster)
+    // set the _geom string to "" and make sure the cache file ("fGeom.root") is present
     // _geom = "";
     
     // Setup the chain for reading an FZD
