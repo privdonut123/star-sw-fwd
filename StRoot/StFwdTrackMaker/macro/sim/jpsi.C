@@ -89,7 +89,7 @@ void trig( Int_t n=1 )
       hMll->Fill( lv.M() );
 
       cout << "ele eta = " << pElectron->Eta() << endl;
-      cout << "pos eta = " << pElectron->Eta() << endl;
+      cout << "pos eta = " << pPositron->Eta() << endl;
     }
 
     

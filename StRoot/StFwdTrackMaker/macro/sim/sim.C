@@ -15,21 +15,24 @@ void sim( int n = 5, // nEvents to run
                 char *inFile =  "sim.fzd"
             ) {
     cout << "Running " << n << " events from " << inFile << endl;
-    const char *geom = "y2023";
+    const char *geom = "y2023 agml usexgeom";
     TString _geom = geom;
 
     // Switches for common options 
     bool SiIneff = false;
     bool useConstBz = false;
     bool useFCS = true;
-    
+
+    // to use the geom cache (skip agml which is faster)
+    // set the _geom string to ""
+    // _geom = "";
     
     // Setup the chain for reading an FZD
     TString _chain;
     if ( useFCS )
-        _chain = Form("fzin %s sdt20211016 fstFastSim fcsSim fcsWFF fcsCluster fwdTrack MakeEvent StEvent ReverseField agml usexgeom bigbig  evout cmudst tree", _geom.Data());
+        _chain = Form("fzin %s sdt20211016 fstFastSim fcsSim fcsWFF fcsCluster fwdTrack MakeEvent StEvent ReverseField bigbig  evout cmudst tree", _geom.Data() );
     else 
-        _chain = Form("fzin %s sdt20211016 MakeEvent StEvent ReverseField agml usexgeom bigbig fstFastSim fcsSim fwdTrack evout cmudst tree", _geom.Data());
+        _chain = Form("fzin %s sdt20211016 MakeEvent StEvent ReverseField bigbig fstFastSim fcsSim fwdTrack evout cmudst tree", _geom.Data());
 
     gSystem->Load( "libStarRoot.so" );
     gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
@@ -99,6 +102,11 @@ void sim( int n = 5, // nEvents to run
             cout << "Configured for realistic simulation DONE" << endl;
         }
 
+        if ( _geom == "" ){
+            cout << "Using the Geometry cache: fGeom.root" << endl;
+            fwdTrack->setGeoCache( "fGeom.root" );
+        }
+
         if (useFstForSeedFinding)
             fwdTrack->setSeedFindingWithFst();
         else
@@ -109,6 +117,10 @@ void sim( int n = 5, // nEvents to run
         fwdTrack->SetGenerateTree( true );
         fwdTrack->SetGenerateHistograms( true );
         fwdTrack->SetDebug();
+
+        StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+        fwdFitQA->SetDebug();
+        chain->AddAfter("fwdTrack", fwdFitQA);
 
         cout << "fwd tracker setup" << endl;
 
