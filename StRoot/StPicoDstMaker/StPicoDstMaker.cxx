@@ -62,6 +62,7 @@
 #include "StMuDSTMaker/COMMON/StMuMcTrack.h"
 #include "StMuDSTMaker/COMMON/StMuMcVertex.h"
 #include "StMuDSTMaker/COMMON/StMuFcsCollection.h"
+#include "StMuDSTMaker/COMMON/StMuFcsHit.h"
 #include "StMuDSTMaker/COMMON/StMuFcsCluster.h"
 
 #include "StTriggerUtilities/StTriggerSimuMaker.h"
@@ -99,6 +100,7 @@
 #include "StPicoEvent/StPicoETofHit.h"
 #include "StPicoEvent/StPicoETofPidTraits.h"
 #include "StPicoEvent/StPicoFwdTrack.h"
+#include "StPicoEvent/StPicoFcsHit.h"
 #include "StPicoEvent/StPicoFcsCluster.h"
 #include "StPicoEvent/StPicoMcVertex.h"
 #include "StPicoEvent/StPicoMcTrack.h"
@@ -252,6 +254,7 @@ void StPicoDstMaker::streamerOff() {
   StPicoETofHit::Class()->IgnoreTObjectStreamer();
   StPicoETofPidTraits::Class()->IgnoreTObjectStreamer();
   StPicoFwdTrack::Class()->IgnoreTObjectStreamer();
+  StPicoFcsHit::Class()->IgnoreTObjectStreamer();
   StPicoFcsCluster::Class()->IgnoreTObjectStreamer();
   StPicoMcVertex::Class()->IgnoreTObjectStreamer();
   StPicoMcTrack::Class()->IgnoreTObjectStreamer();
@@ -902,6 +905,7 @@ Int_t StPicoDstMaker::MakeWrite() {
   fillBbcHits();
   fillETofHits();
   fillFwdTracks();
+  fillFcsHits();
   fillFcsClusters();
 
   // Could be a good idea to move this call to Init() or InitRun()
@@ -2568,6 +2572,27 @@ void StPicoDstMaker::fillFcsClusters() {
     new((*(mPicoArrays[StPicoArrays::FcsCluster]))[counter]) StPicoFcsCluster(picoFcsCluster);
   }
 }//fillFcsClusters
+
+//_________________
+void StPicoDstMaker::fillFcsHits() {
+  StMuFcsCollection * muFcs = mMuDst->muFcsCollection();
+  if ( !muFcs ) {
+    LOG_ERROR << "Cannot get Fcs Collection from MuDst" << endm;
+    return;
+  }
+  TIter next(muFcs->getHitArray());
+  StMuFcsHit* muHit(NULL);
+  while ((muHit = static_cast<StMuFcsHit*>(next()))) {
+    int counter = mPicoArrays[StPicoArrays::FcsHit]->GetEntries();
+    StPicoFcsHit picoFcsHit;
+    picoFcsHit.setIndex(counter);
+    picoFcsHit.setDetectorId(muHit->detectorId());
+    picoFcsHit.setId(muHit->id());
+    // picoFcsHit.setFourMomentum(muHit->fourMomentum());
+    picoFcsHit.setFourMomentum( TLorentzVector(0, 0, 0, muHit->energy()) );
+    new((*(mPicoArrays[StPicoArrays::FcsHit]))[counter]) StPicoFcsHit(picoFcsHit);
+  }
+}//fillFcsHit
 
 #if !defined (__TFG__VERSION__)
 

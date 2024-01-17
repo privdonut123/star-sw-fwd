@@ -227,6 +227,8 @@ class StPicoDstMaker : public StMaker {
   void fillETofHits();
   /// Fill Fwd Track information
   void fillFwdTracks();
+  /// Fill FcsHits information
+  void fillFcsHits();
   /// Fill FcsClusters information
   void fillFcsClusters();
   /// Fill MC vertex information
