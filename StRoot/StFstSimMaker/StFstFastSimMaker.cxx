@@ -20,6 +20,7 @@
 #include "TString.h"
 #include "TVector2.h"
 #include "TVector3.h"
+#include "TVectorT.h"
 
 #include <array>
 #define _USE_MATH_DEFINES
@@ -27,6 +28,8 @@
 #include <map>
 #include <algorithm>
 
+#include "St_db_Maker/St_db_Maker.h"
+#include "tables/St_Survey_Table.h"
 
 // lets not polute the global scope
 namespace FstGlobal{
@@ -34,6 +37,12 @@ namespace FstGlobal{
     StMatrixF Hack1to6(const StHit *stHit);
 	// used to convert between uniform and 1 sigma error
     constexpr float SQRT12 = sqrt(12.0);
+    
+    double PI = TMath::Pi();
+
+    double PHI[] = {5.*PI/12.,  3.*PI/12.,  1.*PI/12.,  -1.*PI/12.,
+                    -3.*PI/12., -5.*PI/12., -7.*PI/12., -9.*PI/12.,
+                    -11.*PI/12.,-13.*PI/12.,-15.*PI/12.,-17.*PI/12.};
 
     // Disk segmentation
     //
@@ -80,13 +89,291 @@ StFstFastSimMaker::StFstFastSimMaker(const Char_t *name)
 
 int StFstFastSimMaker::Init() {
 
+        //-----  LOAD ALIGNMENT MATRICES  -----//
+        St_db_Maker *dbMk=new St_db_Maker("db", "MySQL:StarDb", "$STAR/StarDb");
+        dbMk->SetDebug();
+        dbMk->SetDateTime(20211026,7); // event or run start time, set to your liking
+        dbMk->SetFlavor("ofl");
+
+        dbMk->Init();
+        dbMk->Make();
+       
+        Survey_st *fstOnTpc;
+        Survey_st *hssOnFst;
+        Survey_st *fstWedgeOnHss;
+        Survey_st *fstSensorOnWedge;
+
+        TMatrixD MfstOnTpc(4,4);
+        TMatrixD MhssOnFst(4,4);
+        TMatrixD MfstWedgeOnHss(4,4);
+        TMatrixD MfstSensorOnWedge(4,4);
+
+        MfstOnTpc.Zero();
+        MhssOnFst.Zero();
+        MfstWedgeOnHss.Zero();
+        MfstSensorOnWedge.Zero();
+
+        TDataSet *DB = 0;
+        DB = dbMk->GetDataBase("Geometry/fst/fstOnTpc");
+        if (!DB) {
+          std::cout << "ERROR: no fstOnTpc table found in db, or malformed local db config" << std::endl;
+        }
+
+        St_Survey *dataset = 0;
+        dataset = (St_Survey*) DB->Find("fstOnTpc");
+        
+        if (dataset) {
+
+            Int_t rows = dataset->GetNRows();
+            if (rows > 1) {
+              std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+            }
+
+            TDatime val[2];
+            dbMk->GetValidity((TTable*)dataset,val);
+            std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+              << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+              << std::endl;
+
+            fstOnTpc = dataset->GetTable();
+
+            MfstOnTpc(0,0) = fstOnTpc[0].r00;
+            MfstOnTpc(0,1) = fstOnTpc[0].r01;
+            MfstOnTpc(0,2) = fstOnTpc[0].r02;
+            MfstOnTpc(1,0) = fstOnTpc[0].r10;
+            MfstOnTpc(1,1) = fstOnTpc[0].r11;
+            MfstOnTpc(1,2) = fstOnTpc[0].r12;
+            MfstOnTpc(2,0) = fstOnTpc[0].r20;
+            MfstOnTpc(2,1) = fstOnTpc[0].r21;
+            MfstOnTpc(2,2) = fstOnTpc[0].r22;
+            MfstOnTpc(0,3) = fstOnTpc[0].t0 ;
+            MfstOnTpc(1,3) = fstOnTpc[0].t1 ;
+            MfstOnTpc(2,3) = fstOnTpc[0].t2 ;
+            MfstOnTpc(3,3) = 1.0            ;
+
+        } else {
+            std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+        }
+
+        DB = dbMk->GetDataBase("Geometry/fst/hssOnFst");
+        if (!DB) {
+          std::cout << "ERROR: no hssOnFst table found in db, or malformed local db config" << std::endl;
+        }
+
+        dataset = (St_Survey*) DB->Find("hssOnFst");
+        
+        if (dataset) {
+
+            Int_t rows = dataset->GetNRows();
+            if (rows > 1) {
+              std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+            }
+
+            TDatime val[2];
+            dbMk->GetValidity((TTable*)dataset,val);
+            std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+              << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+              << std::endl;
+
+            hssOnFst = dataset->GetTable();
+           
+        } else {
+            std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+        }
+
+        DB = dbMk->GetDataBase("Geometry/fst/fstWedgeOnHss");
+        if (!DB) {
+          std::cout << "ERROR: no fstWedgeOnHss table found in db, or malformed local db config" << std::endl;
+        }
+
+        dataset = (St_Survey*) DB->Find("fstWedgeOnHss");
+
+        if (dataset) {
+
+            Int_t rows = dataset->GetNRows();
+            if (rows > 1) {
+              std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+            }
+
+            TDatime val[2];
+            dbMk->GetValidity((TTable*)dataset,val);
+            std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+              << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+              << std::endl;
+
+            fstWedgeOnHss = dataset->GetTable();
+
+        } else {
+            std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+        }
+
+
+        DB = dbMk->GetDataBase("Geometry/fst/fstSensorOnWedge");
+        if (!DB) {
+          std::cout << "ERROR: no fstSensorOnWedge table found in db, or malformed local db config" << std::endl;
+        }
+
+        dataset = (St_Survey*) DB->Find("fstSensorOnWedge");
+        
+        if (dataset) {
+
+            Int_t rows = dataset->GetNRows();
+            if (rows > 1) {
+              std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+            }
+
+            TDatime val[2];
+            dbMk->GetValidity((TTable*)dataset,val);
+            std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+              << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+              << std::endl;
+
+            fstSensorOnWedge = dataset->GetTable();
+        
+        } else {
+            std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+        }
+
+
+        // default FST sensor z locations, found externally from ideal geometry
+        for (int is = 0; is < 108; is++) {
+            
+            // FST half
+            int h = (is / 18) % 2; // 0 (left +x half), 1 (right -x half) 
+        
+            // FST wedge
+            int w = is / 3; // 0-35
+
+            if(h == 0)
+            {
+              // create matrices from alignment tables
+              MhssOnFst(0,0) = hssOnFst[h].r00; 
+              MhssOnFst(0,1) = hssOnFst[h].r01; 
+              MhssOnFst(0,2) = hssOnFst[h].r02;
+              MhssOnFst(1,0) = hssOnFst[h].r10; 
+              MhssOnFst(1,1) = hssOnFst[h].r11; 
+              MhssOnFst(1,2) = hssOnFst[h].r12;
+              MhssOnFst(2,0) = hssOnFst[h].r20; 
+              MhssOnFst(2,1) = hssOnFst[h].r21; 
+              MhssOnFst(2,2) = hssOnFst[h].r22;
+              MhssOnFst(0,3) = 0.0;
+              MhssOnFst(1,3) = 0.0;
+              MhssOnFst(2,3) = hssOnFst[h].t2 ;
+              MhssOnFst(3,3) = 1.0            ;
+            }
+            if(h == 1)
+            {
+              MhssOnFst(0,0) = hssOnFst[h].r00; 
+              MhssOnFst(0,1) = hssOnFst[h].r01; 
+              MhssOnFst(0,2) = hssOnFst[h].r02;
+              MhssOnFst(1,0) = hssOnFst[h].r10; 
+              MhssOnFst(1,1) = hssOnFst[h].r11; 
+              MhssOnFst(1,2) = hssOnFst[h].r12;
+              MhssOnFst(2,0) = hssOnFst[h].r20; 
+              MhssOnFst(2,1) = hssOnFst[h].r21; 
+              MhssOnFst(2,2) = hssOnFst[h].r22;
+              MhssOnFst(0,3) = 0.0;
+              MhssOnFst(1,3) = 0.0;
+              MhssOnFst(2,3) = 0.0;
+              MhssOnFst(3,3) = 1.0            ;
+            }
+            MfstWedgeOnHss(0,0) = fstWedgeOnHss[w].r00; 
+            MfstWedgeOnHss(0,1) = fstWedgeOnHss[w].r01; 
+            MfstWedgeOnHss(0,2) = fstWedgeOnHss[w].r02;
+            MfstWedgeOnHss(1,0) = fstWedgeOnHss[w].r10; 
+            MfstWedgeOnHss(1,1) = fstWedgeOnHss[w].r11; 
+            MfstWedgeOnHss(1,2) = fstWedgeOnHss[w].r12;
+            MfstWedgeOnHss(2,0) = fstWedgeOnHss[w].r20; 
+            MfstWedgeOnHss(2,1) = fstWedgeOnHss[w].r21; 
+            MfstWedgeOnHss(2,2) = fstWedgeOnHss[w].r22;
+            MfstWedgeOnHss(0,3) = fstWedgeOnHss[w].t0 ;
+            MfstWedgeOnHss(1,3) = fstWedgeOnHss[w].t1 ;
+            MfstWedgeOnHss(2,3) = fstWedgeOnHss[w].t2 ;
+            MfstWedgeOnHss(3,3) = 1.0                 ;
+
+            if(is != mMisSensor)
+            {
+              MfstSensorOnWedge(0,0) = fstSensorOnWedge[is].r00; 
+              MfstSensorOnWedge(0,1) = fstSensorOnWedge[is].r01; 
+              MfstSensorOnWedge(0,2) = fstSensorOnWedge[is].r02;
+              MfstSensorOnWedge(1,0) = fstSensorOnWedge[is].r10; 
+              MfstSensorOnWedge(1,1) = fstSensorOnWedge[is].r11; 
+              MfstSensorOnWedge(1,2) = fstSensorOnWedge[is].r12;
+              MfstSensorOnWedge(2,0) = fstSensorOnWedge[is].r20; 
+              MfstSensorOnWedge(2,1) = fstSensorOnWedge[is].r21; 
+              MfstSensorOnWedge(2,2) = fstSensorOnWedge[is].r22;
+              MfstSensorOnWedge(0,3) = fstSensorOnWedge[is].t0 ;
+              MfstSensorOnWedge(1,3) = fstSensorOnWedge[is].t1 ;
+              MfstSensorOnWedge(2,3) = fstSensorOnWedge[is].t2 ;
+              MfstSensorOnWedge(3,3) = 1.0                     ;
+            }
+            else
+            {       
+              double cost = TMath::Cos(mDeltaGamma);//0.002);    
+              double sint = TMath::Sin(mDeltaGamma);//0.002);    
+              double cos75 = TMath::Cos(1.309);    
+              double sin75 = TMath::Sin(1.309);  
+              double dxu =  cos75*mDeltaU; //0.005; // dv = 100 um   
+              double dyu =  sin75*mDeltaU; //0.005; // dv = 100 um   
+              double dxv = -sin75*mDeltaV; //0.005; // dv = 100 um   
+              double dyv =  cos75*mDeltaV; //0.005; // dv = 100 um   
+              double dx = dxu + dxv; 
+              double dy = dyu + dyv; 
+              MfstSensorOnWedge(0,0) = cost;//fstSensorOnWedge[is].r00; 
+              MfstSensorOnWedge(0,1) = -sint;//fstSensorOnWedge[is].r01; 
+              MfstSensorOnWedge(0,2) = fstSensorOnWedge[is].r02;
+              MfstSensorOnWedge(1,0) = sint;//fstSensorOnWedge[is].r10; 
+              MfstSensorOnWedge(1,1) = cost;//fstSensorOnWedge[is].r11; 
+              MfstSensorOnWedge(1,2) = fstSensorOnWedge[is].r12;
+              MfstSensorOnWedge(2,0) = fstSensorOnWedge[is].r20; 
+              MfstSensorOnWedge(2,1) = fstSensorOnWedge[is].r21; 
+              MfstSensorOnWedge(2,2) = fstSensorOnWedge[is].r22;
+              MfstSensorOnWedge(0,3) = dx;//fstSensorOnWedge[is].t0 ;
+              MfstSensorOnWedge(1,3) = dy;//fstSensorOnWedge[is].t1 ;
+              MfstSensorOnWedge(2,3) = fstSensorOnWedge[is].t2 ;
+              MfstSensorOnWedge(3,3) = 1.0                     ;
+            }
+
+            // Rotate and Translate plane normal vectors and origin
+            TMatrixD M = MfstOnTpc * MhssOnFst * MfstWedgeOnHss * MfstSensorOnWedge;
+            M.Print();
+
+            // save this inverse matrix for use with misaligned simulated data
+            mInverseM[is].ResizeTo(4,4);
+            mInverseM[is] = M.Invert();
+            //mInverseM[is].Print();
+
+            MhssOnFst.Zero();
+            MfstWedgeOnHss.Zero();
+            MfstSensorOnWedge.Zero();
+        }
+
+
 	if(mHist){
 		fOut = new TFile(mQAFileName.Data(), "RECREATE");
 		AddHist(hTrutHitYXDisk = new TH3F("hTrutHitYXDisk", "Global hits before segmentation", 151, -75.5, 75.5, 151, -75.5, 75.5, 10, 0, 10));
 		AddHist(hTrutHitRDisk = new TH2F("hTrutHitRDisk", "Global hits before segmentation", 400, 0, 40, 10, 0, 10));
 		AddHist(hTrutHitRShower[0] = new TH2F("hTrutHitRShower_4", "Global hits before segmentation", 400, 0, 40, 20, -10, 10));
-		AddHist(hTrutHitRShower[1] = new TH2F("hTrutHitRShower_5", "Global hits before segmentation", 400, 0, 40, 20, -10, 10));
-		AddHist(hTrutHitRShower[2] = new TH2F("hTrutHitRShower_6", "Global hits before segmentation", 400, 0, 40, 20, -10, 10));
+		AddHist(hTrutHitRShower[1] = new TH2F("hTrutHitRShower_5", "Global hits before segmentation", 400, 0, 40, 20, -10, 10));	
+           	AddHist(hTrutHitRShower[2] = new TH2F("hTrutHitRShower_6", "Global hits before segmentation", 400, 0, 40, 20, -10, 10));
+                AddHist(hMCHit[0] = new TH2F("hMCHitDisk_4", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hMCHit[1] = new TH2F("hMCHitDisk_5", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hMCHit[2] = new TH2F("hMCHitDisk_6", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hMCPhiZOut[0] = new TH2F("hMCPhiZOutDisk_4", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hMCPhiZOut[1] = new TH2F("hMCPhiZOutDisk_5", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hMCPhiZOut[2] = new TH2F("hMCPhiZOutDisk_6", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hMCPhiZIn[0] = new TH2F("hMCPhiZInDisk_4", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hMCPhiZIn[1] = new TH2F("hMCPhiZInDisk_5", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hMCPhiZIn[2] = new TH2F("hMCPhiZInDisk_6", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCHit[0] = new TH2F("hRCHitDisk_4", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hRCHit[1] = new TH2F("hRCHitDisk_5", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hRCHit[2] = new TH2F("hRCHitDisk_6", "Global hits before segmentation", 150, -30.0, 30.0, 150, -30.0, 30.0));
+                AddHist(hRCPhiZOut[0] = new TH2F("hRCPhiZOutDisk_4", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCPhiZOut[1] = new TH2F("hRCPhiZOutDisk_5", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCPhiZOut[2] = new TH2F("hRCPhiZOutDisk_6", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCPhiZIn[0] = new TH2F("hRCPhiZInDisk_4", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCPhiZIn[1] = new TH2F("hRCPhiZInDisk_5", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
+                AddHist(hRCPhiZIn[2] = new TH2F("hRCPhiZInDisk_6", "Global hits before segmentation", 360, 0, 360, 2000, 125, 200));
 		AddHist(hTrutHitPhiDisk = new TH2F("hTrutHitPhiDisk", "Global hits before segmentation", 360, 0, 360, 10, 0, 10));
 		AddHist(hTrutHitPhiZ = new TH2F("hTrutHitPhiZ", "Global hits before segmentation", 360, 0, 360, 6000, 0, 600));
 		AddHist(hRecoHitYXDisk = new TH3F("hRecoHitYXDisk", "Global hits after segmentation", 151, -75.5, 75.5, 151, -75.5, 75.5, 10, 0, 10));
@@ -139,6 +426,7 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 
 	StRnDHitCollection *fsicollection = event->rndHitCollection();
 
+	const int NDISC = 6;
 	const int MAXR = mNumR;
 	const int MAXPHI = mNumPHI * mNumSEC;
 
@@ -195,15 +483,19 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 
 
 		int volume_id = hit->volume_id;
+                //in misaligned geometry, this is perfectly labeled to match all mapping throught FST framework
+                //in original geometry the wedges alternate. We are going to assume misaligned geometry from here on out
 		LOG_DEBUG << "volume_id = " << volume_id << endm;
-		int disk = volume_id / 1000;         // disk id
-		int wedge = (volume_id % 1000) / 10; // wedge id
-		int sensor = volume_id % 10;         // sensor id
+		int disk = volume_id / 1000;         // disk id    range = [4,6]
+		int wedge = (volume_id % 1000) / 10; // wedge id   range = [1,12]
+		int sensor = volume_id % 10;         // sensor id  range = [1,3]
+                int globalSensorId = (disk-4)*36 + (wedge-1)*3 + (sensor-1);
 		
 		// used as an index for various arrays
 		size_t disk_index = disk - 1;
 
 		LOG_DEBUG << "disk = " << disk << ", wedge = " << wedge << ", sensor = " << sensor << endm;
+		//cout << "disk = " << disk << ", wedge = " << wedge << ", sensor = " << sensor << endl;
 
 		// skip non-FST hits
 		if ( disk > 6 ) continue;
@@ -233,14 +525,40 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 		double rastered_x = x - xc;
 		double rastered_y = y - yc;
 
-		double r = sqrt(x * x + y * y);
-		double p = atan2(y, x);
+                // Apply inverse misalignment matrices to find x,y in sensor ideal coordinate frame
+                // ideal local sensor coordinates rotated into ideal global position
+                // used to find the overall r and phi index for disk
+                double gpos[4] = {x,y,z,1.};
+                double rgpos[4] = {rastered_x,rastered_y,z,1.};
+                TMatrixD gPosition(4,1,gpos); 
+                TMatrixD r_gPosition(4,1,rgpos);
+      
+                //cout << "globalSensorId = " << globalSensorId << endl;
+ 
+                //cout << "Original global position" << endl;
+                //gPosition.Print();
+                //r_gPosition.Print();
+
+                //cout << "Misalignment matrix to apply" << endl;
+                //mInverseM[globalSensorId].Print();
+
+                gPosition = mInverseM[globalSensorId] * gPosition;
+                r_gPosition = mInverseM[globalSensorId] * r_gPosition;             
+
+                //cout << "Ideal global position after inverse misalignment" << endl;
+                //gPosition.Print();
+                //r_gPosition.Print();
+
+
+		double r = sqrt(gPosition(0,0)*gPosition(0,0) + gPosition(1,0)*gPosition(1,0));
+		double p = atan2(gPosition(1,0), gPosition(0,0));
 
 		// rastered
-		double rr = sqrt(rastered_x * rastered_x + rastered_y * rastered_y);
-		double pp = atan2(rastered_y, rastered_x);
-
-
+		double rr = sqrt(r_gPosition(0,0)*r_gPosition(0,0) + r_gPosition(1,0)*r_gPosition(1,0));
+		double pp = atan2(r_gPosition(1,0), r_gPosition(0,0));
+                
+                //cout << "r =  " << r     <<  "  phi  = " << p     << endl;
+               
 		// wrap an angle between 0 and 2pi
 		auto wrapAngle = [&]( double angle ) {
 			angle = fmod( angle, 2.0 * M_PI );
@@ -262,15 +580,33 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 		LOG_DEBUG << "rr = " << rr << endm;
 
 		// Strip numbers on rastered value
-		int r_index = floor(MAXR * (rr - FstGlobal::RMIN[disk_index]) / (FstGlobal::RMAX[disk_index] - FstGlobal::RMIN[disk_index]));
+		//int r_index = floor(MAXR * (rr - FstGlobal::RMIN[disk_index]) / (FstGlobal::RMAX[disk_index] - FstGlobal::RMIN[disk_index]));
 		
 		// this gives a different conflicting answer for r_index and does not handle r outside of range
+                int r_index = -1;
 		for (int ii = 0; ii < MAXR; ii++)
 			if (rr > FstGlobal::RSegment[ii] && rr <= FstGlobal::RSegment[ii + 1])
 				r_index = ii;
 		
+                double center_phi = 5. * M_PI / 12. -  (wedge - 1) * M_PI / 6.; // radians
+                double phiGap = 1.0 * M_PI / 180.; // radians               
+
 		// Phi number
-		int phi_index = int(MAXPHI * pp / 2.0 / M_PI);
+		int phi_index;
+                if(sensor == 1)
+                {
+                  phi_index = int(MAXPHI * pp / 2.0 / M_PI);
+                }
+                if(sensor == 2 || sensor == 3)
+                {
+                  double local_phi = pp - center_phi;
+                  double gapless_phi;
+                  if(local_phi >  0.0) gapless_phi = pp - phiGap / 2.;
+                  if(local_phi <= 0.0) gapless_phi = pp + phiGap / 2.;
+                  phi_index = int(MAXPHI * gapless_phi / 2.0 / M_PI);
+                }
+           
+                cout << "PHI INDEX = " << phi_index << endl;            
 
 		if (r_index >= 8)
 			continue;
@@ -297,19 +633,76 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 			fsihit = new StRnDHit();
 			fsihit->setDetectorId(kFtsId);
 			fsihit->setLayer(disk);
+                        fsihit->setVolumeId(globalSensorId); // range = [0,127]             
 
 			//
 			// Set position and position error based on radius-constant bins
 			//
-			double p0 = (phi_index + 0.5) * 2.0 * M_PI / double(MAXPHI);
+			double p0  = (double(phi_index) + 0.5) * 2.0 * M_PI / double(MAXPHI);
+                        if(sensor == 2 || sensor == 3)
+                        {
+                          double local_phi = pp - center_phi;
+                          if(local_phi >  0.0) p0 = p0 + (phiGap / 2.);
+                          if(local_phi <= 0.0) p0 = p0 - (phiGap / 2.);
+                        }
 			double dp = 2.0 * M_PI / double(MAXPHI) / FstGlobal::SQRT12;
 			
 			// ONLY valid for the disk array 456, no difference for each disk
 			double r0 = (FstGlobal::RSegment[r_index] + FstGlobal::RSegment[r_index + 1]) * 0.5;
 			double dr = FstGlobal::RSegment[r_index + 1] - FstGlobal::RSegment[r_index];
 			
-			double x0 = r0 * cos(p0) + xc;
-			double y0 = r0 * sin(p0) + yc;
+			double xtemp = r0 * cos(p0) + xc;
+			double ytemp = r0 * sin(p0) + yc;
+
+                        //cout << "Rasterized position" << endl;
+                        //cout << "x =  " << xtemp <<  "    y  = " << ytemp << endl;
+                        //cout << "r =  " << r     <<  "  phi  = " << p     << endl;
+                        //cout << "r0 = " << r0    <<  "  phi0 = " << p0    << endl;
+
+                        // Apply last rotation to the hit to place it in the sensor's local coordinate frame
+                        //double angle = (TMath::Pi() * 3./8.) - wedge * (TMath::Pi() * 1./4.);
+                        // Inverse rotation
+               
+
+                        //////// This code will shift the FST hits to the local coordinates                  ////////////// 
+                        //////// We comment out for now because we want global coords for FST first tracking ////////////// 
+                        //double phiAxisShift = 0.0;
+                        //if((disk-4) == 0 || (disk-4) == 2)
+                        //{
+                        //  if((wedge-1)%2 == 0)
+                        //  {
+                        //    if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+                        //    else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+                        //  }
+                        //  else if((wedge-1)%2 == 1)
+                        //  {
+                        //    if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+                        //    else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+                        //  } 
+                        //}
+                        //else if((disk-4) == 1)
+                        //{
+                        //  if((wedge-1)%2 == 0)
+                        //  {
+                        //    if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+                        //    else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+                        //  }
+                        //  else if((wedge-1)%2 == 1)
+                        //  {
+                        //    if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+                        //    else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+                        //  } 
+                        //}
+                         
+                        //double x0 = xtemp *       TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift);
+                        //double y0 = xtemp * -1. * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift);
+            
+                        //cout << "Final Position of hit after rotation" << endl;
+                        //cout << "x = " << x0 << "   y = " << y0 << endl;
+
+                        double x0 = xtemp;
+                        double y0 = ytemp;
+                        
 			assert(TMath::Abs(x0) + TMath::Abs(y0) > 0);
 			double dz = 0.03 / FstGlobal::SQRT12;
 			double er = dr / FstGlobal::SQRT12;
@@ -318,6 +711,45 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 			fsihit->setPositionError(StThreeVectorF(er, dp, dz));
 			// set covariance matrix
 			fsihit->setErrorMatrix(&FstGlobal::Hack1to6(fsihit)[0][0]);
+
+                        double x0center = x0; 
+                        double y0center = y0;
+                        //double x0center;
+                        //double y0center = y0;
+                        //if((sensor-1)%3 == 0) x0center = x0 - 10.75;
+                        //else                  x0center = x0 - 22.25;
+
+			fsihit->setPosition(StThreeVectorF(x0center, y0center, z));
+
+                        //cout << endl << "Error Matrix " << endl;
+                        //cout << FstGlobal::Hack1to6(fsihit)[0][0] << "   " << FstGlobal::Hack1to6(fsihit)[0][1] << "   " << FstGlobal::Hack1to6(fsihit)[0][2] << endl;  
+                        //cout << FstGlobal::Hack1to6(fsihit)[1][0] << "   " << FstGlobal::Hack1to6(fsihit)[1][1] << "   " << FstGlobal::Hack1to6(fsihit)[1][2] << endl;  
+                        //cout << FstGlobal::Hack1to6(fsihit)[2][0] << "   " << FstGlobal::Hack1to6(fsihit)[2][1] << "   " << FstGlobal::Hack1to6(fsihit)[2][2] << endl;  
+
+
+                        //TMatrixD covar(2,2);
+                        //covar(0,0) = er*er;
+                        //covar(0,1) = 0.0;
+                        //covar(1,0) = 0.0;
+                        //covar(1,1) = dp*dp;
+
+                        //double rloc = TMath::Sqrt(x0*x0+y0*y0);
+                        //double ploc = TMath::ATan2(y0,x0);
+                        //TMatrixD Jac(2,2);
+                        //Jac(0,0) = TMath::Cos(ploc);
+                        //Jac(0,1) = -rloc*TMath::Sin(ploc);
+                        //Jac(1,0) = TMath::Sin(ploc);
+                        //Jac(1,1) = rloc*TMath::Cos(ploc);
+                        //TMatrixD JacT(2,2);
+                        //JacT(0,0) = TMath::Cos(ploc);
+                        //JacT(0,1) = TMath::Sin(ploc);
+                        //JacT(1,0) = -rloc*TMath::Sin(ploc);
+                        //JacT(1,1) = rloc*TMath::Cos(ploc);
+
+                        //TMatrixD covarNew = Jac*covar*JacT;
+                        //cout << "Error Matrix using Jacobian" << endl;
+                        //cout << covarNew[0][0] << "    " << covarNew[0][1] << endl;                          
+                        //cout << covarNew[1][0] << "    " << covarNew[1][1] << endl;                          
 
 			fsihit->setCharge(energy);
 			fsihit->setIdTruth(track, 100);
@@ -362,6 +794,23 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 				h3GlobalDeltaXYDisk->Fill(fsihit->position().x() - x, fsihit->position().y() - y, disk);
 
 				h3GlobalDeltaXYR->Fill(fsihit->position().x() - x, fsihit->position().y() - y, sqrt(pow(fsihit->position().x(), 2) + pow(fsihit->position().y(), 2)));
+                          
+                                double rrc = hitpos_rc.Mod();
+                                double prc = hitpos_rc.Phi();
+                                double rmc = hitpos_mc.Mod();
+                                double pmc = hitpos_mc.Phi();
+
+                                hMCHit[disk-4]->Fill(x,y);
+                                hRCHit[disk-4]->Fill(fsihit->position().x(), fsihit->position().y());
+
+                                if (sensor == 1){
+                                  hMCPhiZIn[disk-4]->Fill(pmc * 180.0 / TMath::Pi(), z);
+                                  hRCPhiZIn[disk-4]->Fill(prc * 180.0 / TMath::Pi(), z); 
+                                }
+                                else {
+                                  hMCPhiZOut[disk-4]->Fill(pmc * 180.0 / TMath::Pi(), z);
+                                  hRCPhiZOut[disk-4]->Fill(prc * 180.0 / TMath::Pi(), z);
+                                }
 			}
 		}
 		else { // Hit on this strip already exists, adding energy to old hit
@@ -420,6 +869,24 @@ int StFstFastSimMaker::Finish() {
 		h2GlobalSmearedXY->Write();
 		h2GlobalDeltaXY->Write();
 		h3GlobalDeltaXYDisk->Write();
+                hMCHit[0]->Write();
+                hMCHit[1]->Write();
+                hMCHit[2]->Write();
+                hMCPhiZOut[0]->Write();
+                hMCPhiZOut[1]->Write();
+                hMCPhiZOut[2]->Write();
+                hMCPhiZIn[0]->Write();
+                hMCPhiZIn[1]->Write();
+                hMCPhiZIn[2]->Write();
+                hRCHit[0]->Write();
+                hRCHit[1]->Write();
+                hRCHit[2]->Write();
+                hRCPhiZOut[0]->Write();
+                hRCPhiZOut[1]->Write();
+                hRCPhiZOut[2]->Write();
+                hRCPhiZIn[0]->Write();
+                hRCPhiZIn[1]->Write();
+                hRCPhiZIn[2]->Write();
 		fOut->Close();
 	}
 	return kStOK;

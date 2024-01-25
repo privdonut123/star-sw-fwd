@@ -21,7 +21,7 @@
 #include "StarGenerator/UTIL/StarRandom.h"
 
 namespace FttGlobal {
-    const bool verbose = false;
+    const bool verbose = true;
 }
 
 StFttFastSimMaker::StFttFastSimMaker(const Char_t *name)
@@ -56,11 +56,13 @@ Int_t StFttFastSimMaker::Make() {
         event = new StEvent;
         AddData(event);
         LOG_DEBUG << "Creating StEvent" << endm;
+        cout << "Creating StEvent" << endl;
     }
 
     if (0 == event->rndHitCollection()) {
         event->setRnDHitCollection(new StRnDHitCollection());
         LOG_DEBUG << "Creating StRnDHitCollection for FTS" << endm;
+        cout << "Creating StRnDHitCollection for FTS" << endl;
     }
 
     FillThinGapChambers(event);
@@ -244,6 +246,7 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
     St_g2t_fts_hit *hitTable = static_cast<St_g2t_fts_hit *>(GetDataSet("g2t_stg_hit"));
     if (!hitTable) {
         LOG_INFO << "g2t_stg_hit table is empty" << endm;
+        cout << "g2t_stg_hit table is empty" << endl;
         return;
     } // if !hitTable
 
@@ -276,16 +279,74 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
         int volume_id = hit->volume_id;
         // volume_id = (1 front | 2 back) + 10 * (quadrant 0-3) + 100 * (station 0-4)
         int disk = ((volume_id - 1) / 100) + 9 ; 
-        LOG_DEBUG << "sTGC hit: volume_id = " << volume_id << " disk = " << disk << endm;
+        //LOG_DEBUG << "sTGC hit: volume_id = " << volume_id << " disk = " << disk << endm;
+        //cout << "sTGC hit: volume_id = " << volume_id << " disk = " << disk << endl;
         
         // Now that geometry has a front and back, we skip points on the back module for fast sim
         if (disk < 9 || volume_id % 2 == 0)
             continue;
+      
+
+        int quadrant = (volume_id-1) % 100 / 10;
+        //cout << "quadrant = " << quadrant << endl;
+
+        if(disk == 10 && quadrant == 0) continue; // hardcoded, we are missing this in data
 
         float theta = DiskRotation(disk);
 
         float x_blurred = xhit + rand.gauss( STGC_SIGMA_X);
         float y_blurred = yhit + rand.gauss( STGC_SIGMA_Y);
+
+        float x_local = xhit;
+        float y_local = yhit - 5.9;
+
+        if(quadrant == 2) x_local += 6.5;
+        if(quadrant == 3) x_local -= 6.5;
+
+        //misalignment
+        if(quadrant == mMisQuad && disk == mMisDisk) 
+        {
+          x_local -= mDeltaU;
+          y_local -= mDeltaV; 
+          double angle = mDeltaGamma;
+          double xtemp = x_local;
+          double ytemp = y_local;
+          x_local =  xtemp*TMath::Cos(angle) + ytemp*TMath::Sin(angle); // we have a +0.002 rad rotation around z-axis
+          y_local = -xtemp*TMath::Sin(angle) + ytemp*TMath::Cos(angle); 
+        }
+        //cout << "x_local = " << x_local << endl;
+        //cout << "y_local = " << y_local << endl;
+        
+        // smear local x and y
+        x_local = x_local + rand.gauss( STGC_SIGMA_X);
+        y_local = y_local + rand.gauss( STGC_SIGMA_Y);
+
+        // Now we choose the center of a sTGC cell for the readout.         
+        //int x_bin = x_local/dx;
+        //int y_bin = y_local/dy;
+
+        //if(x_bin >  0 ) x_local = dx * (float(x_bin) + 0.5);
+        //if(x_bin <= 0 ) x_local = dx * (float(x_bin) - 0.5);
+        //if(y_bin >  0 ) y_local = dy * (float(y_bin) + 0.5);
+        //if(y_bin <= 0 ) y_local = dy * (float(y_bin) - 0.5);
+
+        //cout << "x_bin = " << x_bin << ", x_local = " << x_local << endl;
+        //cout << "y_bin = " << y_bin << ", y_local = " << y_local << endl;
+
+        //double x_binned, y_binned;
+        //y_binned = y_local + 5.9;
+        //x_binned = x_local;
+        //if(quadrant == 2) x_binned = x_local - 6.5;
+        //if(quadrant == 3) x_binned = x_local + 6.5;
+
+        double x_smeared, y_smeared;
+        y_smeared = y_local + 5.9;
+        x_smeared = x_local;
+        if(quadrant == 2) x_smeared = x_local - 6.5;
+        if(quadrant == 3) x_smeared = x_local + 6.5;
+
+        //cout << "xhit = " << xhit << ",    x_smeared = " << x_smeared << endl;
+        //cout << "yhit = " << yhit << ",    y_smeared = " << y_smeared << endl;
 
         float x_rot = -999, y_rot = -999;
         this->rot(-theta, x_blurred, y_blurred, x_rot, y_rot);
@@ -295,13 +356,17 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
         GlobalToLocal(x_rot, y_rot, disk, quad, localX, localY);
 
         // not in the active region
-        if (quad < 0 || quad > 3)
-            continue;
+        //if (quad < 0 || quad > 3)
+        //    continue;
+        //cout << "In the active region" << endl;
+      
         nSTGCHits++;
 
         StRnDHit *ahit = new StRnDHit();
 
-        ahit->setPosition({x_blurred, y_blurred, zhit});
+        ahit->setPosition({x_smeared, y_smeared, zhit});
+        //ahit->setPosition({x_binned, y_binned, zhit});
+        //ahit->setPosition({x_blurred, y_blurred, zhit});
         ahit->setPositionError({dx, dy, 0.1});
 
         ahit->setDouble0(xhit);
@@ -311,7 +376,7 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
 
         ahit->setLayer(disk); // disk mapped to layer 
         ahit->setLadder(2);   // indicates a point
-        ahit->setWafer(quad); // quadrant number
+        ahit->setWafer(quadrant); // quadrant number
 
         ahit->setIdTruth(hit->track_p, 0);
         ahit->setDetectorId(kFtsId); // TODO: use dedicated ID for Ftt when StEvent is updated

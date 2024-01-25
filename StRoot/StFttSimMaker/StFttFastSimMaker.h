@@ -40,6 +40,14 @@ class StFttFastSimMaker : public StMaker {
             sTGC_disk12_theta = degrees * deg_to_radians;
         return;
     }
+    
+    void SetMisalignment(int disk, int quad, double du, double dv, double dg) {
+        mMisDisk    = disk;
+        mMisQuad    = quad;
+        mDeltaU     = du;
+        mDeltaV     = dv;
+        mDeltaGamma = dg;
+    }
 
   private:
     void FillThinGapChambers(StEvent *event);
@@ -91,7 +99,7 @@ class StFttFastSimMaker : public StMaker {
     const double STGC_SIGMA_Y = 0.01;       // 100 microns
     const double STGC_SIGMA_Z = 0.001;      // 10 microns
     const double STGC_WIRE_LENGTH = 15.0;   // cm
-    const bool STGC_MAKE_GHOST_HITS = true; //should be moved to run-time opt
+    const bool STGC_MAKE_GHOST_HITS = false; //should be moved to run-time opt
 
     float sTGC_disk9_theta = 0.0f;
     float sTGC_disk10_theta = 0.0f;
@@ -100,6 +108,13 @@ class StFttFastSimMaker : public StMaker {
 
     int sTGCNRealPoints = 0;
     int sTGCNGhostPoints = 0;
+
+    // Misalignment Testing Variables
+    int    mMisDisk    = 10;  // which disk is misaligned
+    int    mMisQuad    = 0;   // which quadrant is misaligned
+    double mDeltaU     = 0.0; // misalignment in u direction
+    double mDeltaV     = 0.0; // misalignment in v direction
+    double mDeltaGamma = 0.0; // misalignment in gamme direction
 
     ClassDef(StFttFastSimMaker, 0)
 };

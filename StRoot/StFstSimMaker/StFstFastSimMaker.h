@@ -12,7 +12,7 @@ class StRnDHit;
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3F.h"
-
+#include "TMatrixD.h"
 
 class StFstFastSimMaker : public StMaker {
 	public:
@@ -28,6 +28,7 @@ class StFstFastSimMaker : public StMaker {
 
 		/// Set min/max active radii for each disk
 		void SetDisk(const int i, const float rmn, const float rmx);
+		void SetMisalignment(int sensor, double u, double v, double gamma) { mMisSensor = sensor; mDeltaU = u; mDeltaV = v; mDeltaGamma = gamma; }
 		void SetInEfficiency(float ineff = 0.1) { mInEff = ineff; }
 		void SetQAFileName(TString filename = 0.1) { mQAFileName = filename; }
 		void SetFillHist(const bool hist = false) { mHist = hist; }
@@ -37,6 +38,11 @@ class StFstFastSimMaker : public StMaker {
 		void FillSilicon(StEvent *event);
 		StRnDHitCollection *hitCollection = nullptr;
 
+                int mMisSensor = 0;
+                double mDeltaU = 0.0;
+                double mDeltaV = 0.0;
+                double mDeltaGamma = 0.0;
+
 		int mNumR;
 		int mNumPHI;
 		int mNumSEC;
@@ -44,10 +50,18 @@ class StFstFastSimMaker : public StMaker {
 		float mInEff;
 		bool mHist;
 		TString mQAFileName;
+                TMatrixD mInverseM[108];
 
 		TH3F *hTrutHitYXDisk;
 		TH2F *hTrutHitRDisk;
 		TH2F *hTrutHitRShower[3];
+                TH2F *hMCHit[3];
+                TH2F *hMCPhiZOut[3];
+                TH2F *hMCPhiZIn[3];
+                TH2F *hRCHit[3];
+                TH2F *hRCPhiZOut[3];
+                TH2F *hRCPhiZIn[3];
+
 		TH2F *hTrutHitPhiDisk;
 		TH2F *hTrutHitPhiZ;
 		TH3F *hRecoHitYXDisk;
