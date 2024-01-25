@@ -50,13 +50,13 @@ class McTrack {
         mStartVertex = start_vertex;
     }
 
-    void addHit(KiTrack::IHit *hit) { mFttHits.push_back(hit); }
+    void addHit(KiTrack::IHit *hit) { mHits.push_back(hit); }
     void addFstHit(KiTrack::IHit *hit) { mFstHits.push_back(hit); }
 
     double mPt, mEta, mPhi;
     int mTid, mQ, mStartVertex;
 
-    std::vector<KiTrack::IHit *> mFttHits;
+    std::vector<KiTrack::IHit *> mHits;
     std::vector<KiTrack::IHit *> mFstHits;
 };
 
@@ -94,6 +94,10 @@ class FwdHit : public KiTrack::IHit {
         }
     };
 
+    int getSensor() { return _sid; }
+
+    void setSensor(int sid) { _sid = sid; }
+
     const KiTrack::ISectorSystem *getSectorSystem() const {
         return FwdSystem::sInstance;
     }
@@ -101,6 +105,7 @@ class FwdHit : public KiTrack::IHit {
     int getTrackId() { return _tid;}
     int _tid; // aka ID truth
     int _vid; // volume id
+    int _sid; // sensor id for FST | quadrant for FTT
     unsigned int _id; // just a unique id for each hit in this event.
     std::shared_ptr<McTrack> _mcTrack;
     TMatrixDSym _covmat;
@@ -118,7 +123,6 @@ class FwdConnector : public KiTrack::ISectorConnector {
 
     // Return the possible sectors (layers) given current
     virtual std::set<int> getTargetSectors(int disk) {
-
         std::set<int> r;
 
         if (disk > 0 && _distance >= 1)
