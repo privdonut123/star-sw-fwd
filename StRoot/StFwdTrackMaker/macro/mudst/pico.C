@@ -538,7 +538,11 @@ void genDst(unsigned int Last,
 }
 
 void pico(){
-  genDst(200, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/work/st_fwd_22356011_raw_4500001.MuDst.root", "PROD.root");
+  genDst(500, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/work/st_fwd_22356011_raw_4500001.MuDst.root", "PROD.root");
+}
+
+void pico( TString f, int n = 500){
+  genDst(n, "y2023a picodst PicoVtxMode:PicoVtxDefault", f.Data(), "PROD.root" /*Not used?*/);
 }
 
 /////////////////////////////////////////////////////////////////////////////
