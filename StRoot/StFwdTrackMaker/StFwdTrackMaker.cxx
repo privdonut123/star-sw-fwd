@@ -975,6 +975,10 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
     }
     StFstHitCollection *fstHitCollection = event->fstHitCollection();
 
+    double mFstDefaultZ[12] = {150.008101+0.0009308,151.403100+0.000946,153.491899+0.0010220,152.096900+0.0010770,
+                               166.989901+0.0010680,165.594901+0.001053,163.506101+0.0009766,164.901101+0.0009918,
+                               177.039106+0.0009308,178.434106+0.000946,180.522905+0.0010220,179.127906+0.0010070};
+
     if ( fstHitCollection && fstHitCollection->numberOfHits() > 0){
         // reuse this to store cov mat
         TMatrixDSym hitCov3(3);
