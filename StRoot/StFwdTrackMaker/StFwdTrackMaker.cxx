@@ -4,6 +4,7 @@
 #include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
 #include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
 #include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
+#include "StFwdTrackMaker/StFwdGbl.h"
 
 #include "KiTrack/IHit.h"
 #include "GenFit/Track.h"
@@ -224,6 +225,8 @@ class ForwardTracker : public ForwardTrackMaker {
             mQualityPlotter = 0;
         }
         if (mTrackFitter){
+            mTrackFitter->finish();
+            mTrackFitter->writeAlignment();
             delete mTrackFitter;
             mTrackFitter= 0;
         }
@@ -590,6 +593,12 @@ void StFwdTrackMaker::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
         return;
     }
     
+    if ( "FASTSIM" == fttFromSource ) {
+        LOG_DEBUG << "Loading sTGC hits from StFttFastSim hits" << endm;
+        loadFttHitsFromFastSim( mcTrackMap, hitMap, count );
+        return;
+    }
+
     StFttCollection *col = event->fttCollection();
     // From Data
     if ( col || "DATA" == fttFromSource ) {
@@ -615,6 +624,7 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         for ( auto point : col->points() ){
             
             FwdHit *hit = new FwdHit(count++, point->xyz().x()/10.0, point->xyz().y()/10.0, point->xyz().z(), -point->plane(), 0, hitCov3, nullptr);
+            hit->setSensor(point->quadrant());
             mFttHits.push_back( TVector3( point->xyz().x()/10.0, point->xyz().y()/10.0, point->xyz().z() )  );
             if ( mGenHistograms ) {
                 mHistograms[TString::Format("stgc%dHitMapSec", point->plane()).Data()]->Fill(point->xyz().x()/10.0, point->xyz().y()/10.0);
@@ -640,6 +650,131 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         LOG_DEBUG << "The Ftt Collection is EMPTY points" << endm;
     }
     LOG_DEBUG << "Number of FTT in TTree: " << mTreeData.fttN << endm;
+}
+
+void StFwdTrackMaker::loadFttHitsFromFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
+  
+    St_g2t_fts_hit *g2t_stg_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_stg_hit");
+
+    //cout << "Loading FTT hits from GEANT" << endl;
+
+    //this->mTreeData.fttN = 0;
+    if (!g2t_stg_hits){
+        //cout << "geant/g2t_stg_hit is empty" << endl; 
+        LOG_WARN << "geant/g2t_stg_hit is empty" << endm;
+        return;
+    }
+
+    // make the Covariance Matrix once and then reuse
+    TMatrixDSym hitCov3(3);
+    const double sigXY = 0.01;
+    hitCov3(0, 0) = sigXY * sigXY;
+    hitCov3(1, 1) = sigXY * sigXY;
+    hitCov3(2, 2) = 0.001 * 0.001; // unused since they are loaded as points on plane
+
+    int nstg = g2t_stg_hits->GetNRows();
+
+    LOG_DEBUG << "This event has " << nstg << " stg hits in geant/g2t_stg_hit " << endm;
+    //cout << "This event has " << nstg << " stg hits in geant/g2t_stg_hit " << endl;
+    //if ( mGenHistograms ) {
+    //    this->mHistograms["nHitsSTGC"]->Fill(nstg);
+    //}
+
+
+    bool filterGEANT = mFwdConfig.get<bool>( "Source:fttFilter", false );
+    for (int i = 0; i < nstg; i++) {
+
+        g2t_fts_hit_st *git = (g2t_fts_hit_st *)g2t_stg_hits->At(i);
+        if (0 == git)
+            continue; // geant hit
+        int track_id = git->track_p;
+        int volume_id = git->volume_id;
+        //int plane_id = (volume_id - 1) / 4;           // from 1 - 16. four chambers per station
+        // volume_id = (1 front | 2 back) + 10 * (quadrant 0-3) + 100 * (station 0-4)
+        int plane_id = ((volume_id - 1) / 100) + 9 ;
+
+        //LOG_DEBUG << "sTGC hit: volume_id = " << volume_id << " disk = " << plane_id << endm;
+        cout << "sTGC hit: volume_id = " << volume_id << " disk = " << plane_id << endl;
+        //if (disk < 9)
+        //
+        float x = git->x[0];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float y = git->x[1];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float z = git->x[2];
+
+        int quadId = int((volume_id-1) % 100 / 10);
+ 
+        cout << "plane_id = " << plane_id << ",    quadId = " << quadId << endl;
+
+        if(plane_id == 10 && quadId == 0) continue;
+
+        cout << "sTGC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << ",   track ID = " << track_id << endl;
+        //cout << "global position: x = " << x << ", y = " << y << ", z = " << z << endl;      
+
+        // Now that geometry has a front and back, we skip points on the back module for fast sim
+        if (plane_id < 9 || volume_id % 2 == 0)
+            continue;
+
+        FwdHit *hit = new FwdHit(count++, x, y, z, -(plane_id-9), track_id, hitCov3, mcTrackMap[track_id]);
+        hit->setSensor(quadId);
+        // Add the hit to the hit map
+        //hitMap[hit->getSector()].push_back(hit);
+        //mFttHits.push_back( TVector3( x, y, z )  );
+
+        // Add hit pointer to the track
+        if (mcTrackMap[track_id])
+            mcTrackMap[track_id]->addHit(hit);
+    } // loop on hits
+
+    LOG_INFO << "Loading FTT Hits from FastSim" << endm;
+    StEvent *event = (StEvent *)this->GetDataSet("StEvent");
+
+    StRnDHitCollection *rndCollection = event->rndHitCollection();
+    const StSPtrVecRnDHit &hits = rndCollection->hits();
+
+    if ( rndCollection && rndCollection->numberOfHits() > 0 ){
+        LOG_INFO << "The RnD Collection has " << rndCollection->numberOfHits() << " points" << endm;
+        //TMatrixDSym hitCov3(3);
+        //const double sigXY = 0.01; // 
+        //hitCov3(0, 0) = sigXY * sigXY;
+        //hitCov3(1, 1) = sigXY * sigXY;
+        //hitCov3(2, 2) = 0.001 * 0.001; // unused since they are loaded as points on plane
+        for ( auto point : hits ){
+
+            if(point->layer() < 9) continue;
+            cout << "plane_id = " << point->layer() << ",    quadId = " << point->wafer() << endl;
+
+            if(point->layer() == 10 && point->wafer() == 0) continue;
+
+            FwdHit *hit = new FwdHit(count++, point->position().x(), point->position().y(), point->position().z(), -(point->layer()-9), point->idTruth(), hitCov3, mcTrackMap[point->idTruth()]);
+            hit->setSensor(point->wafer()); // quadrant 
+
+            int plane_id = 0;
+            mFttHits.push_back( TVector3( point->position().x(), point->position().y(), point->position().z())  );
+            if ( mGenHistograms ) {
+                this->mHistograms[TString::Format("stgc%dHitMapSec", point->layer()-9).Data()]->Fill(point->position().x(), point->position().y());
+            }
+            // Add the hit to the hit map
+            hitMap[hit->getSector()].push_back(hit);
+
+            if (mGenTree && mTreeData.fttN < MAX_TREE_ELEMENTS) {
+                LOG_DEBUG << "Adding FTT Point to TTrees" << endm;
+                LOG_DEBUG << "FttPoint( " << point->position().x() << ", " << point->position().y() << ", " << point->position().z() << " )" << endm;
+                mTreeData.fttX.push_back( point->position().x() );
+                mTreeData.fttY.push_back( point->position().y() );
+                mTreeData.fttZ.push_back( point->position().z() );
+                mTreeData.fttTrackId.push_back( 0 );
+                mTreeData.fttVolumeId.push_back( point->layer() );
+                mTreeData.fttPt.push_back( 0 );
+                mTreeData.fttVertexId.push_back( 0 );
+                mTreeData.fttN++;
+            }
+        }
+        LOG_INFO << "Number of FTT hits in RnDHitCollection: " << mTreeData.fttN << endm;
+        return;
+    } else {
+        LOG_INFO << "The Ftt Collection is EMPTY points" << endm;
+    }
+    LOG_INFO << "Number of FTT in TTree: " << mTreeData.fttN << endm;
 }
 
 void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
@@ -857,11 +992,17 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
                     float vPhi = fsthits[ih]->localPosition(1);
                     float vZ = fsthits[ih]->localPosition(2);
 
-                    const float dz0 = fabs( vZ - 151.75 );
-                    const float dz1 = fabs( vZ - 165.248 );
-                    const float dz2 = fabs( vZ - 178.781 );
+                    //const float dz0 = fabs( vZ - 151.75 );
+                    //const float dz1 = fabs( vZ - 165.248 );
+                    //const float dz2 = fabs( vZ - 178.781 );
 
-                    int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
+                    //int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
+                    int d = iw/12;
+                    int ds = (is == 0)? 0 : 1; // +0 for inner, +1 for outer
+                    int defaultZidx = d * 4 + 2 * (iw % 2) + ds;
+                    vZ = mFstDefaultZ[defaultZidx];
+
+                    int sensorIdx = iw*3 + is; 
 
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
@@ -872,6 +1013,7 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 
                     // we use d+4 so that both FTT and FST start at 4
                     FwdHit *hit = new FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr);
+                    hit->setSensor(sensorIdx);
                     // Add the hit to the hit map
                     hitMap[d+4].push_back(hit);
 
@@ -890,6 +1032,62 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 } //loadFstHitsFromStEvent
 
 int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+   {
+        int count = 0;
+        St_g2t_fts_hit *g2t_fsi_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit");
+
+        if ( !g2t_fsi_hits )
+            return count;
+
+        int nfsi = g2t_fsi_hits->GetNRows();
+
+
+        // reuse this to store cov mat
+        TMatrixDSym hitCov3(3);
+
+        if ( mGenHistograms ) this->mHistograms["nHitsFSI"]->Fill(nfsi);
+        // LOG_INFO << "# fsi hits = " << nfsi << endm;
+
+        mTreeData.fstN = 0;
+        for (int i = 0; i < nfsi; i++) {
+
+            g2t_fts_hit_st *git = (g2t_fts_hit_st *)g2t_fsi_hits->At(i);
+
+            if (0 == git)
+                continue; // geant hit
+
+            int track_id = git->track_p;
+            int volume_id = git->volume_id;  // 4, 5, 6
+            int d = volume_id / 1000;        // disk id
+            int w = (volume_id % 1000) / 10; // wedge id
+            int s = volume_id % 10;          // sensor id
+            int globalSensorId = (d-4)*36 + (w-1)*3 + (s-1);
+    
+            int plane_id = d - 4;
+            float x = git->x[0];
+            float y = git->x[1];
+            float z = git->x[2];
+
+            //cout << "FST MC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << endl;
+
+            hitCov3 = makeSiCovMat( TVector3( x, y, z ), mFwdConfig );
+            FwdHit *hit = new FwdHit(count++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
+            hit->setSensor(globalSensorId);
+            //mFstHits.push_back( TVector3( x, y, z )  );
+
+            //mTreeData.fstX.push_back( x );
+            //mTreeData.fstY.push_back( y );
+            //mTreeData.fstZ.push_back( z );
+            //mTreeData.fstTrackId.push_back( track_id );
+
+            //mTreeData.fstN++;
+
+            // Add the hit to the hit map
+            if (mcTrackMap[track_id])
+              mcTrackMap[track_id]->addFstHit(hit);
+        }
+    }
+
     int count = 0;
     // Get the StEvent handle
     StEvent *event = (StEvent *)GetDataSet("StEvent");
@@ -925,6 +1123,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
         hitCov3(2,0) = covmat[2][0]; hitCov3(2,1) = covmat[2][1]; hitCov3(2,2) = covmat[2][2];
 
         FwdHit *fhit = new FwdHit(count++, hit->position().x(), hit->position().y(), hit->position().z(), hit->layer(), hit->idTruth(), hitCov3, mcTrackMap[hit->idTruth()]);
+        fhit->setSensor(hit->volumeId()); 
         size_t index = hit->layer()-4;
         if (mGenHistograms && index < 3 ){
             ((TH2*)mHistograms[TString::Format("fsi%luHitMapZ", index).Data()]) -> Fill( hit->position().x(), hit->position().y(), hit->position().z() );
@@ -944,7 +1143,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
 
     }
     return count;
-} //loadFstHitsFromStEvent
+} //loadFstHitsFromStEventFastSim
 
 int StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
     int count = 0;

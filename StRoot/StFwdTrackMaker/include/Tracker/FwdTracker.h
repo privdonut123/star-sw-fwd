@@ -33,7 +33,7 @@
 #include "StFwdTrackMaker/include/Tracker/CriteriaKeeper.h"
 
 #include "GenFit/FitStatus.h"
-#include "GenFit/GFRaveVertexFactory.h"
+//#include "GenFit/GFRaveVertexFactory.h"
 
 #include "StFwdTrackMaker/FwdTrackerConfig.h"
 #include "StFwdTrackMaker/Common.h"
@@ -1069,29 +1069,44 @@ class ForwardTrackMaker {
                 mHist["FitStatus"]->Fill("PossibleReFit", 1);
             }
 
-            Seed_t fst_hits_for_this_track(3, nullptr);
-            Seed_t fst_hits_for_this_track_nnull;
+            //Seed_t fst_hits_for_this_track(3, nullptr);
+            //Seed_t fst_hits_for_this_track_nnull;
+            Seed_t fst_hits_for_this_track[3];
 
             for (size_t j = 0; j < 3; j++) {
                 for (auto h0 : hitmap[j]) {
                     if (dynamic_cast<FwdHit *>(h0)->_tid == gtr.track->getMcTrackId()) {
-                        fst_hits_for_this_track[j] = h0;
-                        fst_hits_for_this_track_nnull.push_back(h0);
-                        break;
+                        //fst_hits_for_this_track[j] = h0;
+                        fst_hits_for_this_track[j].push_back(h0);
+                        //break;
                     }
                 } // loop on hits in this layer of hitmap
             }     // loop on hitmap layers
 
             size_t nFstHitsFound = 0;
-            if ( fst_hits_for_this_track[0] != nullptr ) nFstHitsFound++;
-            if ( fst_hits_for_this_track[1] != nullptr ) nFstHitsFound++;
-            if ( fst_hits_for_this_track[2] != nullptr ) nFstHitsFound++;
+            Seed_t fst_hits_to_add;            
+
+            for(int idisk = 0; idisk < 3; idisk++) {
+              if ( fst_hits_for_this_track[idisk].size() >= 1 ) {
+                  for(int ihit = 0; ihit < fst_hits_for_this_track[idisk].size(); ihit++) {
+                    fst_hits_to_add.push_back( fst_hits_for_this_track[idisk][ihit] );  
+                    nFstHitsFound++;
+                  }
+              }
+            }
+  
+            //if ( fst_hits_for_this_track[0] != nullptr ) nFstHitsFound++;
+            //if ( fst_hits_for_this_track[1] != nullptr ) nFstHitsFound++;
+            //if ( fst_hits_for_this_track[2] != nullptr ) nFstHitsFound++;
             LOG_DEBUG << "Found " << nFstHitsFound << " FST Hits on this track (MC lookup)" << endm;
 
             if ( mGenHistograms ){
-                this->mHist[ "nFstHitsFound" ]->Fill( 1, ( fst_hits_for_this_track[0] != nullptr ? 1 : 0 ) );
-                this->mHist[ "nFstHitsFound" ]->Fill( 2, ( fst_hits_for_this_track[1] != nullptr ? 1 : 0 ) );
-                this->mHist[ "nFstHitsFound" ]->Fill( 3, ( fst_hits_for_this_track[2] != nullptr ? 1 : 0 ) );
+                //this->mHist[ "nFstHitsFound" ]->Fill( 1, ( fst_hits_for_this_track[0] != nullptr ? 1 : 0 ) );
+                //this->mHist[ "nFstHitsFound" ]->Fill( 2, ( fst_hits_for_this_track[1] != nullptr ? 1 : 0 ) );
+                //this->mHist[ "nFstHitsFound" ]->Fill( 3, ( fst_hits_for_this_track[2] != nullptr ? 1 : 0 ) );
+                this->mHist[ "nFstHitsFound" ]->Fill( 1, ( fst_hits_for_this_track[0].size() ) );
+                this->mHist[ "nFstHitsFound" ]->Fill( 2, ( fst_hits_for_this_track[1].size() ) );
+                this->mHist[ "nFstHitsFound" ]->Fill( 3, ( fst_hits_for_this_track[2].size() ) );
             }
 
             if (nFstHitsFound >= 1) {
@@ -1101,8 +1116,8 @@ class ForwardTrackMaker {
 
                 Seed_t combinedSeed;
                 LOG_DEBUG << "Found " << gtr.fttSeed.size() << " existing FTT seed points" << endm;
-                LOG_DEBUG << "Adding " << fst_hits_for_this_track_nnull.size() << " new FST seed points" << endm;
-                combinedSeed.insert( combinedSeed.begin(), fst_hits_for_this_track_nnull.begin(), fst_hits_for_this_track_nnull.end() );
+                LOG_DEBUG << "Adding " << fst_hits_to_add.size() << " new FST seed points" << endm;
+                combinedSeed.insert( combinedSeed.begin(), fst_hits_to_add.begin(), fst_hits_to_add.end() );
                 combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() ); 
                 
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
@@ -1122,7 +1137,7 @@ class ForwardTrackMaker {
                     } else {
                         LOG_DEBUG << "refitTrackWithFstHits successful refit" << endm;
                         mHist["FitStatus"]->Fill("GoodReFit", 1);
-                        gtr.addFST( fst_hits_for_this_track_nnull, mTrackFitter->getTrack() );
+                        gtr.addFST( fst_hits_to_add, mTrackFitter->getTrack() );
                     }
                 }
             } // we have 3 Si hits to refit with
@@ -1147,44 +1162,59 @@ class ForwardTrackMaker {
                 mHist["FitStatus"]->Fill("PossibleReFit", 1);
             }
 
-            Seed_t hits_near_plane0;
-            Seed_t hits_near_plane1;
-            Seed_t hits_near_plane2;
-            Seed_t hits_near_plane3;
+            //Seed_t hits_near_plane0;
+            //Seed_t hits_near_plane1;
+            //Seed_t hits_near_plane2;
+            //Seed_t hits_near_plane3;
+            //Seed_t hits_to_add;
+            //try {
+            //    auto msp3 = mTrackFitter->projectToFtt(3, t.track);
+            //    auto msp2 = mTrackFitter->projectToFtt(2, t.track);
+            //    auto msp1 = mTrackFitter->projectToFtt(1, t.track);
+            //    auto msp0 = mTrackFitter->projectToFtt(0, t.track);
+
+            //    // now look for Ftt hits near these
+            //    hits_near_plane3 = findFttHitsNearProjectedState(hitmap[3], msp3);
+            //    hits_near_plane2 = findFttHitsNearProjectedState(hitmap[2], msp2);
+            //    hits_near_plane1 = findFttHitsNearProjectedState(hitmap[1], msp1);
+            //    hits_near_plane0 = findFttHitsNearProjectedState(hitmap[0], msp0);
+            
+            Seed_t hits_near_plane[4];
             Seed_t hits_to_add;
             try {
-                auto msp3 = mTrackFitter->projectToFtt(3, t.track);
-                auto msp2 = mTrackFitter->projectToFtt(2, t.track);
-                auto msp1 = mTrackFitter->projectToFtt(1, t.track);
-                auto msp0 = mTrackFitter->projectToFtt(0, t.track);
+                std::vector<TVector2> projectedPos;
+                for(int ipent = 0; ipent < 16; ipent++) {
+                    int fttPlane = ipent/4;
+                    int fttQuad  = ipent%4;
+                    TVector2 projectedXY = mTrackFitter->projectToFtt(ipent, t.track);                
+                    Seed_t hits_near_pent = findFttHitsNearProjectedState(hitmap[fttPlane], ipent, projectedXY);
+                    if(fttQuad == 0) hits_near_plane[fttPlane] = hits_near_pent;
+                    if(fttQuad != 0) {
+                        for( auto h : hits_near_pent ) hits_near_plane[fttPlane].push_back(h);
+                    }
+                }
 
-                // now look for Ftt hits near these
-                hits_near_plane3 = findFttHitsNearProjectedState(hitmap[3], msp3);
-                hits_near_plane2 = findFttHitsNearProjectedState(hitmap[2], msp2);
-                hits_near_plane1 = findFttHitsNearProjectedState(hitmap[1], msp1);
-                hits_near_plane0 = findFttHitsNearProjectedState(hitmap[0], msp0);
-
-                LOG_DEBUG << " Found #FTT hits on planes " << TString::Format( "[%ld, %ld, %ld, %ld]", hits_near_plane0.size(), hits_near_plane1.size(), hits_near_plane2.size(), hits_near_plane3.size() ) << endm;
+                LOG_DEBUG << " Found #FTT hits on planes " << TString::Format( "[%ld, %ld, %ld, %ld]", hits_near_plane[0].size(), hits_near_plane[1].size(), hits_near_plane[2].size(), hits_near_plane[3].size() ) << endm;
             } catch (genfit::Exception &e) {
                 // Failed to project to Si disk: ", e.what()
                 LOG_WARN << "Unable to get Ftt projections: " << e.what() << endm;
             }
 
             if ( mGenHistograms ){
-                this->mHist[ "nFttHitsFound" ]->Fill( 1, hits_near_plane0.size() );
-                this->mHist[ "nFttHitsFound" ]->Fill( 2, hits_near_plane1.size() );
-                this->mHist[ "nFttHitsFound" ]->Fill( 3, hits_near_plane2.size() );
-                this->mHist[ "nFttHitsFound" ]->Fill( 4, hits_near_plane3.size() );
+                this->mHist[ "nFttHitsFound" ]->Fill( 1, hits_near_plane[0].size() );
+                this->mHist[ "nFttHitsFound" ]->Fill( 2, hits_near_plane[1].size() );
+                this->mHist[ "nFttHitsFound" ]->Fill( 3, hits_near_plane[2].size() );
+                this->mHist[ "nFttHitsFound" ]->Fill( 4, hits_near_plane[3].size() );
             }
 
-            if ( hits_near_plane0.size() > 0 )  
-                hits_to_add.push_back( hits_near_plane0[0] );
-            if ( hits_near_plane1.size() > 0 )  
-                hits_to_add.push_back( hits_near_plane1[0] );
-            if ( hits_near_plane2.size() > 0 )  
-                hits_to_add.push_back( hits_near_plane2[0] );
-            if ( hits_near_plane3.size() > 0 )  
-                hits_to_add.push_back( hits_near_plane3[0] );
+            if ( hits_near_plane[0].size() > 0 )  
+                hits_to_add.push_back( hits_near_plane[0][0] );
+            if ( hits_near_plane[1].size() > 0 )  
+                hits_to_add.push_back( hits_near_plane[1][0] );
+            if ( hits_near_plane[2].size() > 0 )  
+                hits_to_add.push_back( hits_near_plane[2][0] );
+            if ( hits_near_plane[3].size() > 0 )  
+                hits_to_add.push_back( hits_near_plane[3][0] );
 
             if ( hits_to_add.size() > 0 ){
 
@@ -1241,22 +1271,27 @@ class ForwardTrackMaker {
                 mHist["FitStatus"]->Fill("PossibleReFit", 1);
             }
 
-            Seed_t fttHitsForThisTrack;
+            Seed_t fttHitsForThisTrack[3];
+            Seed_t ftt_hits_to_add;
 
             size_t nFttHitsFound = 0;
             for (size_t j = 0; j < 4; j++) {
                 for (auto h0 : hitmap[j]) {
                     if (dynamic_cast<FwdHit *>(h0)->_tid == gtr.track->getMcTrackId()) {
                         // fttHitsForThisTrack[j] = h0;
-                        fttHitsForThisTrack.push_back( h0 );
+                        fttHitsForThisTrack[j].push_back( h0 );
+                        ftt_hits_to_add.push_back( h0 );
                         nFttHitsFound++;
-                        if ( mGenHistograms ){
-                            this->mHist[ "nFttHitsFound" ]->Fill( j+1, ( fttHitsForThisTrack[j] != nullptr ? 1 : 0 ) );
-                        }
-                        break;
+                        //break;
                     }
                 } // loop on hits in this layer of hitmap
             } // loop on hitmap layers
+
+            if ( mGenHistograms ){
+                this->mHist[ "nFttHitsFound" ]->Fill( 1, ( fttHitsForThisTrack[0].size() ) );
+                this->mHist[ "nFttHitsFound" ]->Fill( 2, ( fttHitsForThisTrack[1].size() ) );
+                this->mHist[ "nFttHitsFound" ]->Fill( 3, ( fttHitsForThisTrack[2].size() ) );
+            }
 
             LOG_DEBUG << "Found " << nFttHitsFound << " FTT Hits on this track (MC lookup)" << endm;
 
@@ -1268,8 +1303,8 @@ class ForwardTrackMaker {
                 Seed_t combinedSeed;
                 LOG_DEBUG << "Found " << gtr.fstSeed.size() << " existing FST seed points" << endm;
                 combinedSeed.insert( combinedSeed.begin(), gtr.fstSeed.begin(), gtr.fstSeed.end() ); // this is goofed but will fix
-                LOG_DEBUG << "Adding " << fttHitsForThisTrack.size() << " new FTT seed points" << endm;
-                combinedSeed.insert( combinedSeed.end(), fttHitsForThisTrack.begin(), fttHitsForThisTrack.end() );
+                LOG_DEBUG << "Adding " << ftt_hits_to_add.size() << " new FTT seed points" << endm;
+                combinedSeed.insert( combinedSeed.end(), ftt_hits_to_add.begin(), ftt_hits_to_add.end() );
 
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
                 LOG_DEBUG << "Using previous fit momentum as the seed: " << endm;
@@ -1283,7 +1318,7 @@ class ForwardTrackMaker {
                 auto status = mTrackFitter->getTrack()->getFitStatus();
                 if ( status && status->isFitConvergedFully() ){
                     LOG_DEBUG << "Track Refit with FTT points converged" << endm;
-                    gtr.addFTT( fttHitsForThisTrack, mTrackFitter->getTrack() );
+                    gtr.addFTT( ftt_hits_to_add, mTrackFitter->getTrack() );
                     LOG_DEBUG << "Track Refit with " << gtr.track->getNumPoints() << " points" << endm;
                     mHist["FitStatus"]->Fill("GoodReFit", 1);
                 } else {
@@ -1317,23 +1352,43 @@ class ForwardTrackMaker {
             if ( mGenHistograms ){
                 mHist["FitStatus"]->Fill("PossibleReFit", 1);
             }
+  
+            Seed_t hits_near_disk[3];
+            std::vector<double> distanceProjHit[3];
+            std::vector<int> fstHitIdx[3];
+            std::vector<int> matchedMc[3];
 
-            Seed_t hits_near_disk0;
-            Seed_t hits_near_disk1;
-            Seed_t hits_near_disk2;
             try {
-                auto msp2 = mTrackFitter->projectToFst(2, gtr.track);
-                auto msp1 = mTrackFitter->projectToFst(1, gtr.track);
-                auto msp0 = mTrackFitter->projectToFst(0, gtr.track);
+                //loop over each plane
+                for(int p = 0; p < 3; p++) {
+                    std::map<int,TVector2> sensorProjections; // maps sensorId to 2D sensor frame location of projected track
 
-                // now look for Si hits near these
-                hits_near_disk2 = findFstHitsNearProjectedState(hitmap[2], msp2);
-                hits_near_disk1 = findFstHitsNearProjectedState(hitmap[1], msp1);
-                hits_near_disk0 = findFstHitsNearProjectedState(hitmap[0], msp0);
+                    // Loop over hits and find unique sensors
+                    for(auto h : hitmap[p]) {
+                        LOG_INFO << "HIT POSITION " << h->getX() << " " << h->getY() << " " << h->getZ() << endl;
+                        int s = static_cast<FwdHit*>(h)->getSensor(); // unique sensor value
+                        LOG_INFO << "LOOKING AT HIT ON SI = " << s << endm;
+                        if(sensorProjections.count(s) == 0) sensorProjections[s] = mTrackFitter->projectToFst(s, gtr.track);
+                        double distance;
+
+                        if(isFstHitNearProjectedState(h,sensorProjections[s],distance)) {
+                            hits_near_disk[p].push_back(h);
+                            distanceProjHit[p].push_back(distance);
+                            fstHitIdx[p].push_back(s);
+                            LOG_INFO << "FOUND A MATCHING SILICON HIT" << endm;
+                        }
+
+                        //if (dynamic_cast<FwdHit *>(h)->_tid == mGlobalTracks[i]->getMcTrackId()) {
+                        //    LOG_INFO << "FOUND AN MC MATCH!!!!!!!!!!!!" << endm;
+                        //    matchedMc[p].push_back(1);
+                        //} else {
+                        //    matchedMc[p].push_back(0);
+                        //}
+                    }
+                }
             } catch (genfit::Exception &e) {
-                // Failed to project to Si disk: ", e.what()
-                LOG_WARN << "Unable to get Ftt projections: " << e.what() << endm;
-            }
+                LOG_WARN << "Unable to get FST projections: " << e.what() << endm;
+            }   
 
             vector<KiTrack::IHit *> hits_to_add;
             Seed_t fst_hits_for_this_track_nnull;
@@ -1341,32 +1396,50 @@ class ForwardTrackMaker {
             size_t nFstHitsFound = 0; // this is really # of disks on which a hit is found
 
             if ( mGenHistograms ){
-                this->mHist[ "nFstHitsFound" ]->Fill( 1, hits_near_disk0.size() );
-                this->mHist[ "nFstHitsFound" ]->Fill( 2, hits_near_disk1.size() );
-                this->mHist[ "nFstHitsFound" ]->Fill( 3, hits_near_disk2.size() );
+                this->mHist[ "nFstHitsFound" ]->Fill( 1, hits_near_disk[0].size() );
+                this->mHist[ "nFstHitsFound" ]->Fill( 2, hits_near_disk[1].size() );
+                this->mHist[ "nFstHitsFound" ]->Fill( 3, hits_near_disk[2].size() );
             }
 
-            //  TODO: HANDLE multiple points found?
-            if ( hits_near_disk0.size() >= 1 ) {
-                hits_to_add.push_back( hits_near_disk0[0] );
-                fst_hits_for_this_track_nnull.push_back( hits_near_disk0[0] );
-                nFstHitsFound++;
-            } else {
-                hits_to_add.push_back( nullptr );
-            }
-            if ( hits_near_disk1.size() >= 1 ) {
-                hits_to_add.push_back( hits_near_disk1[0] );
-                fst_hits_for_this_track_nnull.push_back( hits_near_disk1[0] );
-                nFstHitsFound++;
-            } else {
-                hits_to_add.push_back( nullptr );
-            }
-            if ( hits_near_disk2.size() >= 1 ) {
-                hits_to_add.push_back( hits_near_disk2[0] );
-                fst_hits_for_this_track_nnull.push_back( hits_near_disk2[0] );
-                nFstHitsFound++;
-            } else {
-                hits_to_add.push_back( nullptr );
+            for(int idisk = 0; idisk < 3; idisk++) {
+                if ( hits_near_disk[idisk].size() == 1 ) {
+                    hits_to_add.push_back( hits_near_disk[idisk][0] );
+                    nFstHitsFound++;
+                } else if( hits_near_disk[idisk].size() > 1 ) {
+                    size_t numHits = hits_near_disk[idisk].size();
+                    vector<KiTrack::IHit *> remaininghits;
+                    vector<int> originalidx;
+                    for(int ihit = 0; ihit < numHits; ihit++) {
+                        bool alone = true;
+                        for(int jhit = 0; jhit < numHits; jhit++) {
+                            if(ihit == jhit) continue;
+                            if(fstHitIdx[idisk][ihit] == fstHitIdx[idisk][jhit]) alone = false;
+                        }
+                        if(alone) {
+                            hits_to_add.push_back( hits_near_disk[idisk][ihit] );
+                            LOG_INFO << "HIT ON SENSOR " << fstHitIdx[idisk][ihit] << " IS ALONE" << endm;
+                            nFstHitsFound++;
+                        }
+                        else {
+                            remaininghits.push_back( hits_near_disk[idisk][ihit] );
+                            originalidx.push_back( ihit );
+                        }       
+                    }
+                    if( remaininghits.size() != 0 )
+                    {
+                        double minimum = 100000000.0;
+                        int min_idx = -999;
+                        for(int irem = 0; irem < remaininghits.size(); irem++) {
+                            if(distanceProjHit[idisk][originalidx[irem]] < minimum) {
+                                minimum = distanceProjHit[idisk][originalidx[irem]];
+                                min_idx = irem;
+                            }
+                        }
+                        LOG_INFO << "DISK " << idisk << ", MINIMUM IDX = " << min_idx << ", MINIMUM = " << minimum << endm;
+                        hits_to_add.push_back( remaininghits[min_idx] );
+                        nFstHitsFound++;
+                    }
+                }
             }
 
             if (nFstHitsFound >= 1) {
@@ -1376,8 +1449,8 @@ class ForwardTrackMaker {
 
                 Seed_t combinedSeed;
                 LOG_DEBUG << "Found " << gtr.fttSeed.size() << " existing FTT seed points" << endm;
-                LOG_DEBUG << "Adding " << fst_hits_for_this_track_nnull.size() << " new FST seed points" << endm;
-                combinedSeed.insert( combinedSeed.begin(), fst_hits_for_this_track_nnull.begin(), fst_hits_for_this_track_nnull.end() );
+                LOG_DEBUG << "Adding " << hits_to_add.size() << " new FST seed points" << endm;
+                combinedSeed.insert( combinedSeed.begin(), hits_to_add.begin(), hits_to_add.end() );
                 combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() ); 
                 
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
@@ -1397,7 +1470,7 @@ class ForwardTrackMaker {
                     } else {
                         LOG_DEBUG << "refitTrackWithFstHits successful refit" << endm;
                         mHist["FitStatus"]->Fill("GoodReFit", 1);
-                        gtr.addFST( fst_hits_for_this_track_nnull, mTrackFitter->getTrack() );
+                        gtr.addFST( hits_to_add, mTrackFitter->getTrack() );
                     }
                 }
             } else {
@@ -1442,23 +1515,59 @@ class ForwardTrackMaker {
     } // findFstHitsNearProjectedState
 
     /**
+     * @brief Determine if FST hit is near near projected state
+     * 
+     * @param h : FST hit
+     * @param msp : measured state on plane from existing track projection
+     * @param distance: distance between hit and projected state
+     * @param dphi : search distance in phi
+     * @param dr : search distance in r
+     * @return true or false depending if the hit is near projected state
+     */
+    bool isFstHitNearProjectedState(KiTrack::IHit* h, TVector2 msp, double &distance, double dphi = 0.004 * 20.5, double dr = 2.75 * 2) {
+
+        //TVector2 hitLab = mTrackFitter->convertFstHitPlaneToLab(static_cast<FwdHit*>(h));
+        TVector2 hitLab(h->getX(),h->getY());
+
+        double probe_phi = TMath::ATan2(msp.Y(), msp.X());
+        double probe_r = sqrt(pow(msp.X(), 2) + pow(msp.Y(), 2));
+
+        LOG_INFO << "MeasuredStateOnPlane LabToPlane: X = " << msp.X() << ", Y = " << msp.Y() << endm;
+        LOG_INFO << "Actual hit:                      X = " << hitLab.X() << ", Y = " << hitLab.Y() << endm;
+
+        double h_phi = TMath::ATan2(hitLab.Y(), hitLab.X());
+        double h_r = sqrt(pow(hitLab.X(), 2) + pow(hitLab.Y(), 2));
+        double mdphi = fabs(h_phi - probe_phi);
+
+        distance = sqrt(pow(hitLab.X()-msp.X(), 2) + pow(hitLab.Y()-msp.Y(), 2));
+
+        //LOG_INFO << "MeasuredStateOnPlane LabToPlane: r = " << probe_r << ", phi = " << probe_phi << endm;
+        //LOG_INFO << "Actual hit:                      r = " << h_r << ", phi = " << h_phi << endm;
+
+        if ( mdphi < dphi && fabs( h_r - probe_r ) < dr) return true; // handle 2pi edge
+
+        return false;
+    }
+
+    /**
      * @brief Finds FTT hits near projected state
      * 
      * @param available_hits : FTT hits to consider
+     * @param pentId: ftt pentagon ID
      * @param msp : measured state on plane from existing track fit projection
      * @param dx : search distance in x
      * @param dy : search distance in y
      * 
      * @return compatible FTT hits 
     */
-    Seed_t findFttHitsNearProjectedState(Seed_t &available_hits, genfit::MeasuredStateOnPlane &msp, double dx = 1.5, double dy = 1.5) {
+    Seed_t findFttHitsNearProjectedState(Seed_t &available_hits, int pentId, TVector2 &msp, double dx = 1.5, double dy = 1.5) {
 
         Seed_t found_hits;
-        double probe_phi = TMath::ATan2(msp.getPos().Y(), msp.getPos().X());
-        double probe_r = sqrt(pow(msp.getPos().X(), 2) + pow(msp.getPos().Y(), 2));
+        double probe_phi = TMath::ATan2(msp.Y(), msp.X());
+        double probe_r = sqrt(pow(msp.X(), 2) + pow(msp.Y(), 2));
 
         TLorentzVector lv1, lv2;
-        lv1.SetPxPyPzE( msp.getPos().X(), msp.getPos().Y(), 0, 1 );
+        lv1.SetPxPyPzE( msp.X(), msp.Y(), 0, 1 );
 
         double mindx = 99;
         double mindy = 99;
@@ -1467,12 +1576,17 @@ class ForwardTrackMaker {
         KiTrack::IHit *closest = nullptr;
 
         for (auto h : available_hits) {
+
+            int plane = static_cast<FwdHit*>(h)->getSector();
+            int quad  = static_cast<FwdHit*>(h)->getSensor(); 
+            int planeId = plane*4+quad;
+            if(planeId != pentId) continue;
             
             lv2.SetPxPyPzE( h->getX(), h->getY(), 0, 1 );
             double sr = lv1.Pt() - lv2.Pt();
             double sp =  lv1.DeltaPhi( lv2 );
-            double sx = h->getX() - msp.getPos().X();
-            double sy = h->getY() - msp.getPos().Y();
+            double sx = h->getX() - msp.X();
+            double sy = h->getY() - msp.Y();
             
             if ( fabs(sr) < fabs(mindr) )
                 mindr = sr;

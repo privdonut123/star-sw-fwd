@@ -131,6 +131,11 @@ class StFwdTrackMaker : public StMaker {
     vector<StFwdTrack*> mFwdTracks;
 
   private:
+    
+    double mFstDefaultZ[12] = {150.008101+0.0009308,151.403100+0.000946,153.491899+0.0010220,152.096900+0.0010770,
+                               166.989901+0.0010680,165.594901+0.001053,163.506101+0.0009766,164.901101+0.0009918,
+                               177.039106+0.0009308,178.434106+0.000946,180.522905+0.0010220,179.127906+0.0010070};
+  
   protected:
 
     // Track Seed typdef 
@@ -178,6 +183,7 @@ class StFwdTrackMaker : public StMaker {
         void loadFcs();
         void loadFttHits( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
         void loadFttHitsFromStEvent( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
+        void loadFttHitsFromFastSim( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
         void loadFttHitsFromGEANT( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap, int count = 0 );
 
         int loadFstHits( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap );
