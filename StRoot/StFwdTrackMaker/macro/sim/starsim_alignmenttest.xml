@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+ <job nProcesses="&njobs;" simulateSubmission="false">
+  <command>
+    starver dev
+    root4star -l -b -q ./StRoot/StFwdTrackMaker/macro/sim/starsim_alignmenttest.C\(\"sim\",&nEvents;,&nTracks;,&zeroB;,\"mu+\",&ptstart;,&ptstop;,2.3,4.4,1.5,2.2,$JOBINDEX,\"&geomtag;\"\)
+    root4star -l -b -q ./StRoot/StFwdTrackMaker/macro/sim/fwd_tracking.C\(&nEvents;,\"sim.fzd\",\"./StRoot/StFwdTrackMaker/macro/sim/full_track_zeroB&zeroB;_allFST&allFST;.xml\",\"dev2022\",&zeroB;,&misSensor;,&deltau;,&deltav;,&deltagamma;\)
+  </command>
+
+  <stdout URL="file:&logdir;/fzd_$JOBID.out" />
+  <stderr URL="file:&logdir;/fzd_$JOBID.err" />
+
+  <Generator>
+   <Location>/gpfs01/star/pwg/gwilks3/ForwardTrackingSchedInfo</Location>
+  </Generator>
+  <!--SandBox installer="ZIP"-->
+  <SandBox>
+   <Package> 
+    <File>file:./.sl73_gcc485/</File> 
+    <File>file:./StRoot/</File>
+    <File>file:./StarDb/</File>
+    <File>file:./StarVMC/</File>
+    <File>file:./fGeom.root</File>
+    <File>file:./.sl73_x8664_gcc485/</File>
+   </Package>
+  </SandBox>
+
+  <output fromScratch="full_track.root" toURL="file:&outdir;/full_track_$JOBID.root" />
+  <output fromScratch="fast_track.root" toURL="file:&outdir;/fast_track_$JOBID.root" />
+  <output fromScratch="fwdtree.root" toURL="file:&outdir;/fwdtree_$JOBID.root" />
+  <output fromScratch="sim.FastSimu.QA.root" toURL="file:&outdir;/fstQA_$JOBID.root" />
+  <output fromScratch="millefile.dat" toURL="file:&outdir;/millefile_$JOBID.dat" />
+  <output fromScratch="gbl.root" toURL="file:&outdir;/gbl_$JOBID.root" />
+  <output fromScratch="alignment.root" toURL="file:&outdir;/alignment_$JOBID.root" />
+</job>
