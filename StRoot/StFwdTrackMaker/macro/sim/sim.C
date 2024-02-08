@@ -117,11 +117,11 @@ void sim( int n = 5, // nEvents to run
         fwdTrack->SetGenerateTree( true );
         fwdTrack->SetGenerateHistograms( true );
         fwdTrack->SetDebug();
-
+	/*
         StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
         fwdFitQA->SetDebug();
         chain->AddAfter("fwdTrack", fwdFitQA);
-
+	*/
         cout << "fwd tracker setup" << endl;
 
         
