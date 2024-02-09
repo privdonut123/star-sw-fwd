@@ -1501,6 +1501,10 @@ Bfc_st BFC[] = { // standard chains
                                                                                                     kFALSE},
   {"fstEvtRawHit", "", "", "fstRawHit",                       "","","Store FST Raw Hit in StEvent", kFALSE},
   {"fstMuRawHit", "", "", "CMuDST,fstEvtRawHit",                "","","Store FST Raw Hit in MuDst", kFALSE},
+  // FTT
+  {"ftt","fttChain","","FttDat,FttHitCalib,FttClu,FttPoint", "StMaker","StChain","FST chain"        ,kFALSE}, 
+  {"fttFastSim","","fttChain","StMcEvent,StEvent","StFttFastSimMaker","StFttSimMaker","FTT fast simulator", 
+                                                                                                    kFALSE},
 
   {"ssddat"      ,"","","ssd_daq"                             ,"","","SSD full chain for Real Data",kFALSE},
   {"sstdat"      ,"","","sst_daq"                             ,"","","SST full chain for Real Data",kFALSE},
