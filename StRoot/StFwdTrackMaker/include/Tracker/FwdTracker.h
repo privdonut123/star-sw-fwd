@@ -507,8 +507,8 @@ class ForwardTrackMaker {
         FwdDataSource::HitMap_t &fttHitmap = mDataSource->getFttHits();
         FwdDataSource::HitMap_t &fstHitmap = mDataSource->getFstHits();
 
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
-        bool useFttAsSource = !(hitmapSource == "fst");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
+        bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( useFttAsSource == false ){
             for (auto hp : fstHitmap){
@@ -598,8 +598,8 @@ class ForwardTrackMaker {
     void fitTrack(Seed_t &seed) {
         
         // make sure this is consistent with above
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
-        bool useFttAsSource = !(hitmapSource == "fst");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
+        bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( mGenHistograms ){
             mHist["FitStatus"]->Fill("Seeds", 1);
@@ -1128,7 +1128,7 @@ class ForwardTrackMaker {
                 }
                 LOG_DEBUG << "Using previous fit momentum as the seed: " << TString::Format( "(pX=%f, pY=%f, pZ=%f)", gtr.momentum.X(), gtr.momentum.Y(), gtr.momentum.Z() ) << endm;
 
-                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum) );
+                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum), true );
 
                 if ( mGenHistograms ){
                     if (mTrackFitter->getTrack()->getFitStatus()->isFitConvergedFully() == false) {
@@ -1231,7 +1231,7 @@ class ForwardTrackMaker {
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
                 LOG_DEBUG << "Using previous fit momentum as the seed: " << TString::Format( "(pt=%f, eta=%f, phi=%f)", t.momentum.Pt(), t.momentum.Eta(), t.momentum.Phi() ) << endm;
 
-                TVector3 p = mTrackFitter->fitTrack(combinedSeed, vertex, &(t.momentum) );
+                TVector3 p = mTrackFitter->fitTrack(combinedSeed, vertex, &(t.momentum), true );
 
                 auto status = mTrackFitter->getTrack()->getFitStatus();
                 if ( status->isFitConvergedFully() ){
@@ -1271,7 +1271,7 @@ class ForwardTrackMaker {
                 mHist["FitStatus"]->Fill("PossibleReFit", 1);
             }
 
-            Seed_t fttHitsForThisTrack[3];
+            Seed_t fttHitsForThisTrack[4];
             Seed_t ftt_hits_to_add;
 
             size_t nFttHitsFound = 0;
@@ -1291,6 +1291,7 @@ class ForwardTrackMaker {
                 this->mHist[ "nFttHitsFound" ]->Fill( 1, ( fttHitsForThisTrack[0].size() ) );
                 this->mHist[ "nFttHitsFound" ]->Fill( 2, ( fttHitsForThisTrack[1].size() ) );
                 this->mHist[ "nFttHitsFound" ]->Fill( 3, ( fttHitsForThisTrack[2].size() ) );
+                this->mHist[ "nFttHitsFound" ]->Fill( 4, ( fttHitsForThisTrack[3].size() ) );
             }
 
             LOG_DEBUG << "Found " << nFttHitsFound << " FTT Hits on this track (MC lookup)" << endm;
@@ -1313,7 +1314,7 @@ class ForwardTrackMaker {
                     gtr.momentum.SetZ( 10000 );
                 LOG_DEBUG << TString::Format( "(pt=%f, eta=%f, phi=%f)", gtr.momentum.Pt(), gtr.momentum.Eta(), gtr.momentum.Phi() ) << endm;
 
-                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum) );
+                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum), true );
 
                 auto status = mTrackFitter->getTrack()->getFitStatus();
                 if ( status && status->isFitConvergedFully() ){
@@ -1461,7 +1462,7 @@ class ForwardTrackMaker {
                 }
                 LOG_DEBUG << "Using previous fit momentum as the seed: " << TString::Format( "(pX=%f, pY=%f, pZ=%f)", gtr.momentum.X(), gtr.momentum.Y(), gtr.momentum.Z() ) << endm;
 
-                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum) );
+                mTrackFitter->fitTrack(combinedSeed, vertex, &(gtr.momentum), true );
 
                 if ( mGenHistograms ){
                     if (mTrackFitter->getTrack()->getFitStatus()->isFitConvergedFully() == false) {

@@ -667,7 +667,7 @@ void StFwdTrackMaker::loadFttHitsFromFastSim( FwdDataSource::McTrackMap_t &mcTra
 
     // make the Covariance Matrix once and then reuse
     TMatrixDSym hitCov3(3);
-    const double sigXY = 0.01;
+    const double sigXY = 0.2;
     hitCov3(0, 0) = sigXY * sigXY;
     hitCov3(1, 1) = sigXY * sigXY;
     hitCov3(2, 2) = 0.001 * 0.001; // unused since they are loaded as points on plane
@@ -1072,7 +1072,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
             float y = git->x[1];
             float z = git->x[2];
 
-            //cout << "FST MC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << endl;
+            cout << "FST MC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << endl;
 
             hitCov3 = makeSiCovMat( TVector3( x, y, z ), mFwdConfig );
             FwdHit *hit = new FwdHit(count++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
@@ -1128,6 +1128,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
 
         FwdHit *fhit = new FwdHit(count++, hit->position().x(), hit->position().y(), hit->position().z(), hit->layer(), hit->idTruth(), hitCov3, mcTrackMap[hit->idTruth()]);
         fhit->setSensor(hit->volumeId()); 
+        cout << "FST RC HIT: x = " << hit->position().x() << ", y = " << hit->position().y() << ", z = " << hit->position().z() << endl;
         size_t index = hit->layer()-4;
         if (mGenHistograms && index < 3 ){
             ((TH2*)mHistograms[TString::Format("fsi%luHitMapZ", index).Data()]) -> Fill( hit->position().x(), hit->position().y(), hit->position().z() );
@@ -1143,7 +1144,6 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
         mTreeData.fstTrackId.push_back( hit->idTruth() );
 
         mTreeData.fstN++;
-        count++;
 
     }
     return count;

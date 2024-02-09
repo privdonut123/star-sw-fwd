@@ -859,6 +859,7 @@ class TrackFitter {
             curv = sc.getRadius();
         } catch (KiTrack::InvalidParameter &e) {
             // if we got here we failed to get  a valid seed. We will still try to move forward but the fit will probably fail
+            LOG_WARN << e.what() << endl;
             LOG_WARN << "Circle fit failed, FWD track fit will likely fail" << endm;
         }
 
@@ -902,6 +903,7 @@ class TrackFitter {
         for (size_t i = 0; i < trackSeed.size(); i++) {
             auto fwdHit = static_cast<FwdHit *>(trackSeed[i]);
             if ( !fwdHit ) continue;
+            cout << "fwdHit->_vid  = " << fwdHit->_vid << endl;
             if (vol_map[ abs(fwdHit->_vid) ] == -1)
                 idx.push_back(fwdHit->_vid);
             vol_map[abs(fwdHit->_vid)] = (int)i;
@@ -1965,6 +1967,7 @@ class TrackFitter {
         * Include the Primary vertex if desired
         ******************************************************************************************************************/
         if (mIncludeVertexInFit) {
+            LOG_INFO << "About to add a vertex" << endm;
 
             TMatrixDSym hitCov3(3);
             hitCov3(0, 0) = mVertexSigmaXY * mVertexSigmaXY;
@@ -1973,11 +1976,13 @@ class TrackFitter {
 
             genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, hitCov3, 9999, ++hitId, nullptr);
             fitTrack.insertPoint(new genfit::TrackPoint(measurement, &fitTrack));
+            LOG_INFO << "Added vertex to track" << endm;
         }
 
         /******************************************************************************************************************
 	* sort hits to add by their z-location
  	******************************************************************************************************************/
+        LOG_INFO << "About to sort hits by their z-location" << endm;
         std::vector<double> hitZ;
         for (auto h : trackCand) {
             if ( nullptr == h ) continue; // if no Si hit in this plane, skip
@@ -1987,18 +1992,22 @@ class TrackFitter {
             if(h->getZ() < 200.0)
             {
                 int is = static_cast<FwdHit*>(h)->getSensor();
-
+                LOG_INFO << "is = " << is << endm;
                 // FST disk (integer division rounds down)
                 int d = is / 36; // 0-2
+                LOG_INFO << "d = " << d << endm;
 
                 // FST wedge
                 int w = is / 3; // 0-35
+                LOG_INFO << "w = " << w << endm;
 
                 // FST sensor
                 int s = is % 3; // 0 (inner), 1 (outer), 2 (outer)
+                LOG_INFO << "s = " << s << endm;
                 int ds = (s == 0)? 0 : 1; // +0 for inner, +1 for outer
 
                 int defaultZidx = d * 4 + 2 * (w % 2) + ds;
+                LOG_INFO << "defaultZidx = " << defaultZidx << endm;
                 z = fstDefaultZ[defaultZidx];
             }
             else
@@ -2012,11 +2021,13 @@ class TrackFitter {
         std::vector<size_t> idx(hitZ.size());
         std::iota(idx.begin(), idx.end(), 0);
         std::stable_sort(idx.begin(), idx.end(), [&hitZ](size_t i1, size_t i2) {return hitZ[i1] < hitZ[i2];});
-
-
+        
+        LOG_INFO << "Finished sorting" << endm;
+      
         /******************************************************************************************************************
 	* loop over the hits, add them to the track
  	******************************************************************************************************************/
+        LOG_INFO << "Loop over the hits and add them to the track" << endm;
         for ( int ih = 0; ih < trackCand.size(); ih++ ) {
             auto h = trackCand[idx[ih]];
             size_t diskId = h->getSector();
@@ -2083,6 +2094,7 @@ class TrackFitter {
                 LOG_WARN << "Z Mismatch h->z = " << h->getZ() << ", plane->z = "<< plane->getO().Z() <<", diff = " << h->getZ() - plane->getO().Z() << endm;
             }
         }
+        LOG_INFO << "Added all the hits to the track" << endm;
 
         /******************************************************************************************************************
 		 * Do the fit
