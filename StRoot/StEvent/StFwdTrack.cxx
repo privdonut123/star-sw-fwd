@@ -6,7 +6,7 @@ StFwdTrack::StFwdTrack() {
 
 }
 
-StFwdTrack::~StFwdTrack() {
+StFwdTrack::~StFwdTrack() { 
     for (unsigned int i=0; i<mEcalClusters.size(); i++) {
        delete mEcalClusters[i];
        mEcalClusters[i] = 0;

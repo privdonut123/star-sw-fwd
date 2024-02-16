@@ -119,8 +119,8 @@ void sim( int n = 5, // nEvents to run
 
             fwdTrack->setTrackRefit( enableTrackRefit );
             fwdTrack->setOutputFilename( outputName );
-            fwdTrack->SetGenerateTree( true );
-            fwdTrack->SetGenerateHistograms( true );
+            fwdTrack->SetGenerateTree( false );
+            fwdTrack->SetGenerateHistograms( false );
             fwdTrack->SetDebug();
 
             // fwdTrack->setZeroB( true );
