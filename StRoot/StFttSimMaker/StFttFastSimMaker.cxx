@@ -290,7 +290,7 @@ void StFttFastSimMaker::FillThinGapChambers(StEvent *event) {
         int quadrant = (volume_id-1) % 100 / 10;
         //cout << "quadrant = " << quadrant << endl;
 
-        if(disk == 10 && quadrant == 0) continue; // hardcoded, we are missing this in data
+        //if(disk == 10 && quadrant == 0) continue; // hardcoded, we are missing this in data
 
         float theta = DiskRotation(disk);
 
