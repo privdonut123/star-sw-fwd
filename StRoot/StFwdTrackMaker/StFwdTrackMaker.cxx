@@ -667,7 +667,7 @@ void StFwdTrackMaker::loadFttHitsFromFastSim( FwdDataSource::McTrackMap_t &mcTra
 
     // make the Covariance Matrix once and then reuse
     TMatrixDSym hitCov3(3);
-    const double sigXY = 0.2;
+    const double sigXY = 0.01;
     hitCov3(0, 0) = sigXY * sigXY;
     hitCov3(1, 1) = sigXY * sigXY;
     hitCov3(2, 2) = 0.001 * 0.001; // unused since they are loaded as points on plane
