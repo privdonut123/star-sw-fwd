@@ -507,7 +507,7 @@ class ForwardTrackMaker {
         FwdDataSource::HitMap_t &fttHitmap = mDataSource->getFttHits();
         FwdDataSource::HitMap_t &fstHitmap = mDataSource->getFstHits();
 
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
         bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( useFttAsSource == false ){
@@ -598,7 +598,7 @@ class ForwardTrackMaker {
     void fitTrack(Seed_t &seed) {
         
         // make sure this is consistent with above
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
         bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( mGenHistograms ){
@@ -1467,9 +1467,9 @@ class ForwardTrackMaker {
                 if ( mGenHistograms ){
                     if (mTrackFitter->getTrack()->getFitStatus()->isFitConvergedFully() == false) {
                         mHist["FitStatus"]->Fill("BadReFit", 1);
-                        LOG_DEBUG << "refitTrackWithFstHits failed refit" << endm;
+                        LOG_DEBUG << "BAD REFIT" << endm;
                     } else {
-                        LOG_DEBUG << "refitTrackWithFstHits successful refit" << endm;
+                        LOG_DEBUG << "GOOD REFIT" << endm;
                         mHist["FitStatus"]->Fill("GoodReFit", 1);
                         gtr.addFST( hits_to_add, mTrackFitter->getTrack() );
                     }
