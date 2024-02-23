@@ -1326,7 +1326,7 @@ class TrackFitter {
             {
               cout << "refit with GBL" << endl;
               mGblFitter->setSuccessfulFitFlag(false);
-              p = refitTrackWithGBL(&fitTrack);
+              refitTrackWithGBL(&fitTrack);
             }
 
             if(mGblFitter->getSuccessfulFitFlag())
@@ -1790,7 +1790,7 @@ class TrackFitter {
      * @param originalTrack : original fit track
      * @return TVector3 : momentum
      */
-    TVector3 refitTrackWithGBL( genfit::Track *originalTrack ) {
+    void refitTrackWithGBL( genfit::Track *originalTrack ) {
         // mem leak, global track is overwritten without delete.
         TVector3 pOrig = originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
 
@@ -1799,7 +1799,7 @@ class TrackFitter {
         if (originalTrack->getFitStatus(originalTrack->getCardinalRep())->isFitConverged() == false) {
             // in this case the original track did not converge so we should not refit. 
             // probably never get here due to previous checks
-            return pOrig;
+            return;// pOrig;
         }
 
         try {
@@ -1822,7 +1822,7 @@ class TrackFitter {
 
         if (originalTrack->getFitStatus(originalTrack->getCardinalRep())->isFitConverged() == false) {
             LOG_WARN << "GBL fit did not converge" << endm;
-            return pOrig;
+            return;//pOrig;
         } else { // we did converge, return new momentum
 
             try {
@@ -1834,9 +1834,9 @@ class TrackFitter {
                 LOG_WARN << "Failed to get cardinal status from converged fit" << endm;
             }
 
-            return originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
+            return; //originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
         }
-        return pOrig;
+        return; //pOrig;
     } //refitwith GBL
 
 
@@ -2168,25 +2168,27 @@ class TrackFitter {
             this->mHist["FitDuration"]->Fill(duration);
         }
 
+        genfit::Track gblTrack(fitTrack); 
+
         if(mRefitGBL && gblRefit)
         {
           mGblFitter->setSuccessfulFitFlag(false);
-          p = refitTrackWithGBL(&fitTrack);
+          refitTrackWithGBL(&gblTrack);
 
           if(mGblFitter->getSuccessfulFitFlag())
           {
             int stateid = -1;
-            for( int tp = 0; tp < fitTrack.getNumPointsWithMeasurement(); tp++)
+            for( int tp = 0; tp < gblTrack.getNumPointsWithMeasurement(); tp++)
             {
-              genfit::TrackPoint* point_meas_temp = fitTrack.getPointWithMeasurement(tp);
+              genfit::TrackPoint* point_meas_temp = gblTrack.getPointWithMeasurement(tp);
               genfit::PlanarMeasurement* measPlanar = dynamic_cast<genfit::PlanarMeasurement*>(point_meas_temp->getRawMeasurement(0));
               if (measPlanar) stateid = measPlanar->getPlaneId();
               //trackZ = mFSTSensorPlanes[sid]->getO()->Z();
-              genfit::KalmanFitterInfo* fi = dynamic_cast<genfit::KalmanFitterInfo*>(point_meas_temp->getFitterInfo(fitTrack.getCardinalRep()));
+              genfit::KalmanFitterInfo* fi = dynamic_cast<genfit::KalmanFitterInfo*>(point_meas_temp->getFitterInfo(gblTrack.getCardinalRep()));
               genfit::ReferenceStateOnPlane* reference = new genfit::ReferenceStateOnPlane(*fi->getReferenceState());
               TVectorD state = reference->getState();
               genfit::AbsMeasurement* raw_meas = point_meas_temp->getRawMeasurement(0);
-              std::unique_ptr<const genfit::AbsHMatrix> HitHMatrix(raw_meas->constructHMatrix(fitTrack.getCardinalRep()));
+              std::unique_ptr<const genfit::AbsHMatrix> HitHMatrix(raw_meas->constructHMatrix(gblTrack.getCardinalRep()));
               TVectorD planeState(HitHMatrix->Hv(state));
 
               TVectorD rcCoords(2);
