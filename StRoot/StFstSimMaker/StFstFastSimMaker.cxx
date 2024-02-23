@@ -666,54 +666,56 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 
                         //////// This code will shift the FST hits to the local coordinates                  ////////////// 
                         //////// We comment out for now because we want global coords for FST first tracking ////////////// 
-                        //double phiAxisShift = 0.0;
-                        //if((disk-4) == 0 || (disk-4) == 2)
-                        //{
-                        //  if((wedge-1)%2 == 0)
-                        //  {
-                        //    if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
-                        //    else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
-                        //  }
-                        //  else if((wedge-1)%2 == 1)
-                        //  {
-                        //    if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
-                        //    else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
-                        //  } 
-                        //}
-                        //else if((disk-4) == 1)
-                        //{
-                        //  if((wedge-1)%2 == 0)
-                        //  {
-                        //    if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
-                        //    else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
-                        //  }
-                        //  else if((wedge-1)%2 == 1)
-                        //  {
-                        //    if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
-                        //    else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
-                        //  } 
-                        //}
+                        double phiAxisShift = 0.0;
+                        if((disk-4) == 0 || (disk-4) == 2)
+                        {
+                          if((wedge-1)%2 == 0)
+                          {
+                            if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+                            else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+                          }
+                          else if((wedge-1)%2 == 1)
+                          {
+                            if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+                            else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+                          } 
+                        }
+                        else if((disk-4) == 1)
+                        {
+                          if((wedge-1)%2 == 0)
+                          {
+                            if((sensor-1)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+                            else if((sensor-1)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+                          }
+                          else if((wedge-1)%2 == 1)
+                          {
+                            if((sensor-1)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+                            else if((sensor-1)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+                          } 
+                        }
                          
-                        //double x0 = xtemp *       TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift);
-                        //double y0 = xtemp * -1. * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift);
+                        double x0 = xtemp *       TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift);
+                        double y0 = xtemp * -1. * TMath::Sin(FstGlobal::PHI[wedge-1] + phiAxisShift) + ytemp * TMath::Cos(FstGlobal::PHI[wedge-1] + phiAxisShift);
             
                         //cout << "Final Position of hit after rotation" << endl;
                         //cout << "x = " << x0 << "   y = " << y0 << endl;
 
-                        double x0 = xtemp;
-                        double y0 = ytemp;
+                        //double x0 = xtemp;
+                        //double y0 = ytemp;
                         
 			assert(TMath::Abs(x0) + TMath::Abs(y0) > 0);
 			double dz = 0.03 / FstGlobal::SQRT12;
 			double er = dr / FstGlobal::SQRT12;
+                        //cout << "Error: er = " << er << ", dp = " << dp << endl;
+                     
 			fsihit->setPosition(StThreeVectorF(x0, y0, z));
 			
 			fsihit->setPositionError(StThreeVectorF(er, dp, dz));
 			// set covariance matrix
 			fsihit->setErrorMatrix(&FstGlobal::Hack1to6(fsihit)[0][0]);
 
-                        double x0center = x0; 
-                        double y0center = y0;
+                        double x0center = xtemp; 
+                        double y0center = ytemp;
                         //double x0center;
                         //double y0center = y0;
                         //if((sensor-1)%3 == 0) x0center = x0 - 10.75;
