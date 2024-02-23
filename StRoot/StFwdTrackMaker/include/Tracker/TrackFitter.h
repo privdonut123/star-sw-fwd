@@ -2109,8 +2109,8 @@ class TrackFitter {
         TVector3 p(0, 0, 0);
 
         /******************************************************************************************************************
-		 * Now check the fit
-		 ******************************************************************************************************************/
+         * Now check the fit
+         ******************************************************************************************************************/
         try {
             // find track rep with smallest chi2
             fitTrack.determineCardinalRep();
@@ -2128,7 +2128,8 @@ class TrackFitter {
                 this->mHist["FitStatus"]->Fill("GoodCardinal", 1);
             }
 
-            if (fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false) {
+            //if (fitTrack.getFitStatus(trackRepNeg)->isFitConverged() == false) {
+            if (fitTrack.getFitStatus(cardinalRep)->isFitConverged() == false) {
                 LOG_WARN << "FWD Track GenFit Failed" << endm;
 
                 p.SetXYZ(0, 0, 0);
