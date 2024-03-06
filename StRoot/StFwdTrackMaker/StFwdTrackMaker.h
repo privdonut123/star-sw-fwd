@@ -365,6 +365,32 @@ class StFwdTrackMaker : public StMaker {
      * 
      */
     void setGeoCache( TString gc ) { mGeoCache = gc; }
+
+    /**
+     * @brief Set a generic Key Value in the Config object
+     * 
+     * @param k key: any string representing absolute path e.g. `the.path.to.node:attribute`
+     * @param v value: value encoded as a string
+     */
+    void setConfigKeyValue( std::string k, std::string v ){
+      mFwdConfig.set( k, v );
+    }
+
+    void setCrit2( std::string name, double min, double max ){
+      for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.SegmentBuilder" ) ){
+        auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
+        LOG_INFO << "CRIT2 NAME=" << nName << endm;
+      }
+    }
+
+    void setCrit3( std::string name, double min, double max ){
+      for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.ThreeHitSegments" ) ){
+        auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
+        LOG_INFO << "CRIT3 NAME=" << nName << endm;
+      }
+    }
+
+    
 };
 
 #endif
