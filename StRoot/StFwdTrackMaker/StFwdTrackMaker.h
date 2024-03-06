@@ -379,14 +379,23 @@ class StFwdTrackMaker : public StMaker {
     void setCrit2( std::string name, double min, double max ){
       for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.SegmentBuilder" ) ){
         auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
-        LOG_INFO << "CRIT2 NAME=" << nName << endm;
+        
+        if (nName == name) {
+          LOG_DEBUG << "Setting Crit2=" << nName << " (min=" << min << ", max=" << max << ")" << endm;
+          mFwdConfig.set<double>(p + ":min", min );
+          mFwdConfig.set<double>(p + ":max", max );
+        }
       }
     }
 
     void setCrit3( std::string name, double min, double max ){
       for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.ThreeHitSegments" ) ){
         auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
-        LOG_INFO << "CRIT3 NAME=" << nName << endm;
+        if (nName == name) {
+          LOG_DEBUG << "Setting Crit3=" << nName << " (min=" << min << ", max=" << max << ")" << endm;
+          mFwdConfig.set<double>(p + ":min", min );
+          mFwdConfig.set<double>(p + ":max", max );
+        }
       }
     }
 
