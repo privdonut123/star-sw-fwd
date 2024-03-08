@@ -1,15 +1,16 @@
 /***************************************************************************
  *
- * StFttPointMaker.h
+ * StFttClusterPointMaker.h
  *
- * Author: jdb 2021
+ * Author: Zhen Wang 2023,
+ * email: wangzhen@rcf.rhic.bnl.gov
  ***************************************************************************
  *
- * Description: StFttPointMaker - class to fill the points in StEvent
+ * Description: StFttClusterPointMaker - class to convert all the clusters to the point 
  *
  ***************************************************************************/
-#ifndef STFTTPOINTMAKER_H
-#define STFTTPOINTMAKER_H
+#ifndef STFTTCLUSTPOINTMAKER_H
+#define STFTTCLUSTPOINTMAKER_H
 #include "StMaker.h"
 #include <vector>
 #include <map>
@@ -22,12 +23,12 @@ class StFttCollection;
 class StFttCluster;
 class StFttPoint;
 
-class StFttPointMaker: public StMaker {
+class StFttClusterPointMaker: public StMaker {
 
 public:
-    StFttPointMaker( const char* name = "stgcPoint" );
+    StFttClusterPointMaker( const char* name = "stgcPoint" );
 
-    ~StFttPointMaker();
+    ~StFttClusterPointMaker();
 
 
     Int_t  Init();
@@ -40,11 +41,8 @@ private:
     void InjectTestData();
     void MakeLocalPoints(UChar_t Rob);
     void MakeGlobalPoints();
-    bool GhostHitRejection_StripGroup(int row_x, int row_y, double x, double y);
-    //return kTRUE when a diagoanl cluster was find to match (x,y)
-    bool GhostHitRejection_DiagH(double x, double y, int Rob, int &i_cluster);
-    bool GhostHitRejection_DiagV(double x, double y, int Rob, int &i_cluster);
-    
+    //in the ClusterPointMaker there no ghost hit rejection since all the clusters will be saved
+
     StEvent*             mEvent;
     StFttCollection*     mFttCollection;
     Bool_t               mDebug;
@@ -73,7 +71,7 @@ private:
     }
     inline bool is_Group8(int row_x, int row_y, double x, double y) const { return ( ((360.09 <= y && y <= 504.2) && (172.29 <= x && x <= 315.4)) && (row_x == 2) && (row_y == 1)); }
 
-    ClassDef( StFttPointMaker, 1 )
+    ClassDef( StFttClusterPointMaker, 1 )
 };
 
 #endif // STFTTPOINTMAKER_H
