@@ -84,7 +84,7 @@
 
 #include <TVector3.h>
 
-#define DEBUG
+//#define DEBUG
 //#define OUTPUT
 
 
@@ -315,9 +315,9 @@ void getScattererFromMatList(double& length,
 {
   theta = 0.; s = 0.; ds = 0.;
   
-  cout << "if (steps.empty()) return;" << endl;
+  //cout << "if (steps.empty()) return;" << endl;
   if (steps.empty()) return;
-  cout << "passed test" << endl;
+  //cout << "passed test" << endl;
   
   // sum of step lengths
   double len = 0.;
@@ -350,9 +350,9 @@ void getScattererFromMatList(double& length,
     sumx3x3 += rho * (xmax * xmax * xmax - xmin * xmin * xmin) / 3.;
   }
   // This ensures PDG formula still gives positive results (but sumxx should be > 1e-4 for it to hold)
-  cout << "if (sumxx < 1.0e-10) return;" << endl;
+  //cout << "if (sumxx < 1.0e-10) return;" << endl;
   if (sumxx < 1.0e-10) return;
-  cout << "passed" << endl;
+  //cout << "passed" << endl;
   // Calculate theta from total sum of radiation length
   // instead of summimg squares of individual deflection angle variances
   // PDG formula:
@@ -399,12 +399,12 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
   bool fitQoverP = true;
   //TODO: Use clever way to determine zero B-field
   double Bfield = genfit::FieldManager::getInstance()->getFieldVal(TVector3(0., 0., 0.)).Mag();
-  cout << "Bfield @ (0,0,0) = " << Bfield << endl;
+  //cout << "Bfield @ (0,0,0) = " << Bfield << endl;
 
   if (!(Bfield > 0.))
   {
     fitQoverP = false;
-    cout << "DO NOT FIT q/p!" << endl;
+    //cout << "DO NOT FIT q/p!" << endl;
   }
  
   // Dimesion of repository/state
@@ -425,7 +425,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
   int npoints_all = trk->getNumPoints();
   
   if (resortHits)
-    cout << "WARNING: Hits resorting in GBL interface not supported." << endl;
+    //cout << "WARNING: Hits resorting in GBL interface not supported." << endl;
   
   cout << "-------------------------------------------------------" << endl;
   cout << "               GBL processing genfit::Track            " << endl;
@@ -671,12 +671,24 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
     } else if(point_meas->getRawMeasurement(0)->getDim() == 2) {
       // Default behavior
       raw_meas = point_meas->getRawMeasurement(0);
+      TVectorD raw_coor = raw_meas->getRawHitCoords();
+      float x = raw_coor(0);
+      float y = raw_coor(1);
+      if(sensorId >= 1000 && sensorId < 9000) {
+        if((sensorId-1000)%3 == 0) x+=10.75;
+        if((sensorId-1000)%3 != 0) x+=22.25;
+        float r = TMath::Sqrt(x*x+y*y);
+        if(sensorId >= 1000 && sensorId < 1036 && r >= 22.250) skipMeasurement = true;
+        if(sensorId >= 1036 && sensorId < 1072 && r <=  7.875) skipMeasurement = true;
+        if(sensorId >= 1036 && sensorId < 1072 && r >= 25.125) skipMeasurement = true;
+        if(sensorId >= 1072 && sensorId < 1108 && r <=  7.875) skipMeasurement = true;
+      }
     } else {
       //measSpace->constructPlane(state);
       raw_meas = point_meas->getRawMeasurement(0);
-      cout << "Vertex information" << endl;
-      measSpace->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getCov().Print();
-      measSpace->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getState().Print();
+      //cout << "Vertex information" << endl;
+      //measSpace->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getCov().Print();
+      //measSpace->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getState().Print();
     }
     //TODO: We only support 2D measurements in GBL (ot two 1D combined above)
     /*if (raw_meas->getRawHitCoords().GetNoElements() != 2 && raw_meas_vertex->getRawHitCoords().GetNoElements() != 3) {
@@ -703,11 +715,11 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       }
       if(point_meas->getRawMeasurement(0)->getDim() == 3)
       {
-        cout << "3D measurement" << endl;
+        //cout << "3D measurement" << endl;
         raw_coorNew = raw_meas->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getState();
       }
-      cout << "Raw Coordinates " <<endl;
-      raw_coorNew.Print();
+      //cout << "Raw Coordinates " <<endl;
+      //raw_coorNew.Print();
       // Covariance matrix of measurement
       TMatrixDSym raw_cov(2); 
       if(point_meas->getRawMeasurement(0)->getDim() == 2)
@@ -716,33 +728,33 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       }
       if(point_meas->getRawMeasurement(0)->getDim() == 3)
       {
-        cout << "3D measurement" << endl;
+        //cout << "3D measurement" << endl;
         raw_cov = raw_meas->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getCov();
         auto planeSpacePoint = measSpace->constructPlane(*dynamic_cast<genfit::StateOnPlane*>(reference));
-        cout << "Plane information" << endl;
-        planeSpacePoint->Print();
+        //cout << "Plane information" << endl;
+        //planeSpacePoint->Print();
         TVectorD measured = raw_meas->constructMeasurementsOnPlane(*dynamic_cast<genfit::StateOnPlane*>(reference))[0]->getState();
         TVector2 rcpoint(measured(0),measured(1));
-        cout << "Vertex in lab" << endl;
-        planeSpacePoint->toLab(rcpoint).Print();
+        //cout << "Vertex in lab" << endl;
+        //planeSpacePoint->toLab(rcpoint).Print();
         std::unique_ptr<const genfit::AbsHMatrix> HitHMatrix3d(raw_meas->constructHMatrix(rep));
         TVectorD planestate = HitHMatrix3d->Hv(state);
-        cout << "Track Vertex in lab" << endl;
+        //cout << "Track Vertex in lab" << endl;
         TVector2 trackpoint(planestate(0),planestate(1));
-        planeSpacePoint->toLab(trackpoint).Print();
+        //planeSpacePoint->toLab(trackpoint).Print();
         //state.Print();
       }
-      cout << "Raw Covariance" << endl;
-      raw_cov.Print();
+      //cout << "Raw Covariance" << endl;
+      //raw_cov.Print();
       // Projection matrix from repository state to measurement coords
       std::unique_ptr<const genfit::AbsHMatrix> HitHMatrix(raw_meas->constructHMatrix(rep));
       // Residual between measured position and reference track position
       TVectorD residual = -1.*(raw_coorNew - HitHMatrix->Hv(state));
-      cout << "state" << endl;
-      state.Print();
+      //cout << "state" << endl;
+      //state.Print();
 
-      cout << "Track Projection" << endl;
-      HitHMatrix->Hv(state).Print();
+      //cout << "Track Projection" << endl;
+      //HitHMatrix->Hv(state).Print();
       //cout << "right before filling the residuals" << endl;
       //cout << "residuals = " << residual(0) << ", " << residual(1) << endl;
       //residualsUkf[ipoint_meas]->Fill(residual(0));
@@ -761,10 +773,10 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       raw_covNew(0,1) = raw_cov(0,1);
       raw_covNew(1,0) = raw_cov(1,0);
       raw_covNew(1,1) = raw_cov(1,1);
-      cout << "2x2 Covariant" << endl;
-      raw_covNew.Print();
-      cout << "Residuals = " << endl;
-      residual.Print();
+      //cout << "2x2 Covariant" << endl;
+      //raw_covNew.Print();
+      //cout << "Residuals = " << endl;
+      //residual.Print();
       gbl::GblPoint measPoint(jacPointToPoint);
       // Projection from local (state) coordinates .to measurement coordinates (inverted)
       // 2x2 matrix ... last block of H matrix (2 rows x 5 columns)
@@ -775,8 +787,8 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       proL2m(0, 1) = HitHMatrix->getMatrix()(0, 4);
       proL2m(1, 1) = HitHMatrix->getMatrix()(1, 4);
       proL2m(1, 0) = HitHMatrix->getMatrix()(1, 3);
-      cout << "HitHMatrix" << endl;
-      HitHMatrix->getMatrix().Print();
+      //cout << "HitHMatrix" << endl;
+      //HitHMatrix->getMatrix().Print();
       proL2m.Invert();
       //raw_cov *= 100.;
       //cout << "proL2m" << endl;
@@ -830,7 +842,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
         label = 9000;
       }
 
-      cout << "SensorID = " << sensorId << "     label = " << label << "      wedgelabel = " << wedgelabel << "      halflabel = " << halflabel << endl;
+      //cout << "SensorID = " << sensorId << "     label = " << label << "      wedgelabel = " << wedgelabel << "      halflabel = " << halflabel << endl;
       // values for global derivatives
       TMatrixD derGlobalFTT(2, 6);
       TMatrixD derGlobalFST(2, 18);
@@ -1138,8 +1150,8 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
 
         measPoint.addGlobals(labGlobal, derGlobalFST);
         
-        cout << "Global Derivatives" << endl;
-        derGlobalFST.Print();        
+        //cout << "Global Derivatives" << endl;
+        //derGlobalFST.Print();        
 
       }
       if(sensorId < 1000 || sensorId > 9000)
@@ -1163,7 +1175,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       cout << " Dummy point inserted. " << endl;
       #endif
     }
-    cout << "end of adding a point" << endl;
+    //cout << "end of adding a point" << endl;
 
 
     //cout << " Starting extrapolation..." << endl;
@@ -1198,9 +1210,9 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
 	// (Solution from Claus Kleinwort (DESY))
 	s1 = 0.;
 	s2 = scatSMean + scatDeltaS * scatDeltaS / (scatSMean - s1);
-        cout << "scatTheta = " << scatTheta << endl;
-        cout << "scatDeltaS = " << scatDeltaS << endl;
-        cout << "scatSMean = " << scatSMean << endl;
+        //cout << "scatTheta = " << scatTheta << endl;
+        //cout << "scatDeltaS = " << scatDeltaS << endl;
+        //cout << "scatSMean = " << scatSMean << endl;
 	theta1 = sqrt(scatTheta * scatTheta * scatDeltaS * scatDeltaS / (scatDeltaS * scatDeltaS + (scatSMean - s1) * (scatSMean - s1)));
 	theta2 = sqrt(scatTheta * scatTheta * (scatSMean - s1) * (scatSMean - s1) / (scatDeltaS * scatDeltaS + (scatSMean - s1) * (scatSMean - s1)));
 
@@ -1275,13 +1287,13 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
 	scatCov(1, 0) = c1 * c2;
 	scatCov *= theta1 * theta1 / (1. - c1 * c1 - c2 * c2) / (1. - c1 * c1 - c2 * c2) ;
 
-        cout << "theta1 = " << theta1 << endl;
-        cout << "c1 = " << c1 << endl;
-        cout << "c2 = " << c2 << endl;
-        cout << "1. - c1 * c1 - c2 * c2 = " << 1. - c1 * c1 - c2 * c2 << endl;  
+        //cout << "theta1 = " << theta1 << endl;
+        //cout << "c1 = " << c1 << endl;
+        //cout << "c2 = " << c2 << endl;
+        //cout << "1. - c1 * c1 - c2 * c2 = " << 1. - c1 * c1 - c2 * c2 << endl;  
 
-        cout << "scatCov" << endl;
-        scatCov.Print();
+        //cout << "scatCov" << endl;
+        //scatCov.Print();
 	// last point is the just inserted measurement (or dummy point)
 	gbl::GblPoint& lastPoint = listOfPoints.at(n_gbl_points - 1);
 	lastPoint.addScatterer(scatResidual, scatCov.Invert());
@@ -1389,7 +1401,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       int imeas = 0;
       for (unsigned int p = 0; p < listOfPoints.size(); p++) {
         unsigned int label = p + 1;
-        cout << "label = " << label << endl;
+        //cout << "label = " << label << endl;
         unsigned int numRes;
         TVectorD residuals(5);
         TVectorD measErrors(2);
@@ -1426,7 +1438,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
         traj->getResults(label, localPar, localCov);
         // Get GBL fit results
         traj->getMeasResults(label, numRes, residuals, measErrors, resErrors, downWeights);
-        residuals.Print();
+        //residuals.Print();
         //residualsUgbl[imeas]->Fill(residuals[0]);
         //residualsVgbl[imeas]->Fill(residuals[1]);
         //merrUgbl[imeas]->Fill(measErrors[0]);
@@ -1464,7 +1476,7 @@ void StFwdGbl::processTrackWithRep(genfit::Track* trk, const genfit::AbsTrackRep
       #endif
       
       if (milleFile && m_milleFileName != "" && fitRes == 0 /*&& pvalue >= m_pValueCut && Ndf >= m_minNdf*/ && traj->isValid()) {
-        cout << "Trajectory is valid? " << traj->isValid() << endl;
+        //cout << "Trajectory is valid? " << traj->isValid() << endl;
         setSuccessfulFitFlag(true);
         traj->milleOut(*milleFile);  
         chi2OndfHistoGBL->Fill(Chi2 / Ndf);
