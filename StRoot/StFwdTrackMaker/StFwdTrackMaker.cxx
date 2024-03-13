@@ -705,7 +705,7 @@ void StFwdTrackMaker::loadFttHitsFromFastSim( FwdDataSource::McTrackMap_t &mcTra
  
         cout << "plane_id = " << plane_id << ",    quadId = " << quadId << endl;
 
-        if(plane_id == 10 && quadId == 0) continue;
+        //if(plane_id == 10 && quadId == 0) continue;
 
         cout << "sTGC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << ",   track ID = " << track_id << endl;
         //cout << "global position: x = " << x << ", y = " << y << ", z = " << z << endl;      
@@ -743,7 +743,7 @@ void StFwdTrackMaker::loadFttHitsFromFastSim( FwdDataSource::McTrackMap_t &mcTra
             if(point->layer() < 9) continue;
             cout << "plane_id = " << point->layer() << ",    quadId = " << point->wafer() << endl;
 
-            if(point->layer() == 10 && point->wafer() == 0) continue;
+            //if(point->layer() == 10 && point->wafer() == 0) continue;
 
             FwdHit *hit = new FwdHit(count++, point->position().x(), point->position().y(), point->position().z(), -(point->layer()-9), point->idTruth(), hitCov3, mcTrackMap[point->idTruth()]);
             hit->setSensor(point->wafer()); // quadrant 
@@ -1037,11 +1037,11 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 
 int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
    {
-        int count = 0;
+        int countMc = 0;
         St_g2t_fts_hit *g2t_fsi_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit");
 
         if ( !g2t_fsi_hits )
-            return count;
+            return countMc;
 
         int nfsi = g2t_fsi_hits->GetNRows();
 
@@ -1075,7 +1075,7 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
             cout << "FST MC HIT: x = " << git->x[0] << ", y = " << git->x[1] << ", z = " << git->x[2] << endl;
 
             hitCov3 = makeSiCovMat( TVector3( x, y, z ), mFwdConfig );
-            FwdHit *hit = new FwdHit(count++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
+            FwdHit *hit = new FwdHit(countMc++, x, y, z, d, track_id, hitCov3, mcTrackMap[track_id]);
             hit->setSensor(globalSensorId);
             //mFstHits.push_back( TVector3( x, y, z )  );
 
@@ -1112,8 +1112,11 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
     for (unsigned int fsthit_index = 0; fsthit_index < hits.size(); fsthit_index++) {
         StRnDHit *hit = hits[fsthit_index];
     
-        if ( hit->layer() > 6 ){
+        //cout << "ABOUT TO ADD RC HITS  " <<endl;
+
+        if ( hit->layer() > 6  || hit->layer() < 4){
             // skip sTGC hits here
+            //cout << "JUST KIDDING DON'T  " <<endl;
             continue;
         }
 
