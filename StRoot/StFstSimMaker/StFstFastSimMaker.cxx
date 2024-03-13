@@ -247,31 +247,31 @@ int StFstFastSimMaker::Init() {
             if(h == 0)
             {
               // create matrices from alignment tables
-              MhssOnFst(0,0) = hssOnFst[h].r00; 
-              MhssOnFst(0,1) = hssOnFst[h].r01; 
-              MhssOnFst(0,2) = hssOnFst[h].r02;
-              MhssOnFst(1,0) = hssOnFst[h].r10; 
-              MhssOnFst(1,1) = hssOnFst[h].r11; 
-              MhssOnFst(1,2) = hssOnFst[h].r12;
-              MhssOnFst(2,0) = hssOnFst[h].r20; 
-              MhssOnFst(2,1) = hssOnFst[h].r21; 
-              MhssOnFst(2,2) = hssOnFst[h].r22;
+              MhssOnFst(0,0) = 1.0; 
+              MhssOnFst(0,1) = 0.0; 
+              MhssOnFst(0,2) = 0.0;
+              MhssOnFst(1,0) = 0.0; 
+              MhssOnFst(1,1) = 1.0; 
+              MhssOnFst(1,2) = 0.0;
+              MhssOnFst(2,0) = 0.0; 
+              MhssOnFst(2,1) = 0.0; 
+              MhssOnFst(2,2) = 1.0;
               MhssOnFst(0,3) = 0.0;
               MhssOnFst(1,3) = 0.0;
-              MhssOnFst(2,3) = hssOnFst[h].t2 ;
+              MhssOnFst(2,3) = 0.0;//hssOnFst[h].t2 ;
               MhssOnFst(3,3) = 1.0            ;
             }
             if(h == 1)
             {
-              MhssOnFst(0,0) = hssOnFst[h].r00; 
-              MhssOnFst(0,1) = hssOnFst[h].r01; 
-              MhssOnFst(0,2) = hssOnFst[h].r02;
-              MhssOnFst(1,0) = hssOnFst[h].r10; 
-              MhssOnFst(1,1) = hssOnFst[h].r11; 
-              MhssOnFst(1,2) = hssOnFst[h].r12;
-              MhssOnFst(2,0) = hssOnFst[h].r20; 
-              MhssOnFst(2,1) = hssOnFst[h].r21; 
-              MhssOnFst(2,2) = hssOnFst[h].r22;
+              MhssOnFst(0,0) = 1.0;//hssOnFst[h].r00; 
+              MhssOnFst(0,1) = 0.0;//hssOnFst[h].r01; 
+              MhssOnFst(0,2) = 0.0;//hssOnFst[h].r02;
+              MhssOnFst(1,0) = 0.0;//hssOnFst[h].r10; 
+              MhssOnFst(1,1) = 1.0;//hssOnFst[h].r11; 
+              MhssOnFst(1,2) = 0.0;//hssOnFst[h].r12;
+              MhssOnFst(2,0) = 0.0;//hssOnFst[h].r20; 
+              MhssOnFst(2,1) = 0.0;//hssOnFst[h].r21; 
+              MhssOnFst(2,2) = 1.0;//hssOnFst[h].r22;
               MhssOnFst(0,3) = 0.0;
               MhssOnFst(1,3) = 0.0;
               MhssOnFst(2,3) = 0.0;
@@ -606,10 +606,16 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
                   phi_index = int(MAXPHI * gapless_phi / 2.0 / M_PI);
                 }
            
-                cout << "PHI INDEX = " << phi_index << endl;            
+                //cout << "PHI INDEX = " << phi_index << endl;            
 
-		if (r_index >= 8)
+		if (r_index >= 8 || r_index < 0)
 			continue;
+
+                //if(disk_index == 3 && (r_index == 6 || r_index == 7)) {/*cout << "skip disk " << disk_index << " rindex = " << r_index << endl; */ continue;}
+                //if(disk_index == 4 && (r_index == 0 || r_index == 7)) {/*cout << "skip disk " << disk_index << " rindex = " << r_index << endl; */ continue;}
+                //if(disk_index == 5 && (r_index == 0))                 {/*cout << "skip disk " << disk_index << " rindex = " << r_index << endl; */ continue;}
+                
+                //cout << "We continue" << endl;
 
 		if (MAXR)
 			assert(r_index < MAXR);
