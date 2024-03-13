@@ -426,18 +426,18 @@ class TrackFitter {
             TMatrixD o4(4,1,oa); // default origin
 
             // create matrices from alignment tables
-            MhssOnFst(0,0) = hssOnFst[h].r00;
-            MhssOnFst(0,1) = hssOnFst[h].r01;
-            MhssOnFst(0,2) = hssOnFst[h].r02;
-            MhssOnFst(1,0) = hssOnFst[h].r10;
-            MhssOnFst(1,1) = hssOnFst[h].r11;
-            MhssOnFst(1,2) = hssOnFst[h].r12;
-            MhssOnFst(2,0) = hssOnFst[h].r20;
-            MhssOnFst(2,1) = hssOnFst[h].r21;
-            MhssOnFst(2,2) = hssOnFst[h].r22;
-            MhssOnFst(0,3) = hssOnFst[h].t0 ;
-            MhssOnFst(1,3) = hssOnFst[h].t1 ;
-            MhssOnFst(2,3) = hssOnFst[h].t2 ;
+            MhssOnFst(0,0) = 1;//hssOnFst[h].r00;
+            MhssOnFst(0,1) = 0;//hssOnFst[h].r01;
+            MhssOnFst(0,2) = 0;//hssOnFst[h].r02;
+            MhssOnFst(1,0) = 0;//hssOnFst[h].r10;
+            MhssOnFst(1,1) = 1;//hssOnFst[h].r11;
+            MhssOnFst(1,2) = 0;//hssOnFst[h].r12;
+            MhssOnFst(2,0) = 0;//hssOnFst[h].r20;
+            MhssOnFst(2,1) = 0;//hssOnFst[h].r21;
+            MhssOnFst(2,2) = 1;//hssOnFst[h].r22;
+            MhssOnFst(0,3) = 0;//hssOnFst[h].t0 ;
+            MhssOnFst(1,3) = 0;//hssOnFst[h].t1 ;
+            MhssOnFst(2,3) = 0;//hssOnFst[h].t2 ;
             MhssOnFst(3,3) = 1.0            ;
 
             MfstWedgeOnHss(0,0) = fstWedgeOnHss[w].r00;
@@ -1331,6 +1331,7 @@ class TrackFitter {
 
             if(mGblFitter->getSuccessfulFitFlag())
             {
+              LOG_INFO << "Successful GBL refit" << endl;
               int nhits = 0;
               for (auto h : fstHits)
               {
@@ -1966,7 +1967,7 @@ class TrackFitter {
         * Include the Primary vertex if desired
         ******************************************************************************************************************/
         if (mIncludeVertexInFit) {
-            LOG_INFO << "About to add a vertex" << endm;
+            //LOG_INFO << "About to add a vertex" << endm;
 
             TMatrixDSym hitCov3(3);
             hitCov3(0, 0) = mVertexSigmaXY * mVertexSigmaXY;
@@ -1975,13 +1976,13 @@ class TrackFitter {
 
             genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, hitCov3, 9999, ++hitId, nullptr);
             fitTrack.insertPoint(new genfit::TrackPoint(measurement, &fitTrack));
-            LOG_INFO << "Added vertex to track" << endm;
+            //LOG_INFO << "Added vertex to track" << endm;
         }
 
         /******************************************************************************************************************
 	* sort hits to add by their z-location
  	******************************************************************************************************************/
-        LOG_INFO << "About to sort hits by their z-location" << endm;
+        //LOG_INFO << "About to sort hits by their z-location" << endm;
         std::vector<double> hitZ;
         for (auto h : trackCand) {
             if ( nullptr == h ) continue; // if no Si hit in this plane, skip
@@ -1991,22 +1992,22 @@ class TrackFitter {
             if(h->getZ() < 200.0)
             {
                 int is = static_cast<FwdHit*>(h)->getSensor();
-                LOG_INFO << "is = " << is << endm;
+                //LOG_INFO << "is = " << is << endm;
                 // FST disk (integer division rounds down)
                 int d = is / 36; // 0-2
-                LOG_INFO << "d = " << d << endm;
+                //LOG_INFO << "d = " << d << endm;
 
                 // FST wedge
                 int w = is / 3; // 0-35
-                LOG_INFO << "w = " << w << endm;
+                //LOG_INFO << "w = " << w << endm;
 
                 // FST sensor
                 int s = is % 3; // 0 (inner), 1 (outer), 2 (outer)
-                LOG_INFO << "s = " << s << endm;
+                //LOG_INFO << "s = " << s << endm;
                 int ds = (s == 0)? 0 : 1; // +0 for inner, +1 for outer
 
                 int defaultZidx = d * 4 + 2 * (w % 2) + ds;
-                LOG_INFO << "defaultZidx = " << defaultZidx << endm;
+                //LOG_INFO << "defaultZidx = " << defaultZidx << endm;
                 z = fstDefaultZ[defaultZidx];
             }
             else
@@ -2021,12 +2022,12 @@ class TrackFitter {
         std::iota(idx.begin(), idx.end(), 0);
         std::stable_sort(idx.begin(), idx.end(), [&hitZ](size_t i1, size_t i2) {return hitZ[i1] < hitZ[i2];});
         
-        LOG_INFO << "Finished sorting" << endm;
+        //LOG_INFO << "Finished sorting" << endm;
       
         /******************************************************************************************************************
 	* loop over the hits, add them to the track
  	******************************************************************************************************************/
-        LOG_INFO << "Loop over the hits and add them to the track" << endm;
+        //LOG_INFO << "Loop over the hits and add them to the track" << endm;
         for ( int ih = 0; ih < trackCand.size(); ih++ ) {
             auto h = trackCand[idx[ih]];
             size_t diskId = h->getSector();
@@ -2074,10 +2075,10 @@ class TrackFitter {
             if(!isFst) measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), planeId, ++hitId, nullptr);
             if(isFst ) measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), planeId+1000, ++hitId, nullptr);
              
-            cout << "planeId = " << planeId << endl;
-            cout << "diskId = " << diskId << endl;
+            //cout << "planeId = " << planeId << endl;
+            //cout << "diskId = " << diskId << endl;
 
-            cout << "Before selecting plane" << endl;
+            //cout << "Before selecting plane" << endl;
             genfit::SharedPlanePtr plane;
             if(!isFst) plane = mFTTPlanes[planeId];
             if(isFst ) {
@@ -2085,7 +2086,7 @@ class TrackFitter {
                 planeId += 1000; // offset for FST plane ID for alignment parameter ID
             }
             measurement->setPlane(plane, planeId);
-            cout << "After selecting plane" << endl;
+            //cout << "After selecting plane" << endl;
 
             fitTrack.insertPoint(new genfit::TrackPoint(measurement, &fitTrack));
 
@@ -2093,7 +2094,7 @@ class TrackFitter {
                 LOG_WARN << "Z Mismatch h->z = " << h->getZ() << ", plane->z = "<< plane->getO().Z() <<", diff = " << h->getZ() - plane->getO().Z() << endm;
             }
         }
-        LOG_INFO << "Added all the hits to the track" << endm;
+        //LOG_INFO << "Added all the hits to the track" << endm;
 
         /******************************************************************************************************************
 		 * Do the fit
@@ -2177,6 +2178,7 @@ class TrackFitter {
 
           if(mGblFitter->getSuccessfulFitFlag())
           {
+            LOG_INFO << "Successful GBL refit" << endl;
             int stateid = -1;
             for( int tp = 0; tp < gblTrack.getNumPointsWithMeasurement(); tp++)
             {
@@ -2195,9 +2197,23 @@ class TrackFitter {
               TVectorD trackCoords(2);
               rcCoords[0] = raw_meas->getRawHitCoords()[0];
               rcCoords[1] = raw_meas->getRawHitCoords()[1];
-              trackCoords[0] = planeState(0);
-              trackCoords[1] = planeState(1);
+              
+              float x = rcCoords[0];
+              float y = rcCoords[1];
+              if(stateid >= 1000 && stateid < 9000) {
+                if((stateid-1000)%3 == 0) x+=10.75;
+                if((stateid-1000)%3 != 0) x+=22.25;
+                float r = TMath::Sqrt(x*x+y*y);
+                if(stateid >= 1000 && stateid < 1036 && r >= 22.250) continue; 
+                if(stateid >= 1036 && stateid < 1072 && r <=  7.875) continue; 
+                if(stateid >= 1036 && stateid < 1072 && r >= 25.125) continue; 
+                if(stateid >= 1072 && stateid < 1108 && r <=  7.875) continue; 
+              }
 
+              trackCoords[0] = planeState(0);               
+              trackCoords[1] = planeState(1);
+ 
+ 
               TVector2 rcCoordsLocal(rcCoords[0],rcCoords[1]);
               TVector2 trackCoordsLocal(trackCoords[0],trackCoords[1]);
 
@@ -2231,7 +2247,7 @@ class TrackFitter {
                   { 
                     if(static_cast<FwdHit*>(mch)->getSensor() != stateid-1000) continue;
                     double arr[4] = {mch->getX(),mch->getY(),mch->getZ(),1.0};
-                    cout << "x = " << mch->getX() << ", y = " << mch->getY() << ", z = " << mch->getZ() << endl;
+                    //cout << "x = " << mch->getX() << ", y = " << mch->getY() << ", z = " << mch->getZ() << endl;
                     TMatrixD mc4D(4,1,arr);
                     mc4D = mInverseMFst[stateid-1000] * mc4D; // This is the MC position in the local frame where origins coincide between local and lab
 
