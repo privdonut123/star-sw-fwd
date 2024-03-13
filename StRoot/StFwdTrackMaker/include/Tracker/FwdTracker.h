@@ -507,7 +507,7 @@ class ForwardTrackMaker {
         FwdDataSource::HitMap_t &fttHitmap = mDataSource->getFttHits();
         FwdDataSource::HitMap_t &fstHitmap = mDataSource->getFstHits();
 
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
         bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( useFttAsSource == false ){
@@ -598,7 +598,7 @@ class ForwardTrackMaker {
     void fitTrack(Seed_t &seed) {
         
         // make sure this is consistent with above
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "");
         bool useFttAsSource = !(hitmapSource == "fst") && !(hitmapSource == "");
 
         if ( mGenHistograms ){
