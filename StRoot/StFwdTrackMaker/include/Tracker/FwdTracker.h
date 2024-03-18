@@ -96,14 +96,14 @@ void set(   Seed_t &fttSeed,
         try {
             // this->track = new genfit::Track(*track);
             this->track = track;
-            this->status = *(this->track->getFitStatus());
+            this->status = this->track->getFitStatus();
             this->trackRep = this->track->getCardinalRep();
 
-            this->isFitConverged = this->status.isFitConverged();
-            this->isFitConvergedFully = this->status.isFitConvergedFully();
-            this->isFitConvergedPartially = this->status.isFitConvergedPartially();
-            this->nFailedPoints = this->status.getNFailedPoints();
-            this->charge = this->status.getCharge();
+            this->isFitConverged = this->status->isFitConverged();
+            this->isFitConvergedFully = this->status->isFitConvergedFully();
+            this->isFitConvergedPartially = this->status->isFitConvergedPartially();
+            this->nFailedPoints = this->status->getNFailedPoints();
+            this->charge = this->status->getCharge();
 
             this->nPV = this->track->getNumPoints() - (numFTT() + numFST());
 
@@ -142,7 +142,7 @@ void set(   Seed_t &fttSeed,
     TVector3 momentum;
     double charge;
     size_t nPV = 0;
-    genfit::FitStatus status;
+    genfit::FitStatus *status = nullptr;
     genfit::AbsTrackRep *trackRep = nullptr;
     genfit::Track *track = nullptr;
     bool isFitConverged = false;
@@ -515,7 +515,6 @@ class ForwardTrackMaker {
         mRecoTracks.clear();
         mRecoTrackQuality.clear();
         mRecoTrackIdTruth.clear();
-        
         mTrackResults.clear();
         /************** Cleanup **************************/
 
@@ -655,61 +654,54 @@ class ForwardTrackMaker {
         genfit::AbsTrackRep *trackRep = nullptr;//new genfit::RKTrackRep(211); // pdg for pi+
         genfit::Track *genTrack = nullptr;//new genfit::Track( trackRep, TVector3(0, 0, 0), TVector3(0, 0, 0) );
 
+        mAttemptedFits++;
+        if ( mGenHistograms ){
+            mHist["FitStatus"]->Fill("AttemptFit", 1);
+        }
 
-        if (mDoTrackFitting) {
-            if ( mGenHistograms ){
-                mHist["FitStatus"]->Fill("AttemptFit", 1);
-            }
+        double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
 
-            double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
+        double * pVertex = 0;
+        if ( fabs(mEventVertex.X()) < 150 ){
+            pVertex = vertex; // only use it if it has been set from default
+        }
 
-            double * pVertex = 0;
-            if ( fabs(mEventVertex.X()) < 150 ){
-                pVertex = vertex; // only use it if it has been set from default
-            }
+        bool useMcSeed = mConfig.get<bool>("TrackFitter:mcSeed", false);
+        if (true == useMcSeed) {
+            // use the MC pt, eta, phi as the seed for fitting
+            mTrackFitter->fitTrack(seed, pVertex, &mcSeedMom);
+        } else {
+            // Normal case, real data
+            mTrackFitter->fitTrack(seed, pVertex);
+        }
 
-            bool useMcSeed = mConfig.get<bool>("TrackFitter:mcSeed", false);
-            for ( size_t i = 0; i < 10000; i++ ){
-            if (true == useMcSeed) {
-                // use the MC pt, eta, phi as the seed for fitting
-                mTrackFitter->fitTrack2(seed, pVertex, &mcSeedMom);
+        if (mTrackFitter->getTrack() != nullptr ){
+            genTrack = mTrackFitter->getTrack();
+            Seed_t nonSeeds; // none
+            GenfitTrackResult gtr;
+            if ( useFttAsSource )
+                gtr.set( seed, nonSeeds, genTrack );
+            else 
+                gtr.set( nonSeeds, seed, genTrack );
+
+            if (gtr.status && gtr.status->isFitConvergedFully()) {
+                mGoodFits ++;
+                if ( mGenHistograms ) mHist["FitStatus"]->Fill("GoodFit", 1);
             } else {
-                // Normal case, real data
-                mTrackFitter->fitTrack2(seed, pVertex);
-            }}
-
-            if ( mGenHistograms ){
-                if (mTrackFitter->getStatus().isFitConvergedFully()) {
-                    mHist["FitStatus"]->Fill("GoodFit", 1);
-                } else {
-                    mHist["FitStatus"]->Fill("BadFit", 1);
-                }
+                mFailedFits ++;
+                if ( mGenHistograms ) mHist["FitStatus"]->Fill("BadFit", 1);
             }
 
-            // for ( int i = 0; i < 10000; i ++ )
-            if (mTrackFitter->getTrack() != nullptr ){
-                genTrack = new genfit::Track(*mTrackFitter->getTrack());
-                genTrack->setMcTrackId(idt);
-                Seed_t nonSeeds; // none
-                GenfitTrackResult gtr;
-                if ( useFttAsSource )
-                    gtr.set( seed, nonSeeds, genTrack );
-                else 
-                    gtr.set( nonSeeds, seed, genTrack );
-
-                if ( mGenHistograms && genTrack->getFitStatus(genTrack->getCardinalRep())->isFitConverged()) {
-                    mHist["FitStatus"]->Fill("GoodCardinal", 1);
-                }
-                mTrackResults.push_back( gtr );
+            if ( genTrack->getFitStatus(genTrack->getCardinalRep())->isFitConverged()) {
+                mGoodCardinals++;
+                if ( mGenHistograms ) mHist["FitStatus"]->Fill("GoodCardinal", 1);
             }
-            // genTrack->Clear();
-            
-            // genTrack->Clear();
-            // delete genTrack;
-            // genTrack = nullptr;
-            LOG_DEBUG << "FwdTracker::fitTrack complete" << endm;
-            
-        } // if (mDoTrackFitting)
+            mTrackResults.push_back( gtr );
+        } else {
+            mFailedFits ++;
+            if ( mGenHistograms ) mHist["FitStatus"]->Fill("BadFit", 1);
+        }
+        LOG_DEBUG << "FwdTracker::fitTrack complete" << endm;
     } // fitTrack
 
     /**
@@ -719,6 +711,13 @@ class ForwardTrackMaker {
      */
     void doTrackFitting( std::vector<Seed_t> &trackSeeds) {
         long long itStart = FwdTrackerUtils::nowNanoSecond();
+
+        // metrics for this round
+        mAttemptedFits = 0;
+        mGoodFits = 0;
+        mFailedFits = 0;
+        mGoodCardinals = 0;
+
         // Fit each accepted track seed
         LOG_DEBUG << "Starting Track fitting loop on " << trackSeeds.size() << " track seeds" << endm;
         size_t index = 0;
@@ -732,6 +731,12 @@ class ForwardTrackMaker {
         if ( mGenHistograms ){
             this->mHist["FitDuration"]->Fill(duration);
         }
+
+        double perGood = (double) mGoodFits / (double) mAttemptedFits;
+        double perFailed = (double) mFailedFits / (double) mAttemptedFits;
+        double perCardinals = (double) mGoodCardinals / (double) mGoodFits;
+        LOG_DEBUG << "Track Fitting Results:" <<
+                    TString::Format( "Attempts = %lu, Good = %lu (%f%), Failed = %lu (%f%), GoodCardinals = %lu (%f%)", mAttemptedFits, mGoodFits, perGood, mFailedFits, perFailed, mGoodCardinals, perCardinals ) << endm;
         LOG_DEBUG << "Track fitting took " << duration << "ms" << endm; 
     } // doTrackFitting
 
@@ -1076,7 +1081,7 @@ class ForwardTrackMaker {
         
         LOG_DEBUG << " FITTING " << mRecoTracksThisItertion.size() << " now" << endm;
 
-        if ( mRecoTracksThisItertion.size() < 2001 ){
+        if ( mRecoTracksThisItertion.size() < 10001 ){
             doTrackFitting( mRecoTracksThisItertion );
         } else {
             LOG_ERROR << "BAILING OUT of fit, too many track candidates" << endm;
@@ -1101,7 +1106,7 @@ class ForwardTrackMaker {
         for (size_t i = 0; i < mTrackResults.size(); i++) {
             GenfitTrackResult &gtr = mTrackResults[i];
             
-            if ( gtr.status.isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
+            if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
                 LOG_DEBUG << "Skipping addFstHitsMc, fit failed" << endm;
                 return;
             }
@@ -1273,7 +1278,7 @@ class ForwardTrackMaker {
         for (size_t i = 0; i < mTrackResults.size(); i++) {
             GenfitTrackResult &gtr = mTrackResults[i];
             
-            if ( gtr.status.isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
+            if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
                 LOG_DEBUG << "Skipping addFttHitsMc on this track, fit failed" << endm;
                 return;
             }
@@ -1571,6 +1576,11 @@ class ForwardTrackMaker {
 
     std::vector<Seed_t> mRecoTracks; // the tracks recod from all iterations
     std::vector<Seed_t> mRecoTracksThisItertion;
+
+    size_t mAttemptedFits = 0;
+    size_t mGoodFits = 0;
+    size_t mFailedFits = 0;
+    size_t mGoodCardinals = 0;
 
     // Set to the Primary vertex for the event
     TVector3 mEventVertex;
