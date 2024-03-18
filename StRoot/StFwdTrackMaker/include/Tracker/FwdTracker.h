@@ -83,6 +83,8 @@ public:
     void Clear() {
         if ( track ){
             track->Clear();
+            delete track;
+            track = nullptr;
         }
     }
 void set(   Seed_t &fttSeed, 
@@ -666,13 +668,15 @@ class ForwardTrackMaker {
                 pVertex = vertex; // only use it if it has been set from default
             }
 
-            if (true == mConfig.get<bool>("TrackFitter:mcSeed", false)) {
+            bool useMcSeed = mConfig.get<bool>("TrackFitter:mcSeed", false);
+            for ( size_t i = 0; i < 10000; i++ ){
+            if (true == useMcSeed) {
                 // use the MC pt, eta, phi as the seed for fitting
-                mTrackFitter->fitTrack(seed, pVertex, &mcSeedMom);
+                mTrackFitter->fitTrack2(seed, pVertex, &mcSeedMom);
             } else {
                 // Normal case, real data
-                mTrackFitter->fitTrack(seed, pVertex);
-            }
+                mTrackFitter->fitTrack2(seed, pVertex);
+            }}
 
             if ( mGenHistograms ){
                 if (mTrackFitter->getStatus().isFitConvergedFully()) {
@@ -683,7 +687,7 @@ class ForwardTrackMaker {
             }
 
             // for ( int i = 0; i < 10000; i ++ )
-            {
+            if (mTrackFitter->getTrack() != nullptr ){
                 genTrack = new genfit::Track(*mTrackFitter->getTrack());
                 genTrack->setMcTrackId(idt);
                 Seed_t nonSeeds; // none
@@ -716,14 +720,19 @@ class ForwardTrackMaker {
     void doTrackFitting( std::vector<Seed_t> &trackSeeds) {
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         // Fit each accepted track seed
+        LOG_DEBUG << "Starting Track fitting loop on " << trackSeeds.size() << " track seeds" << endm;
+        size_t index = 0;
         for (auto t : trackSeeds) {
+            LOG_DEBUG << "Track seed fit #" << index << endm;
             fitTrack(t);
+            index++;
         }
         long long itEnd = FwdTrackerUtils::nowNanoSecond();
         long long duration = (itEnd - itStart) * 1e-6; // milliseconds
         if ( mGenHistograms ){
             this->mHist["FitDuration"]->Fill(duration);
         }
+        LOG_DEBUG << "Track fitting took " << duration << "ms" << endm; 
     } // doTrackFitting
 
     /**
