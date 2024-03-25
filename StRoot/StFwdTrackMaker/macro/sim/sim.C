@@ -7,6 +7,23 @@
 
 TFile *output = 0;
 
+void reportMem(){
+    struct sysinfo memInfo;
+
+    sysinfo (&memInfo);
+    long long totalVirtualMem = memInfo.totalram;
+    //Add other values in next statement to avoid int overflow on right hand side...
+    totalVirtualMem += memInfo.totalswap;
+    totalVirtualMem *= memInfo.mem_unit;
+
+    long long virtualMemUsed = memInfo.totalram - memInfo.freeram;
+    //Add other values in next statement to avoid int overflow on right hand side...
+    virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
+    virtualMemUsed *= memInfo.mem_unit;
+
+    LOG_INFO << "MEM USED % = " << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endm;
+}
+
 void sim( int n = 5, // nEvents to run
                 string outputName = "stFwdTrackMaker_ideal_sim.root",
                 bool useFstForSeedFinding = false, // use FTT (default) or FST for track finding
@@ -121,22 +138,27 @@ void sim( int n = 5, // nEvents to run
             fwdTrack->setOutputFilename( outputName );
             fwdTrack->SetGenerateTree( false );
             fwdTrack->SetGenerateHistograms( false );
+            fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
 
             // fwdTrack->setZeroB( true );
         
-            StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
-            fwdFitQA->SetDebug();
-            chain->AddAfter("fwdTrack", fwdFitQA);
-        
+            bool doFitQA = true;
+            if ( doFitQA ){    
+                StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+                fwdFitQA->SetDebug();
+                chain->AddAfter("fwdTrack", fwdFitQA);
+            }
             cout << "fwd tracker setup" << endl;
         }
         
-        if (!useFCS){
+        bool doFwdAna = false;
+        if (!useFCS && doFwdAna ){
             StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
             fwdAna->SetDebug();
             chain->AddAfter("fwdTrack", fwdAna);
         }
+
 
     StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
     if (useFCS) {
@@ -148,14 +170,18 @@ void sim( int n = 5, // nEvents to run
         match->SetDebug();
         chain->AddMaker(match);
 
-        StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-        fwdAna->SetDebug();
-        chain->AddAfter("FcsTrkMatch", fwdAna);
+        if ( doFwdAna ){
+            StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+            fwdAna->SetDebug();
+            chain->AddAfter("FcsTrkMatch", fwdAna);
+        }
 
         // Produce MuDst output
-        chain->AddAfter( "FcsTrkMatch", muDstMaker );
+        if ( muDstMaker )
+            chain->AddAfter( "FcsTrkMatch", muDstMaker );
     } else {
-        chain->AddAfter( "fwdAna", muDstMaker );
+        if ( muDstMaker )
+            chain->AddAfter( "fwdAna", muDstMaker );
     }
 
     
@@ -184,7 +210,7 @@ chain_loop:
         //     cout << "muFwdTrack->mPt = " << muFwdTrack->momentum().Pt() << endl;
 
         // }
-
+        // reportMem();
         cout << "<---------- END EVENT" << endl;
     } // event loop
 }

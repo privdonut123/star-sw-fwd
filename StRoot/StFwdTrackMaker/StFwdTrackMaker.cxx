@@ -1,5 +1,7 @@
 #include "StFwdTrackMaker/StFwdTrackMaker.h"
 #include "StFwdTrackMaker/include/Tracker/FwdHit.h"
+ofstream memf;
+double getValueRAM();
 #include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
 #include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
 #include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
@@ -83,7 +85,38 @@ float BDTCrit2::Crit2_DeltaRho = -999;
 float BDTCrit2::Crit2_DeltaPhi = -999;
 float BDTCrit2::Crit2_StraightTrackRatio = -999;
 
-ofstream memf;
+
+
+#include "stdlib.h"
+#include "stdio.h"
+#include "string.h"
+
+int parseLine(char* line){
+    // This assumes that a digit will be found and the line ends in " Kb".
+    int i = strlen(line);
+    const char* p = line;
+    while (*p <'0' || *p > '9') p++;
+    line[i-3] = '\0';
+    i = atoi(p);
+    return i;
+}
+
+double getValueRAM(){ //Note: this value is in KB!
+    FILE* file = fopen("/proc/self/status", "r");
+    int result = -1;
+    char line[128];
+
+    while (fgets(line, 128, file) != NULL){
+        if (strncmp(line, "VmRSS:", 6) == 0){
+            result = parseLine(line);
+            break;
+        }
+    }
+    fclose(file);
+    const double megabyte = 1024 * 1024;
+    double rMb = ((double)result) / megabyte;
+    return rMb;
+}
 
 void reportMem(){
     struct sysinfo memInfo;
@@ -99,8 +132,19 @@ void reportMem(){
     virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
     virtualMemUsed *= memInfo.mem_unit;
 
-    LOG_INFO << "MEM USED % = " << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endm;
-    memf << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endl;
+    long long totalPhysMem = memInfo.totalram;
+    //Multiply in next statement to avoid int overflow on right hand side...
+    totalPhysMem *= memInfo.mem_unit;
+    long long physMemUsed = memInfo.totalram - memInfo.freeram;
+    //Multiply in next statement to avoid int overflow on right hand side...
+    physMemUsed *= memInfo.mem_unit;
+    const double megabyte = 1024 * 1024;
+
+    LOG_INFO << "VIRTUAL MEM USED % = " << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endm;
+    LOG_INFO << "RAM USED % = " << ((double)physMemUsed / (double)totalPhysMem) << endm;
+    // memf << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endl;
+    // memf << ( (double)virtualMemUsed ) << endl;
+    memf << (getValueRAM()) << endl;
 
 }
 
@@ -1287,7 +1331,6 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
     LOG_DEBUG << "<<Found " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds" << endm;
     LOG_DEBUG << "Fit " << mForwardTracker -> getTrackResults().size() << " GenFit Tracks" << endm;
-
     // perform vertex finding/fitting with Fwd tracks
     // FitVertex();
 
@@ -1299,7 +1342,7 @@ int StFwdTrackMaker::Make() {
         std::vector<genfit::Track *> genfitTracks;
         for ( auto gtr : mForwardTracker->getTrackResults() ) {
             if ( gtr.isFitConvergedFully == false ) continue;
-            genfitTracks.push_back( gtr.track );
+            genfitTracks.push_back( gtr.track.get() );
         }
 
         if ( mVisualize && genfitTracks.size() > 0 && genfitTracks.size() < 400 && eventIndex < 50 ) {
@@ -1345,6 +1388,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     // Fit failed beyond use
     if ( gtr.track == nullptr  ){
+        gtr.Clear();
         LOG_DEBUG << "GenfitTrack is nullptr, not making StFwdTrack" << endm;
         return nullptr;
     }    
@@ -1451,10 +1495,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         LOG_DEBUG << "Calculating Fwd Projection for detId=" << detIndex << " @ z=" << z << endm;
         tv3.SetXYZ(0, 0, 0);
         if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
-            tv3 = ObjExporter::trackPosition( gtr.track, z, cov, mom );
+            tv3 = ObjExporter::trackPosition( gtr.track.get(), z, cov, mom );
         } else {
             // use a straight line projection to HCAL since GenFit cannot handle long projections
-            tv3 = ObjExporter::projectAsStraightLine( gtr.track, 575.0, 625.0, z, cov, mom );
+            tv3 = ObjExporter::projectAsStraightLine( gtr.track.get(), 575.0, 625.0, z, cov, mom );
         }
         fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
 
@@ -1469,6 +1513,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
         zIndex++;
     }
+    gtr.Clear();
 
     return fwdTrack;   
 }
@@ -1534,7 +1579,7 @@ void StFwdTrackMaker::FillTrackDeltas(){
             TLorentzVector lvHit, lvTrack;
             lvHit.SetPxPyPzE( hit->getX(), hit->getY(), hit->getZ(), 1 );
             
-            auto ttv3 = ObjExporter::trackPosition( gt, htv3.Z() );
+            auto ttv3 = ObjExporter::trackPosition( gt.get(), htv3.Z() );
             lvTrack.SetPxPyPzE( ttv3.X(), ttv3.Y(), ttv3.Z(), 1 );
             
             mTreeData.thdX.push_back( (ttv3.X() - htv3.X()) );
@@ -1555,9 +1600,9 @@ void StFwdTrackMaker::FitVertex(){
     vector<genfit::Track *> genfitTracks;
 
     const auto &trackResults = mForwardTracker -> getTrackResults();
-    for ( auto gtr : trackResults ){
-        genfitTracks.push_back( gtr.track );
-    }
+    // for ( auto gtr : trackResults ){
+    //     // genfitTracks.push_back( gtr.track );
+    // }
     if ( genfitTracks.size() >= 2 ){
         genfit::GFRaveVertexFactory gfrvf;
 
@@ -1922,7 +1967,7 @@ std::string StFwdTrackMaker::defaultConfigData = R"(
         <HitRemover active="false" />
     </TrackFinder>
     
-	<TrackFitter refitSi="true" mcSeed="false" zeroB="false">
+	<TrackFitter refitSi="true" mcSeed="false" zeroB="false" active="true">
         <Vertex sigmaXY="0.01" sigmaZ="0.01" includeInFit="true" smearMcVertex="false" />
     </TrackFitter>
 </config>
