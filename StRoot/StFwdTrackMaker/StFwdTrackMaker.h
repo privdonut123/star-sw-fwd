@@ -414,7 +414,6 @@ class StFwdTrackMaker : public StMaker {
       // if we got here then the crit did not exist
     }
 
-    
 };
 
 #endif

@@ -1942,7 +1942,7 @@ std::string StFwdTrackMaker::defaultConfigData = R"(
         <Iteration nPhiSlices="32" > <!-- Options for first iteration -->
             <SegmentBuilder>
                 <Criteria name="Crit2_RZRatio" min="0" max="1.20" />
-                <Criteria name="Crit2_DeltaRho" min="-7" max="7"/>
+                <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/>
                 <Criteria name="Crit2_DeltaPhi" min="0" max="30.0" />
                 <Criteria name="Crit2_StraightTrackRatio" min="0.01" max="5.85"/>
             </SegmentBuilder>
