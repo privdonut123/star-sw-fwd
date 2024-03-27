@@ -7,17 +7,6 @@ StFwdTrack::StFwdTrack() {
 }
 
 StFwdTrack::~StFwdTrack() { 
-    for (unsigned int i=0; i<mEcalClusters.size(); i++) {
-        if ( !mEcalClusters[i] ) continue;
-       delete mEcalClusters[i];
-       mEcalClusters[i] = 0;
-   }
-
-   for (unsigned int i=0; i<mHcalClusters.size(); i++) {
-    if ( !mHcalClusters[i] ) continue;
-       delete mHcalClusters[i];
-       mHcalClusters[i] = 0;
-   }
    mEcalClusters.clear();
    mHcalClusters.clear();
 }
