@@ -927,63 +927,36 @@ class TrackFitter {
             if (mGenHistograms) mHist["FitStatus"]->Fill("Exception", 1);
         }
 
-        if ( nullptr == mFitTrack ){
+        long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
+
+        if ( nullptr == mFitTrack ){ // this should not be a possible path
             LOG_ERROR << "NULL track" << endm;
+            if (mGenHistograms) {
+                this->mHist["FitStatus"]->Fill("Fail", 1);
+                this->mHist["FailedFitDuration"]->Fill(duration);
+            }
             return p;
         }
-        return p;
 
-        /******************************************************************************************************************
-		 * Now check the fit
-		 ******************************************************************************************************************/
-        // try {
+        if (mFitTrack->getFitStatus(mFitTrack->getCardinalRep())->isFitConvergedFully() && mGenHistograms ) {
+            this->mHist["FitStatus"]->Fill("GoodCardinal", 1);
+        } else {
             
-        //     auto cardinalRep = mFitTrack->getCardinalRep();
-        //     LOG_DEBUG << "Cardinal rep and status deteremined" << endm;
-        //     // Clone the cardinal rep for persistency
-        //     // mTrackRep = cardinalRep->clone(); // save the result of the fit
-        //     if (mFitTrack->getFitStatus(cardinalRep)->isFitConverged() && mGenHistograms ) {
-        //         this->mHist["FitStatus"]->Fill("GoodCardinal", 1);
-        //     }
+            if (mGenHistograms) {
+                this->mHist["FitStatus"]->Fill("Fail", 1);
+                this->mHist["FailedFitDuration"]->Fill(duration);
+            }
+        }
 
-            
+        // Fill some histograms for successful fits
+        if (mGenHistograms) {
+            this->mHist["FitStatus"]->Fill("Pass", 1);
+            this->mHist["delta_fit_seed_pT"]->Fill(p.Pt() - seedMom.Pt());
+            this->mHist["delta_fit_seed_eta"]->Fill(p.Eta() - seedMom.Eta());
+            this->mHist["delta_fit_seed_phi"]->Fill(p.Phi() - seedMom.Phi());
+            this->mHist["FitDuration"]->Fill(duration);
+        }
 
-        //     if (mFitTrack->getFitStatus(cardinalRep)->isFitConverged() == false) {
-        //         LOG_WARN << "FWD Track GenFit Failed" << endm;
-
-        //         p.SetXYZ(0, 0, 0);
-        //         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        //         if (mGenHistograms) {
-        //             this->mHist["FitStatus"]->Fill("Fail", 1);
-        //             this->mHist["FailedFitDuration"]->Fill(duration);
-        //         }
-        //         return p;
-        //     } // neither track rep converged
-
-        //     p = cardinalRep->getMom(mFitTrack->getFittedState(1, cardinalRep));
-        //     // LOG_DEBUG << "track fit p = " << TString::Format( "(%f, %f, %f), q=%f", p.X(), p.Y(), p.Z(), mQ ).Data() << endm;
-
-        // } catch (genfit::Exception &e) {
-        //     LOG_WARN << "Exception on track fit: " << e.what() << endm;
-        //     p.SetXYZ(0, 0, 0);
-
-        //     long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        //     if (mGenHistograms) {
-        //         this->mHist["FitStatus"]->Fill("Exception", 1);
-        //         this->mHist["FailedFitDuration"]->Fill(duration);
-        //     }
-
-        //     return p;
-        // } // try/catch 
-
-        // long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        // if (mGenHistograms) {
-        //     this->mHist["FitStatus"]->Fill("Pass", 1);
-        //     this->mHist["delta_fit_seed_pT"]->Fill(p.Pt() - seedMom.Pt());
-        //     this->mHist["delta_fit_seed_eta"]->Fill(p.Eta() - seedMom.Eta());
-        //     this->mHist["delta_fit_seed_phi"]->Fill(p.Phi() - seedMom.Phi());
-        //     this->mHist["FitDuration"]->Fill(duration);
-        // }
         return p;
     }
 
@@ -1027,7 +1000,6 @@ class TrackFitter {
     bool mIncludeVertexInFit = false;
 
     // GenFit state
-    genfit::AbsTrackRep *mTrackRep;
     std::shared_ptr<genfit::Track> mFitTrack;
 };
 
