@@ -376,6 +376,11 @@ class StFwdTrackMaker : public StMaker {
       mFwdConfig.set( k, v );
     }
 
+    /** @brief Sets a criteria value in the config for 2-hit criteria
+     *  @param string name: name of the crit2, e.g. Crit2_RZRatio
+     *  @param double min: minimum for the criteria, meaning depends on specific crit2
+     *  @param double max: maximum for the criteria, meaning depends on specific crit2
+     */
     void setCrit2( std::string name, double min, double max ){
       for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.SegmentBuilder" ) ){
         auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
@@ -384,10 +389,18 @@ class StFwdTrackMaker : public StMaker {
           LOG_DEBUG << "Setting Crit2=" << nName << " (min=" << min << ", max=" << max << ")" << endm;
           mFwdConfig.set<double>(p + ":min", min );
           mFwdConfig.set<double>(p + ":max", max );
+          return;
         }
-      }
+      } // loop on existing crit2
+      // if we got here then the crit did not exist
+
     }
 
+    /** @brief Sets a criteria value in the config for 3-hit criteria
+     *  @param string name: name of the crit3, e.g. Crit2_RZRatio
+     *  @param double min: minimum for the criteria, meaning depends on specific crit2
+     *  @param double max: maximum for the criteria, meaning depends on specific crit2
+     */
     void setCrit3( std::string name, double min, double max ){
       for ( auto p : mFwdConfig.childrenOf( "TrackFinder.Iteration.ThreeHitSegments" ) ){
         auto nName = mFwdConfig.get<std::string>( p + ":name", "DNE" );
@@ -395,11 +408,12 @@ class StFwdTrackMaker : public StMaker {
           LOG_DEBUG << "Setting Crit3=" << nName << " (min=" << min << ", max=" << max << ")" << endm;
           mFwdConfig.set<double>(p + ":min", min );
           mFwdConfig.set<double>(p + ":max", max );
+          return;
         }
-      }
+      } // loop on existing crit3
+      // if we got here then the crit did not exist
     }
 
-    
 };
 
 #endif
