@@ -29,6 +29,7 @@ void mudst( const Char_t * fileList = "mudst.lis", int nEvents = 5000, int nFile
 
 	gSystem->Load("StFwdUtils.so");
     StFwdAnalysisMaker * fwdAna = new StFwdAnalysisMaker();
+	fwdAna->setMuDstInput();
     chain->AddMaker(fwdAna);
 
 	StFcsDbMaker * fcsDb = new StFcsDbMaker();

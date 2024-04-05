@@ -152,7 +152,7 @@ void sim( int n = 5, // nEvents to run
             cout << "fwd tracker setup" << endl;
         }
         
-        bool doFwdAna = false;
+        bool doFwdAna = true;
         if (!useFCS && doFwdAna ){
             StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
             fwdAna->SetDebug();

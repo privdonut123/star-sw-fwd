@@ -338,6 +338,9 @@ void genDst(unsigned int First,
     StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
     fwdAna->SetDebug();
 
+    StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+    fwdFitQA->SetDebug();
+
     if (findAndRemoveOption("btofmatch",optionTokens)) {
 
       procGeoTag(optionTokens);
@@ -534,11 +537,12 @@ void genDst(unsigned int Last,
             char* infile,
             char* outfile)
 {
+  cout << TString::Format("genDst( %u, '%s', '%s', '%s' )", Last, options, infile, outfile ) << endl;
   genDst(1,Last,options,infile,outfile);
 }
 
 void pico(){
-  genDst(500, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/work/st_fwd_22356011_raw_4500001.MuDst.root", "PROD.root");
+  genDst(20000, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/gpfs01/star/pwg_tasks/FwdCalib//MuDst/Run22ppP23if/st_fwd_22356022_raw_2500032.MuDst.root", "PROD.root");
 }
 
 void pico( TString f, int n = 500){
