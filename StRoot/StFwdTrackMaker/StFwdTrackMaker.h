@@ -160,6 +160,7 @@ class StFwdTrackMaker : public StMaker {
 
     std::vector< genfit::GFRaveVertex * > mRaveVertices;
 
+    TVector3 GetEventPrimaryVertex();
     void ProcessFwdTracks();
     void FillEvent();
     void FillTrackDeltas();

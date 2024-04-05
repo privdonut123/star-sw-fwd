@@ -74,6 +74,7 @@ double getValueRAM();
 #include "StMuDSTMaker/COMMON/StMuDst.h"
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
+#include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
 
 #include "sys/types.h"
 #include "sys/sysinfo.h"
@@ -1269,6 +1270,32 @@ void StFwdTrackMaker::loadFcs( ) {
     } // for det
 } // loadFcs
 
+TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
+    TVector3 pv(0, 0, 0);
+
+    // MuDst only for now
+    int count = 0;
+    StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
+    if(!mMuDstMaker) {
+        return pv;
+    }
+    StMuDst *mMuDst = mMuDstMaker->muDst();
+    if(!mMuDst) {
+        return pv;
+    }
+
+    StMuPrimaryVertex *muPV = mMuDst->primaryVertex();
+    if ( muPV ){
+        pv.SetX(muPV->position().x());
+        pv.SetY(muPV->position().y());
+        pv.SetZ(muPV->position().z());
+    } else {
+        // No primary vertex available 
+    }
+
+    return pv;
+}
+
 //________________________________________________________________________
 int StFwdTrackMaker::Make() {
     reportMem();
@@ -1290,7 +1317,14 @@ int StFwdTrackMaker::Make() {
     mFwdTracks.clear();
     
     // default event vertex
-    mForwardTracker->setEventVertex( TVector3( 0, 0, 0 ) );
+    auto eventPV = GetEventPrimaryVertex();
+    mForwardTracker->setEventVertex( eventPV );
+    if ( fabs(eventPV.X()) < 0.001 && fabs(eventPV.Y()) < 0.001 && fabs(eventPV.Z()) < 0.001 ){
+        LOG_DEBUG << "FWD Tracking on event without available Primary Vertex" << endm;
+    } else {
+        LOG_INFO << "Forward Tracking using primary vertex: " << TString::Format( "(%f, %f, %f)", eventPV.X(), eventPV.Y(), eventPV.Z() ) << endm;
+    }
+
 
     /**********************************************************************/
     // Load MC tracks
