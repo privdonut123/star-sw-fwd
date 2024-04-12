@@ -337,6 +337,7 @@ void genDst(unsigned int First,
 
     StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
     fwdAna->SetDebug();
+    fwdAna->setLocalOutputFile( "StFwdAnalysisMaker.root");
 
     StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
     fwdFitQA->SetDebug();
@@ -542,7 +543,7 @@ void genDst(unsigned int Last,
 }
 
 void pico(){
-  genDst(20000, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/gpfs01/star/pwg_tasks/FwdCalib//MuDst/Run22ppP23if/st_fwd_22356022_raw_2500032.MuDst.root", "PROD.root");
+  genDst(5000, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/gpfs01/star/pwg_tasks/FwdCalib//MuDst/Run22ppP23if/st_fwd_22356022_raw_2500032.MuDst.root", "PROD.root");
 }
 
 void pico( TString f, int n = 500){

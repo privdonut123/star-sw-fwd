@@ -1,6 +1,6 @@
 <job  name="FwdPicoProd"  simulateSubmission="false" maxFilesPerProcess="1" filesPerHour="500" fileListSyntax="paths">
 
-    <input URL="catalog:star.bnl.gov?production=P23if,trgsetupname=production_pp500_2022,filetype=daq_reco_mudst,storage=NFS" nFiles="50" />
+    <input URL="catalog:star.bnl.gov?production=P23if,trgsetupname=production_pp500_2022,filetype=daq_reco_mudst,storage=NFS" nFiles="500" />
 
     <!-- Modify these for your case -->
     <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/log/log_pico_$JOBID.log" />
@@ -23,7 +23,7 @@
         ls -lah
 
         starver dev
-        root4star -b -q -l 'mudst/pico.C( "'$INPUTFILE0'", 500 )'
+        root4star -b -q -l 'mudst/pico.C( "'$INPUTFILE0'", 50000 )'
 
         mv StFwdAnalysisMaker.root ${JOBID}_StFwdAnalysisMaker.root
         mv StFwdFitQAMaker.root  ${JOBID}_StFwdFitQAMaker.root
