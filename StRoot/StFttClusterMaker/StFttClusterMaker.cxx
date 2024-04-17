@@ -175,7 +175,7 @@ StFttClusterMaker::Make()
             }
         } // loop on iRob
     } // nStripsHit
-    LOG_DEBUG << "Found " << nClusters << " clusters this event" << endm;
+    LOG_INFO << "StFttClusterMaker produced " << nClusters << " clusters this event" << endm;
 
     return kStOk;
 } // Make
