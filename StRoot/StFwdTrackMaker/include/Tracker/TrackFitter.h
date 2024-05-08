@@ -102,13 +102,13 @@ class TrackFitter {
         // Either constant field or real field from StarFieldAdaptor
         if (mConfig.get<bool>("TrackFitter:constB", false)) {
             mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 5.)); // 0.5 T Bz
-            LOG_INFO << "StFwdTrackMaker: Tracking with constant magnetic field" << endl;
+            LOG_INFO << "StFwdTrackMaker: Tracking with constant magnetic field" << endm;
         } else if (mConfig.get<bool>("TrackFitter:zeroB", false)) {
             mBField = std::unique_ptr<genfit::AbsBField>(new genfit::ConstField(0., 0., 0.)); // ZERO FIELD
-            LOG_INFO << "StFwdTrackMaker: Tracking with ZERO magnetic field" << endl;
+            LOG_INFO << "StFwdTrackMaker: Tracking with ZERO magnetic field" << endm;
         } else {
             mBField = std::unique_ptr<genfit::AbsBField>(new StarFieldAdaptor());
-            LOG_INFO << "StFwdTrackMaker: Tracking with StarFieldAdapter" << endl;
+            LOG_INFO << "StFwdTrackMaker: Tracking with StarFieldAdapter" << endm;
         }
         // we must have one of the two available fields at this point
         // note, the pointer is still bound to the lifetime of the TackFitter

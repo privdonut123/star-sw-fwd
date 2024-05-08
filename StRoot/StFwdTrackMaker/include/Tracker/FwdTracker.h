@@ -228,6 +228,8 @@ class ForwardTrackMaker {
         // no file, dont write anything
         if ( !gDirectory )
             return;
+        if ( !mGenHistograms )
+            return;
 
         gDirectory->cd();
         // write out the config we use (do before histos):
