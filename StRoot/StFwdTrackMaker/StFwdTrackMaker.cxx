@@ -192,6 +192,8 @@ void FwdTreeData::clear(){
     rcCharge.clear();
     rcNumFTT.clear();
     rcNumPV.clear();
+    rcEpdX.clear();
+    rcEpdY.clear();
 
     mcN = 0;
     mcPt.clear();
