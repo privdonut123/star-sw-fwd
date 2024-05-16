@@ -13,29 +13,12 @@
 #include "StBFChain/StBFChain.h"
 
 #include "StEvent/StEvent.h"
-#include "StEvent/StGlobalTrack.h"
-#include "StEvent/StHelixModel.h"
-#include "StEvent/StPrimaryTrack.h"
-#include "StEvent/StRnDHit.h"
-#include "StEvent/StRnDHitCollection.h"
-#include "StEvent/StTrack.h"
-#include "StEvent/StTrackGeometry.h"
-#include "StEvent/StTrackNode.h"
-#include "StEvent/StPrimaryVertex.h"
 #include "StEvent/StEnumerations.h"
-#include "StEvent/StTrackDetectorInfo.h"
-#include "StEvent/StFttPoint.h"
-#include "StEvent/StFcsHit.h"
 #include "StEvent/StFcsCluster.h"
 #include "StEvent/StFttCollection.h"
 #include "StEvent/StFcsCollection.h"
-#include "StEvent/StTriggerData.h"
-#include "StEvent/StFstHitCollection.h"
-#include "StEvent/StFstHit.h"
+#include "StEvent/StFwdTrack.h"
 #include "StEvent/StFwdTrackCollection.h"
-#include "StChain/StChainOpt.h"
-
-#include "StEventUtilities/StEventHelper.h"
 
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuDst.h"
@@ -61,6 +44,31 @@
 #include "StFcsDbMaker/StFcsDb.h"
 
 //________________________________________________________________________
+StFwdAnalysisMaker::StFwdAnalysisMaker() : StMaker("fwdAna"){
+    setLocalOutputFile( "" ); // default off
+};
+int StFwdAnalysisMaker::Finish() { 
+    
+    if ( mLocalOutputFile != "" ){
+        auto prevDir = gDirectory;
+        
+        // output file name
+        TFile *fOutput = new TFile(mLocalOutputFile, "RECREATE");
+        fOutput->cd();
+        for (auto nh : mHists) {
+            nh.second->SetDirectory(gDirectory);
+            nh.second->Write();
+        }
+
+        // restore previous directory
+        gDirectory = prevDir;
+
+        LOG_INFO << "Done writing StFwdAnalysisMaker output to local file : " << mLocalOutputFile << endm;
+    }
+
+    return kStOk; 
+}
+
 StFwdAnalysisMaker::StFwdAnalysisMaker() : StMaker("fwdAna"){
     setLocalOutputFile( "" ); // default off
 };

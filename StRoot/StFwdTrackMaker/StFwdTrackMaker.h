@@ -5,6 +5,7 @@
 
 #ifndef __CINT__
 #include "GenFit/Track.h"
+#include "StFwdTrackMaker/include/Tracker/FwdHit.h"
 #endif
 
 #include "FwdTrackerConfig.h"
@@ -163,7 +164,7 @@ class StFwdTrackMaker : public StMaker {
     vector<TVector3> mFcsPreHits;
 
     std::vector< genfit::GFRaveVertex * > mRaveVertices;
-
+    vector<float> mFttZFromGeom, mFstZFromGeom;
     TVector3 GetEventPrimaryVertex();
     void ProcessFwdTracks();
     void FillEvent();
@@ -174,6 +175,7 @@ class StFwdTrackMaker : public StMaker {
     // I could not get the library generation to succeed with these.
     // so I have removed them
     #ifndef __CINT__
+        vector<FwdHit> mFwdHits;
         std::shared_ptr<SiRasterizer> mSiRasterizer;
         FwdTrackerConfig mFwdConfig;
         std::shared_ptr<ForwardTracker> mForwardTracker;

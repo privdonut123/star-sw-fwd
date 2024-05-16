@@ -1281,7 +1281,7 @@ class ForwardTrackMaker {
         for (size_t i = 0; i < mTrackResults.size(); i++) {
             GenfitTrackResult &gtr = mTrackResults[i];
             
-            if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
+            if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-6) {
                 LOG_DEBUG << "Skipping addFttHitsMc on this track, fit failed" << endm;
                 return;
             }
@@ -1323,6 +1323,7 @@ class ForwardTrackMaker {
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
                 LOG_DEBUG << "Using previous fit momentum as the seed: " << endm;
                 LOG_DEBUG << TString::Format( "(px=%f, py=%f, pz=%f)", gtr.momentum.Px(), gtr.momentum.Py(), gtr.momentum.Pz() ) << endm;
+                // this prevents an exception when momentum is outrageous
                 if ( fabs(gtr.momentum.Pz()) > 100000 )
                     gtr.momentum.SetZ( 10000 );
                 LOG_DEBUG << TString::Format( "(pt=%f, eta=%f, phi=%f)", gtr.momentum.Pt(), gtr.momentum.Eta(), gtr.momentum.Phi() ) << endm;
@@ -1580,6 +1581,7 @@ class ForwardTrackMaker {
     std::vector<Seed_t> mRecoTracks; // the tracks recod from all iterations
     std::vector<Seed_t> mRecoTracksThisIteration;
 
+    // Metrics about the event 
     size_t mAttemptedFits = 0;
     size_t mGoodFits = 0;
     size_t mFailedFits = 0;

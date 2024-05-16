@@ -173,10 +173,8 @@ protected:
     float mPval;
     short mCharge;
     StThreeVectorD mPrimaryMomentum;
-    
     StPtrVecFcsCluster mEcalClusters;
     StPtrVecFcsCluster mHcalClusters;
-
     /// MC track id
     UShort_t mIdTruth;
     /// MC track quality (percentage of hits coming from corresponding MC track)
