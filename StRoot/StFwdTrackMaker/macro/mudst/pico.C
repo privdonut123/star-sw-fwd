@@ -210,6 +210,7 @@ void genDst(unsigned int First,
   loadLibs();
 
   StChain fullChain("genDst");
+  fullChain.SetDebug(1);
 
   StMuDstMaker muDstMaker(0, 0, "", infile, "st:MuDst.root", 1e9); // set up maker in read mode
   //                      0, 0                        this means read mode
@@ -319,8 +320,12 @@ void genDst(unsigned int First,
     // StFcsClusterMaker * fcsClu = new StFcsClusterMaker();
     // StFcsPointMaker * fcsPoint = new StFcsPointMaker();
 
-    // Re-run the FTT chain
-    StFttHitCalibMaker * fttCalib = new StFttHitCalibMaker();
+    // FTT chain
+    StFttDbMaker * fttDbMk = new StFttDbMaker();
+    StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
+    StFttClusterMaker * fttclu = new StFttClusterMaker();
+    StFttPointMaker * fttpoint = new StFttPointMaker();
+
 
     StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
     fwdTrack->setConfigForData( );
