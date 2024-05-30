@@ -728,11 +728,65 @@ class TrackFitter {
         mIncludeVertexInFit = mConfig.get<bool>("TrackFitter.Vertex:includeInFit", false);
         mSmearMcVertex = mConfig.get<bool>("TrackFitter.Vertex:smearMcVertex", false);
 
+        mRSize = mConfig.get<float>("SiRasterizer:r",3.0);
+        mPhiSize = mConfig.get<float>("SiRasterizer:phi",0.004);
+
         if ( mGenHistograms )
             makeHistograms();
     }
 
-
+    TMatrixDSym makeSiCovMat(TVector3 hit) {
+        // we can calculate the CovMat since we know the det info, but in future we should probably keep this info in the hit itself
+    
+        float rSize = mRSize; //xfg.get<float>("SiRasterizer:r", 3.0);
+        float phiSize = mPhiSize; //xfg.get<float>("SiRasterizer:phi", 0.004);
+    
+        // measurements on a plane only need 2x2
+        // for Si geom we need to convert from cylindrical to cartesian coords
+        TMatrixDSym cm(2);
+        TMatrixD T(2, 2);
+        TMatrixD J(2, 2);
+        const float x = hit.X();
+        const float y = hit.Y();
+        const float R = sqrt(x * x + y * y);
+        const float cosphi = x / R;
+        const float sinphi = y / R;
+        const float sqrt12 = sqrt(12.);
+    
+        const float dr = rSize / sqrt12;
+        const float dphi = (phiSize) / sqrt12;
+    
+        // Setup the Transposed and normal Jacobian transform matrix;
+        // note, the si fast sim did this wrong
+        // row col
+        T(0, 0) = cosphi;
+        T(0, 1) = -R * sinphi;
+        T(1, 0) = sinphi;
+        T(1, 1) = R * cosphi;
+    
+        J(0, 0) = cosphi;
+        J(0, 1) = sinphi;
+        J(1, 0) = -R * sinphi;
+        J(1, 1) = R * cosphi;
+    
+        TMatrixD cmcyl(2, 2);
+        cmcyl(0, 0) = dr * dr;
+        cmcyl(1, 1) = dphi * dphi;
+    
+        TMatrixD r = T * cmcyl * J;
+    
+        // note: float sigmaX = sqrt(r(0, 0));
+        // note: float sigmaY = sqrt(r(1, 1));
+    
+        cm(0, 0) = r(0, 0);
+        cm(1, 1) = r(1, 1);
+        cm(0, 1) = r(0, 1);
+        cm(1, 0) = r(1, 0);
+    
+        TMatrixDSym tamvoc(3);
+        tamvoc( 0, 0 ) = cm(0, 0); tamvoc( 0, 1 ) = cm(0, 1); tamvoc( 0, 2 ) = 0.0;
+    }
+   
     /**
      * @brief end the Gbl Fitter
      * 
@@ -834,6 +888,13 @@ class TrackFitter {
         cm(0, 0) = static_cast<FwdHit*>(h)->_covmat(0, 0);
         cm(1, 1) = static_cast<FwdHit*>(h)->_covmat(1, 1);
         cm(0, 1) = static_cast<FwdHit*>(h)->_covmat(0, 1);
+        return cm;
+    }
+    TMatrixDSym CovMatPlaneFst(TMatrixDSym input){
+        TMatrixDSym cm(2);
+        cm(0, 0) = input(0, 0);
+        cm(1, 1) = input(1, 1);
+        cm(0, 1) = input(0, 1);
         return cm;
     }
 
@@ -2035,6 +2096,7 @@ class TrackFitter {
             double z = h->getZ();
             bool isFst = z < 200;
 
+            TMatrixDSym covMatFst; 
             double hArr[4] = {h->getX(),h->getY(),h->getZ(),1.0};
             TMatrixD h4D(4,1,hArr);
             if(!isFst) {
@@ -2063,6 +2125,7 @@ class TrackFitter {
             if(isFst) {                
                 planeId = static_cast<FwdHit*>(h)->getSensor();
                 h4D = mInverseMFst[planeId]*h4D;
+                covMatFst = makeSiCovMat(TVector3(h4D(0,0),h4D(1,0),h4D(2,0)));
                 int s = planeId%3; 
                 if(s == 0) h4D(0,0) -= 10.75;
                 if(s != 0) h4D(0,0) -= 22.25;
@@ -2073,7 +2136,7 @@ class TrackFitter {
 
             genfit::PlanarMeasurement *measurement;
             if(!isFst) measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), planeId, ++hitId, nullptr);
-            if(isFst ) measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), planeId+1000, ++hitId, nullptr);
+            if(isFst ) measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlaneFst(covMatFst), planeId+1000, ++hitId, nullptr);
              
             //cout << "planeId = " << planeId << endl;
             //cout << "diskId = " << diskId << endl;
@@ -2653,6 +2716,9 @@ class TrackFitter {
     TFile *mAlignmentOutput = nullptr;
 
     bool mMcTracking = false;
+
+    float mRSize = 3.0;
+    float mPhiSize = 0.004;
 };
 
 #endif
