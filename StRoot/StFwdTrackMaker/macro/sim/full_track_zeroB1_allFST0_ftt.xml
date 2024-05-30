@@ -4,9 +4,9 @@
 	<Geometry misaligned="true">fGeom.root</Geometry>
     <Source ftt="FASTSIM" fttFilter="true" />
     
-    <!--TrackFinder nIterations="1"-->
-        <!--Iteration nPhiSlices="8"--> <!-- Options for first iteration -->
-            <!--SegmentBuilder>
+    <TrackFinder nIterations="1" source="ftt">
+        <Iteration nPhiSlices="8"> <!-- Options for first iteration -->
+            <SegmentBuilder>
                 <Criteria name="Crit2_RZRatio" min="0.0" max="10.0" />
                 <Criteria name="Crit2_DeltaPhi" min="0" max="180" />    
                 <Criteria name="Crit2_DeltaRho" min="-100" max="100"/>
@@ -23,17 +23,17 @@
 
         <Connector distance="1"/>
 
-        <SubsetNN active="false" min-hits-on-track="4" -->
+        <SubsetNN active="false" min-hits-on-track="4" >
             <!-- <InitialTemp>2.1</InitialTemp> -->
             <!-- <InfTemp>0.1</InfTemp> -->
-            <!--Omega>0.99</Omega>
+            <Omega>0.99</Omega>
             <StableThreshold>0.001</StableThreshold>
         </SubsetNN> 
 
         <HitRemover active="true" />
-    </TrackFinder-->
+    </TrackFinder>
 
-    <TrackFitter off="false" refit="true" mcSeed="true" zeroB="true" MaterialEffects="true" refitGBL="true" McTracking="true" >
-        <Vertex sigmaXY="0.1" sigmaZ="0.1" includeInFit="true" smearMcVertex="false" />
+    <TrackFitter off="false" refit="true" mcSeed="true" zeroB="true" MaterialEffects="true" refitGBL="false" McTracking="true" >
+        <Vertex sigmaXY="0.01" sigmaZ="0.01" includeInFit="true" smearMcVertex="false" />
     </TrackFitter>
 </config>

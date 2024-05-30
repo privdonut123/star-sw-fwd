@@ -4,7 +4,7 @@
 	<Geometry>fGeom.root</Geometry>
     <Source ftt="DATA" />
 
-    <SiRasterizer r="3.0" phi="0.04" />
+    <SiRasterizer active="false" r="3.0" phi="0.04" />
 
 
     <TrackFinder nIterations="1">

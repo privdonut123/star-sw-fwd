@@ -74,6 +74,6 @@
     </TrackFinder>
     
     <TrackFitter off="false" refit="true" mcSeed="true" zeroB="true" MaterialEffects="true" refitGBL="true" McTracking="true" >
-        <Vertex sigmaXY="0.5" sigmaZ="0.5" includeInFit="true" smearMcVertex="false" />
+        <Vertex sigmaXY="0.01" sigmaZ="0.01" includeInFit="true" smearMcVertex="false" />
     </TrackFitter>
 </config>

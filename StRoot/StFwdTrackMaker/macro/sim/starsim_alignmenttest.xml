@@ -2,7 +2,7 @@
  <job nProcesses="&njobs;" simulateSubmission="false">
   <command>
     starver dev
-    root4star -l -b -q ./StRoot/StFwdTrackMaker/macro/sim/starsim_alignmenttest.C\(\"sim\",&nEvents;,&nTracks;,&zeroB;,\"mu+\",&ptstart;,&ptstop;,2.3,4.4,1.5,2.2,$JOBINDEX,\"&geomtag;\"\)
+    root4star -l -b -q ./StRoot/StFwdTrackMaker/macro/sim/starsim_alignmenttest.C\(\"sim\",&nEvents;,&nTracks;,&zeroB;,\"mu+\",&ptstart;,&ptstop;,2.4,4.2,1.47,2.18,$JOBINDEX,\"&geomtag;\"\)
     root4star -l -b -q ./StRoot/StFwdTrackMaker/macro/sim/fwd_tracking.C\(&nEvents;,\"sim.fzd\",\"./StRoot/StFwdTrackMaker/macro/sim/full_track_zeroB&zeroB;_allFST&allFST;.xml\",\"dev2022\",&zeroB;,&misSensor;,&deltau;,&deltav;,&deltagamma;\)
   </command>
 
@@ -20,7 +20,6 @@
     <File>file:./StarDb/</File>
     <File>file:./StarVMC/</File>
     <File>file:./fGeom.root</File>
-    <File>file:./.sl73_x8664_gcc485/</File>
    </Package>
   </SandBox>
 

@@ -3,14 +3,16 @@
     <input URL="filelist:/gpfs01/star/pwg_tasks/FwdCalib//DAQ/zfa/st_physics_23072003.lis" nFiles="150" />
 
     <!-- Modify these for your case -->
-    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/log/log_$JOBID.log" />
-    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/log/err_$JOBID.err" />
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/log/err_$JOBID.err" />
 
-    <output fromScratch="*.event.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/out/" />
-    <output fromScratch="*.MuDst.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/out/" />
-    <output fromScratch="*.fttQA.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/out/" />
-    <output fromScratch="*.fstQa.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/out/" />
-    <output fromScratch="*.fttRawHitTime.dat" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/out/" />
+    <output fromScratch="*.event.root"        toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.MuDst.root"        toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.fttQA.root"        toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.fstQa.root"        toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.alignment.root"    toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.millefile.dat"     toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
+    <output fromScratch="*.fttRawHitTime.dat" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/gwilks3/TestingProdAlignment_20240314/out/" />
 
     <command>
         echo "JOBINDEX = ${JOBINDEX}"
@@ -19,13 +21,13 @@
         ln -s StRoot/StFwdTrackMaker/macro/daq/ daq
         ls -lah
 
-        setup 64b
+        <!--setup 64b-->
         starver dev
-        module use /cvmfs/star.sdcc.bnl.gov/star-spack/spack/share/spack/modules/linux-rhel7-x86_64/
+        <!--module use /cvmfs/star.sdcc.bnl.gov/star-spack/spack/share/spack/modules/linux-rhel7-x86_64/
         module load star-env-root-5.34.38
         module load kitrack-root-5.34.38
         module load genfit-root-5.34.38
-        module load rave-2020-08-11
+        module load rave-2020-08-11-->
 
         root4star -b -q -l 'daq/prod.C( 50000, "'$INPUTFILE0'" )' 
 
@@ -39,7 +41,7 @@
     <SandBox>
         <Package>
             <File>file:./StRoot</File>
-            <File>file:./.sl73_x8664_gcc485/</File>
+            <File>file:./.sl73_gcc485/</File>
         </Package>
     </SandBox>
 

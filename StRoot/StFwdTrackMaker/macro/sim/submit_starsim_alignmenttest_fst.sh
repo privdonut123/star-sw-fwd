@@ -4,19 +4,19 @@ date
 
 geomtag=dev2022m # dev2022, dev2022m    (ideal, misaligned)
 njobs=500
-nEvents=1000
+nEvents=500
 nTracks=1
-ptstart=$1
-ptstop=$2
-zeroB=$3
-allFST=$4
-misSensor=$5
-deltau=$6
-deltav=$7
-deltagamma=$8
+ptstart=0.2
+ptstop=2.0
+zeroB=1
+allFST=0
+misSensor=0
+deltau=0.0
+deltav=0.0
+deltagamma=0.0
 
-dir=/star/u/gwilks3/fst/ForwardTracking/checkpoint-07-06-2023
-folder=AlignmentTest2_20231130_halfpito23rdpi_S${misSensor}_du${deltau}cm_dv${deltav}cm_rot${deltagamma}mrad_zeroB${zeroB}_noV_full_${ptstart}_${ptstop}_AllFSTPlanes${allFST} #whatever you want the output folder to be named
+dir=/star/u/gwilks3/ForwardTracking/star-sw-1
+folder=AlignmentTest_20240308_ignorerstrip_halfpito23rdpi_S${misSensor}_du${deltau}cm_dv${deltav}cm_rot${deltagamma}mrad_zeroB${zeroB}_withV_${ptstart}_${ptstop}_AllFSTPlanes${allFST} #whatever you want the output folder to be named
 #folder=Fixed_AlignmentTest_20231102_NormalTracking_zeroB${zeroB}_withV_full_${ptstart}_${ptstop}_AllFSTPlanes${allFST} #whatever you want the output folder to be named
 #dir=$(echo "`pwd`" | sed 's:/:\\/:g')
 
