@@ -47,6 +47,9 @@
 #include <TMath.h>
 #include <TVector3.h>
 
+#include <TH1D.h>
+#include <TFile.h>
+
 
 //namespace genfit {
   
@@ -83,6 +86,18 @@ private:
   double lu_pent = 60.2361; // length and width of FTT pentagon modules
   double lv_pent = 60.2361;
 
+  // Millepede Binary File for output of GBL trajectories for alignment
+  gbl::MilleBinary* milleFile;
+  // Minimum scattering sigma (will be squared and inverted...)
+  const double scatEpsilon = 1.e-8;
+
+  std::string rootFileName = "gbl.root";
+
+  TFile* diag;
+  TH1F* chi2OndfHistoGBL;
+  TH1F* pValueHistoGBL;
+  TH1F* chi2OndfHisto;
+  TH1F* pValueHisto;
 
 public:
   

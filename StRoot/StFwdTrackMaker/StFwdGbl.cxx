@@ -95,55 +95,6 @@
 //#ifdef OUTPUT
 
 
-std::string rootFileName = "gbl.root";
-
-
-TFile* diag;
-//TH1F* resHistosU[12];
-//TH1F* resHistosV[12];
-//TH1F* mhistosU[12];
-//TH1F* mhistosV[12];
-//TH1F* ghistosU[12];
-//TH1F* ghistosV[12];
-//TH1F* downWeightsHistosU[12];
-//TH1F* downWeightsHistosV[12];
-//TH1F* localPar1[12];
-//TH1F* localPar2[12];
-//TH1F* localPar3[12];
-//TH1F* localPar4[12];
-//TH1F* localPar5[12];
-//TH1F* localCov1[12];
-//TH1F* localCov2[12];
-//TH1F* localCov3[12];
-//TH1F* localCov4[12];
-//TH1F* localCov5[12];
-//TH1F* localCov12[12];
-//TH1F* localCov13[12];
-//TH1F* localCov14[12];
-//TH1F* localCov15[12];
-//TH1F* localCov23[12];
-//TH1F* localCov24[12];
-//TH1F* localCov25[12];
-//TH1F* localCov34[12];
-//TH1F* localCov35[12];
-//TH1F* localCov45[12];
-//TH1I* fitResHisto;
-//TH1I* ndfHisto;
-//TH1F* residualsUkf[7];
-//TH1F* residualsVkf[7];
-//TH1F* residualsUgbl[7];
-//TH1F* residualsVgbl[7];
-//TH1F*    merrUgbl[7];
-//TH1F*    merrVgbl[7];
-//TH1F*    rerrUgbl[7];
-//TH1F*    rerrVgbl[7];
-//TH1F* dweightUgbl[7];
-//TH1F* dweightVgbl[7];
-TH1F* chi2OndfHistoGBL;
-TH1F* pValueHistoGBL;
-TH1F* chi2OndfHisto;
-TH1F* pValueHisto;
-//TH1I* stats;
 
 
 
@@ -192,10 +143,6 @@ TH1F* pValueHisto;
 //}
 //#endif
 
-// Millepede Binary File for output of GBL trajectories for alignment
-gbl::MilleBinary* milleFile;
-// Minimum scattering sigma (will be squared and inverted...)
-const double scatEpsilon = 1.e-8;
 
 
 using namespace gbl;
@@ -216,7 +163,7 @@ void StFwdGbl::beginRun()
   milleFile = new gbl::MilleBinary(m_milleFileName);
   
   //#ifdef OUTPUT
-  diag = new TFile(rootFileName.c_str(), "RECREATE");
+  //diag = new TFile(rootFileName.c_str(), "RECREATE");
   //char name[20];
   //
   //for (int i = 0; i < 12; i++) {
@@ -275,13 +222,15 @@ void StFwdGbl::beginRun()
 void StFwdGbl::endRun()
 {
   //#ifdef OUTPUT
-  diag->cd();
-  diag->Write();
-  diag->Close();
+  //diag->cd();
+  //diag->Write();
+  //diag->Close();
   //#endif
   // This is needed to close the file before alignment starts
+  cout << "Before Millefile" << endl;
   if (milleFile)
     delete milleFile;
+  cout << "Deleted Millefile" << endl;
 }
 
 /**
