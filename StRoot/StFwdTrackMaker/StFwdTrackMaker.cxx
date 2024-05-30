@@ -74,6 +74,8 @@
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 
+#include "St_db_Maker/St_db_Maker.h"
+#include "tables/St_Survey_Table.h"
 
 FwdSystem* FwdSystem::sInstance = nullptr;
 TMVA::Reader * BDTCrit2::reader = nullptr;
@@ -238,7 +240,7 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mGenHistograms(false),
     SetAttr("useFtt",1);                 // Default Ftt on 
     SetAttr("useFst",1);                 // Default Fst on
     SetAttr("useFcs",1);                 // Default Fcs on
-    SetAttr("config", "config.xml");     // Default configuration file (user may override before Init())
+    SetAttr("config", "");     // Default configuration file (user may override before Init())
     SetAttr("fillEvent",1); // fill StEvent
 };
 
@@ -514,6 +516,268 @@ int StFwdTrackMaker::Init() {
         }
 
     } // mGenHistograms
+
+    //-----  LOAD ALIGNMENT MATRICES  -----//
+    St_db_Maker *dbMk=new St_db_Maker("db", "MySQL:StarDb", "$STAR/StarDb");
+    dbMk->SetDebug();
+    dbMk->SetDateTime(20211026,7); // event or run start time, set to your liking
+    dbMk->SetFlavor("ofl");
+
+    dbMk->Init();
+    dbMk->Make();
+    
+    Survey_st *fstOnTpc;
+    Survey_st *hssOnFst;
+    Survey_st *fstWedgeOnHss;
+    Survey_st *fstSensorOnWedge;
+
+    TMatrixD MfstOnTpc(4,4);
+    TMatrixD MhssOnFst(4,4);
+    TMatrixD MfstWedgeOnHss(4,4);
+    TMatrixD MfstSensorOnWedge(4,4);
+
+    MfstOnTpc.Zero();
+    MhssOnFst.Zero();
+    MfstWedgeOnHss.Zero();
+    MfstSensorOnWedge.Zero();
+
+    TDataSet *DB = 0;
+    DB = dbMk->GetDataBase("Geometry/fst/fstOnTpc");
+    if (!DB) {
+      std::cout << "ERROR: no fstOnTpc table found in db, or malformed local db config" << std::endl;
+    }
+
+    St_Survey *dataset = 0;
+    dataset = (St_Survey*) DB->Find("fstOnTpc");
+    
+    if (dataset) {
+
+        Int_t rows = dataset->GetNRows();
+        if (rows > 1) {
+          std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+        }
+
+        TDatime val[2];
+        dbMk->GetValidity((TTable*)dataset,val);
+        std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+          << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+          << std::endl;
+
+        fstOnTpc = dataset->GetTable();
+
+        MfstOnTpc(0,0) = fstOnTpc[0].r00;
+        MfstOnTpc(0,1) = fstOnTpc[0].r01;
+        MfstOnTpc(0,2) = fstOnTpc[0].r02;
+        MfstOnTpc(1,0) = fstOnTpc[0].r10;
+        MfstOnTpc(1,1) = fstOnTpc[0].r11;
+        MfstOnTpc(1,2) = fstOnTpc[0].r12;
+        MfstOnTpc(2,0) = fstOnTpc[0].r20;
+        MfstOnTpc(2,1) = fstOnTpc[0].r21;
+        MfstOnTpc(2,2) = fstOnTpc[0].r22;
+        MfstOnTpc(0,3) = fstOnTpc[0].t0 ;
+        MfstOnTpc(1,3) = fstOnTpc[0].t1 ;
+        MfstOnTpc(2,3) = fstOnTpc[0].t2 ;
+        MfstOnTpc(3,3) = 1.0            ;
+
+    } else {
+        std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+    }
+
+    DB = dbMk->GetDataBase("Geometry/fst/hssOnFst");
+    if (!DB) {
+      std::cout << "ERROR: no hssOnFst table found in db, or malformed local db config" << std::endl;
+    }
+
+    dataset = (St_Survey*) DB->Find("hssOnFst");
+    
+    if (dataset) {
+
+        Int_t rows = dataset->GetNRows();
+        if (rows > 1) {
+          std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+        }
+
+        TDatime val[2];
+        dbMk->GetValidity((TTable*)dataset,val);
+        std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+          << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+          << std::endl;
+
+        hssOnFst = dataset->GetTable();
+       
+    } else {
+        std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+    }
+
+    DB = dbMk->GetDataBase("Geometry/fst/fstWedgeOnHss");
+    if (!DB) {
+      std::cout << "ERROR: no fstWedgeOnHss table found in db, or malformed local db config" << std::endl;
+    }
+
+    dataset = (St_Survey*) DB->Find("fstWedgeOnHss");
+
+    if (dataset) {
+
+        Int_t rows = dataset->GetNRows();
+        if (rows > 1) {
+          std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+        }
+
+        TDatime val[2];
+        dbMk->GetValidity((TTable*)dataset,val);
+        std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+          << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+          << std::endl;
+
+        fstWedgeOnHss = dataset->GetTable();
+
+    } else {
+        std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+    }
+
+
+    DB = dbMk->GetDataBase("Geometry/fst/fstSensorOnWedge");
+    if (!DB) {
+      std::cout << "ERROR: no fstSensorOnWedge table found in db, or malformed local db config" << std::endl;
+    }
+
+    dataset = (St_Survey*) DB->Find("fstSensorOnWedge");
+    
+    if (dataset) {
+
+        Int_t rows = dataset->GetNRows();
+        if (rows > 1) {
+          std::cout << "INFO: found INDEXED table with " << rows << " rows" << std::endl;
+        }
+
+        TDatime val[2];
+        dbMk->GetValidity((TTable*)dataset,val);
+        std::cout << "Dataset validity range: [ " << val[0].GetDate() << "." << val[0].GetTime() << " - " 
+          << val[1].GetDate() << "." << val[1].GetTime() << " ] "
+          << std::endl;
+
+        fstSensorOnWedge = dataset->GetTable();
+    
+    } else {
+        std::cout << "ERROR: dataset does not contain requested table" << std::endl;
+    }
+
+
+    // default FST sensor z locations, found externally from ideal geometry
+    for (int is = 0; is < 108; is++) {
+        
+        // FST half
+        int h = (is / 18) % 2; // 0 (left +x half), 1 (right -x half) 
+    
+        // FST wedge
+        int w = is / 3; // 0-35
+
+        if(h == 0)
+        {
+          // create matrices from alignment tables
+          MhssOnFst(0,0) = 1.0; 
+          MhssOnFst(0,1) = 0.0; 
+          MhssOnFst(0,2) = 0.0;
+          MhssOnFst(1,0) = 0.0; 
+          MhssOnFst(1,1) = 1.0; 
+          MhssOnFst(1,2) = 0.0;
+          MhssOnFst(2,0) = 0.0; 
+          MhssOnFst(2,1) = 0.0; 
+          MhssOnFst(2,2) = 1.0;
+          MhssOnFst(0,3) = 0.0;
+          MhssOnFst(1,3) = 0.0;
+          MhssOnFst(2,3) = 0.0;//hssOnFst[h].t2 ;
+          MhssOnFst(3,3) = 1.0            ;
+        }
+        if(h == 1)
+        {
+          MhssOnFst(0,0) = 1.0;//hssOnFst[h].r00; 
+          MhssOnFst(0,1) = 0.0;//hssOnFst[h].r01; 
+          MhssOnFst(0,2) = 0.0;//hssOnFst[h].r02;
+          MhssOnFst(1,0) = 0.0;//hssOnFst[h].r10; 
+          MhssOnFst(1,1) = 1.0;//hssOnFst[h].r11; 
+          MhssOnFst(1,2) = 0.0;//hssOnFst[h].r12;
+          MhssOnFst(2,0) = 0.0;//hssOnFst[h].r20; 
+          MhssOnFst(2,1) = 0.0;//hssOnFst[h].r21; 
+          MhssOnFst(2,2) = 1.0;//hssOnFst[h].r22;
+          MhssOnFst(0,3) = 0.0;
+          MhssOnFst(1,3) = 0.0;
+          MhssOnFst(2,3) = 0.0;
+          MhssOnFst(3,3) = 1.0            ;
+        }
+        MfstWedgeOnHss(0,0) = fstWedgeOnHss[w].r00; 
+        MfstWedgeOnHss(0,1) = fstWedgeOnHss[w].r01; 
+        MfstWedgeOnHss(0,2) = fstWedgeOnHss[w].r02;
+        MfstWedgeOnHss(1,0) = fstWedgeOnHss[w].r10; 
+        MfstWedgeOnHss(1,1) = fstWedgeOnHss[w].r11; 
+        MfstWedgeOnHss(1,2) = fstWedgeOnHss[w].r12;
+        MfstWedgeOnHss(2,0) = fstWedgeOnHss[w].r20; 
+        MfstWedgeOnHss(2,1) = fstWedgeOnHss[w].r21; 
+        MfstWedgeOnHss(2,2) = fstWedgeOnHss[w].r22;
+        MfstWedgeOnHss(0,3) = fstWedgeOnHss[w].t0 ;
+        MfstWedgeOnHss(1,3) = fstWedgeOnHss[w].t1 ;
+        MfstWedgeOnHss(2,3) = fstWedgeOnHss[w].t2 ;
+        MfstWedgeOnHss(3,3) = 1.0                 ;
+
+        //if(is != mMisSensor)
+        //{
+          MfstSensorOnWedge(0,0) = fstSensorOnWedge[is].r00; 
+          MfstSensorOnWedge(0,1) = fstSensorOnWedge[is].r01; 
+          MfstSensorOnWedge(0,2) = fstSensorOnWedge[is].r02;
+          MfstSensorOnWedge(1,0) = fstSensorOnWedge[is].r10; 
+          MfstSensorOnWedge(1,1) = fstSensorOnWedge[is].r11; 
+          MfstSensorOnWedge(1,2) = fstSensorOnWedge[is].r12;
+          MfstSensorOnWedge(2,0) = fstSensorOnWedge[is].r20; 
+          MfstSensorOnWedge(2,1) = fstSensorOnWedge[is].r21; 
+          MfstSensorOnWedge(2,2) = fstSensorOnWedge[is].r22;
+          MfstSensorOnWedge(0,3) = fstSensorOnWedge[is].t0 ;
+          MfstSensorOnWedge(1,3) = fstSensorOnWedge[is].t1 ;
+          MfstSensorOnWedge(2,3) = fstSensorOnWedge[is].t2 ;
+          MfstSensorOnWedge(3,3) = 1.0                     ;
+        //}
+        //else
+        //{       
+        //  double cost = TMath::Cos(mDeltaGamma);//0.002);    
+        //  double sint = TMath::Sin(mDeltaGamma);//0.002);    
+        //  double cos75 = TMath::Cos(1.309);    
+        //  double sin75 = TMath::Sin(1.309);  
+        //  double dxu =  cos75*mDeltaU; //0.005; // dv = 100 um   
+        //  double dyu =  sin75*mDeltaU; //0.005; // dv = 100 um   
+        //  double dxv = -sin75*mDeltaV; //0.005; // dv = 100 um   
+        //  double dyv =  cos75*mDeltaV; //0.005; // dv = 100 um   
+        //  double dx = dxu + dxv; 
+        //  double dy = dyu + dyv; 
+        //  MfstSensorOnWedge(0,0) = cost;//fstSensorOnWedge[is].r00; 
+        //  MfstSensorOnWedge(0,1) = -sint;//fstSensorOnWedge[is].r01; 
+        //  MfstSensorOnWedge(0,2) = fstSensorOnWedge[is].r02;
+        //  MfstSensorOnWedge(1,0) = sint;//fstSensorOnWedge[is].r10; 
+        //  MfstSensorOnWedge(1,1) = cost;//fstSensorOnWedge[is].r11; 
+        //  MfstSensorOnWedge(1,2) = fstSensorOnWedge[is].r12;
+        //  MfstSensorOnWedge(2,0) = fstSensorOnWedge[is].r20; 
+        //  MfstSensorOnWedge(2,1) = fstSensorOnWedge[is].r21; 
+        //  MfstSensorOnWedge(2,2) = fstSensorOnWedge[is].r22;
+        //  MfstSensorOnWedge(0,3) = dx;//fstSensorOnWedge[is].t0 ;
+        //  MfstSensorOnWedge(1,3) = dy;//fstSensorOnWedge[is].t1 ;
+        //  MfstSensorOnWedge(2,3) = fstSensorOnWedge[is].t2 ;
+        //  MfstSensorOnWedge(3,3) = 1.0                     ;
+        //}
+
+        // Rotate and Translate plane normal vectors and origin
+        TMatrixD M = MfstOnTpc * MhssOnFst * MfstWedgeOnHss * MfstSensorOnWedge;
+        M.Print();
+
+        // save this inverse matrix for use with misaligned simulated data
+        mInverseM[is].ResizeTo(4,4);
+        mInverseM[is] = M.Invert();
+        //mInverseM[is].Print();
+
+        MhssOnFst.Zero();
+        MfstWedgeOnHss.Zero();
+        MfstSensorOnWedge.Zero();
+    }
+
+    
+
     LOG_DEBUG << "StFwdTrackMaker::Init" << endm;
     return kStOK;
 };
@@ -930,6 +1194,16 @@ int StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackM
     }
 
     LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
+
+    double fstDefaultZ[12] = {150.008101+0.0009308,151.403100+0.000946,153.491899+0.0010220,152.096900+0.0010770,
+                              166.989901+0.0010680,165.594901+0.001053,163.506101+0.0009766,164.901101+0.0009918,
+                              177.039106+0.0009308,178.434106+0.000946,180.522905+0.0010220,179.127906+0.0010070};
+
+    double PI = TMath::Pi();
+    double PHI[] = {5.*PI/12.,  3.*PI/12.,  1.*PI/12.,  -1.*PI/12.,
+                    -3.*PI/12., -5.*PI/12., -7.*PI/12., -9.*PI/12.,
+                    -11.*PI/12.,-13.*PI/12.,-15.*PI/12.,-17.*PI/12.};
+
     TMatrixDSym hitCov3(3);
     for ( unsigned int index = 0; index < fst->numberOfHits(); index++){
         StMuFstHit * muFstHit = fst->getHit( index );
@@ -938,21 +1212,66 @@ int StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackM
         float vPhi = muFstHit->localPosition(1);
         float vZ = muFstHit->localPosition(2);
 
-        const float dz0 = fabs( vZ - 151.75 );
-        const float dz1 = fabs( vZ - 165.248 );
-        const float dz2 = fabs( vZ - 178.781 );
-
-        int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
-
         float x0 = vR * cos( vPhi );
         float y0 = vR * sin( vPhi );
-        hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
+
+        //const float dz0 = fabs( vZ - 151.75 );
+        //const float dz1 = fabs( vZ - 165.248 );
+        //const float dz2 = fabs( vZ - 178.781 );
+
+        //int d = 0 * ( dz0 < 1.0 ) + 1 * ( dz1 < 1.0 ) + 2 * ( dz2 < 1.0 );
+
+        int iw = muFstHit->getWedge();
+        int is = muFstHit->getSensor();
+
+        //LOG_INFO << "iw = " << iw << ", is = " << is << endm;
+
+        int d = iw/12;
+        int ds = (is == 0)? 0 : 1; // +0 for inner, +1 for outer
+        int defaultZidx = d * 4 + 2 * (iw % 2) + ds;
+        vZ = fstDefaultZ[defaultZidx];
+
+        int sensorIdx = iw*3 + is; 
+
+        //double phiAxisShift = 0.0;
+        //if((d) == 0 || (d) == 2)
+        //{
+        //  if((iw)%2 == 0)
+        //  {
+        //    if((is)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+        //    else if((is)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+        //  }
+        //  else if((iw)%2 == 1)
+        //  {
+        //    if((is)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+        //    else if((is)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+        //  } 
+        //}
+        //else if((d) == 1)
+        //{
+        //  if((iw)%2 == 0)
+        //  {
+        //    if((is)%3 == 1)      phiAxisShift = -8.0 * M_PI / 180.0;
+        //    else if((is)%3 == 2) phiAxisShift = +8.0 * M_PI / 180.0;
+        //  }
+        //  else if((iw)%2 == 1)
+        //  {
+        //    if((is)%3 == 1)      phiAxisShift = +8.0 * M_PI / 180.0;
+        //    else if((is)%3 == 2) phiAxisShift = -8.0 * M_PI / 180.0;
+        //  } 
+        //}
+        // 
+        //double xtemp = x0 *       TMath::Cos(PHI[iw] + phiAxisShift) + y0 * TMath::Sin(PHI[iw] + phiAxisShift);
+        //double ytemp = x0 * -1. * TMath::Sin(PHI[iw] + phiAxisShift) + y0 * TMath::Cos(PHI[iw] + phiAxisShift);
+
+        hitCov3 = makeSiCovMat( TVector3( x0, x0, vZ ), mFwdConfig );
 
         LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;                
         mFstHits.push_back( TVector3( x0, y0, vZ)  );
 
         // we use d+4 so that both FTT and FST start at 4
         FwdHit *hit = new FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr);
+        hit->setSensor(sensorIdx);
         // Add the hit to the hit map
         hitMap[d+4].push_back(hit);
 
@@ -2063,6 +2382,7 @@ std::string StFwdTrackMaker::defaultConfigData = R"(
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <Output url="stfwdtrackmaker_data.root" />
+    <Geometry misaligned="true">fGeom.root</Geometry>
     <Source ftt="DATA" />
 
     <SiRasterizer r="3.0" phi="0.004" />
@@ -2096,7 +2416,7 @@ std::string StFwdTrackMaker::defaultConfigData = R"(
         <HitRemover active="false" />
     </TrackFinder>
     
-	<TrackFitter refitSi="true" mcSeed="false" zeroB="true">
+	<TrackFitter refit="true" mcSeed="false" zeroB="true" refitGBL="true">
         <Vertex sigmaXY="0.01" sigmaZ="0.01" includeInFit="true" smearMcVertex="false" />
     </TrackFitter>
 </config>

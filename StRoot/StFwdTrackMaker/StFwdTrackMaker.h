@@ -35,6 +35,7 @@ class McTrack;
 // ROOT includes
 #include "TNtuple.h"
 #include "TTree.h"
+#include "TMatrixD.h"
 // STL includes
 #include <vector>
 #include <memory>
@@ -199,6 +200,7 @@ class StFwdTrackMaker : public StMaker {
     std::string defaultConfig;
     bool configLoaded = false;
     TString mGeoCache;
+    TMatrixD mInverseM[108];
 
     // Helper functions for modifying configuration
     // NOTE: to override configuration, call individual functions after setConfigForXXX
