@@ -80,16 +80,20 @@ StFttPointMaker::Make()
     if(mEvent) {
         LOG_DEBUG<<"Found StEvent"<<endm;
     } else {
+        LOG_WARN << "StFttPointMaker found no StEvent" << endm;
         return kStOk;
     }
     mFttCollection=mEvent->fttCollection();
     if(!mFttCollection) {
+        LOG_WARN << "StFttPointMaker found no StFttCollection " << endm;
         return kStOk;
     }
 
     mFttDb = static_cast<StFttDb*>(GetDataSet("fttDb"));
-
-    assert( mFttDb );
+    if ( !mFttDb ){
+        LOG_ERROR << "No StFttDb object available, bailing out" << endm;
+        return kStErr;
+    }
 
     if ( mUseTestData )
         InjectTestData();

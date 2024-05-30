@@ -210,6 +210,7 @@ void genDst(unsigned int First,
   loadLibs();
 
   StChain fullChain("genDst");
+  fullChain.SetDebug(1);
 
   StMuDstMaker muDstMaker(0, 0, "", infile, "st:MuDst.root", 1e9); // set up maker in read mode
   //                      0, 0                        this means read mode
@@ -319,8 +320,12 @@ void genDst(unsigned int First,
     // StFcsClusterMaker * fcsClu = new StFcsClusterMaker();
     // StFcsPointMaker * fcsPoint = new StFcsPointMaker();
 
-    // Re-run the FTT chain
-    StFttHitCalibMaker * fttCalib = new StFttHitCalibMaker();
+    // FTT chain
+    StFttDbMaker * fttDbMk = new StFttDbMaker();
+    StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
+    StFttClusterMaker * fttclu = new StFttClusterMaker();
+    StFttPointMaker * fttpoint = new StFttPointMaker();
+
 
     StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
     fwdTrack->setConfigForData( );
@@ -337,6 +342,10 @@ void genDst(unsigned int First,
 
     StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
     fwdAna->SetDebug();
+    fwdAna->setLocalOutputFile( "StFwdAnalysisMaker.root");
+
+    StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+    fwdFitQA->SetDebug();
 
     if (findAndRemoveOption("btofmatch",optionTokens)) {
 
@@ -534,11 +543,12 @@ void genDst(unsigned int Last,
             char* infile,
             char* outfile)
 {
+  cout << TString::Format("genDst( %u, '%s', '%s', '%s' )", Last, options, infile, outfile ) << endl;
   genDst(1,Last,options,infile,outfile);
 }
 
 void pico(){
-  genDst(500, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/work/st_fwd_22356011_raw_4500001.MuDst.root", "PROD.root");
+  genDst(5000, "y2023a picodst PicoVtxMode:PicoVtxDefault", "/gpfs01/star/pwg_tasks/FwdCalib//MuDst/Run22ppP23if/st_fwd_22356022_raw_2500032.MuDst.root", "PROD.root");
 }
 
 void pico( TString f, int n = 500){

@@ -25,7 +25,7 @@ public:
     virtual ~StPicoFcsHit();
 
     virtual void Print(const Char_t *option = "") const;    
-    Int_t index() const { return mId; } // Return unique Index of the hit
+    Int_t index() const { return mIndex; } // Return unique Index of the hit
     unsigned short detectorId() const { return mDetectorId; } 
     Int_t id() const { return mId; }    // Id of the hit winthin detectorId
     float energy() const { return mFourMomentumT; } // Energy

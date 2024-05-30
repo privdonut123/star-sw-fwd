@@ -7,6 +7,23 @@
 
 TFile *output = 0;
 
+void reportMem(){
+    struct sysinfo memInfo;
+
+    sysinfo (&memInfo);
+    long long totalVirtualMem = memInfo.totalram;
+    //Add other values in next statement to avoid int overflow on right hand side...
+    totalVirtualMem += memInfo.totalswap;
+    totalVirtualMem *= memInfo.mem_unit;
+
+    long long virtualMemUsed = memInfo.totalram - memInfo.freeram;
+    //Add other values in next statement to avoid int overflow on right hand side...
+    virtualMemUsed += memInfo.totalswap - memInfo.freeswap;
+    virtualMemUsed *= memInfo.mem_unit;
+
+    LOG_INFO << "MEM USED % = " << ( (double)virtualMemUsed / (double)totalVirtualMem ) << endm;
+}
+
 void sim( int n = 5, // nEvents to run
                 string outputName = "stFwdTrackMaker_ideal_sim.root",
                 bool useFstForSeedFinding = false, // use FTT (default) or FST for track finding
@@ -44,6 +61,10 @@ void sim( int n = 5, // nEvents to run
 
     gSystem->Load( "libStFttSimMaker" );
     gSystem->Load( "libStFcsTrackMatchMaker" );
+
+    gSystem->Load( "libMathMore.so" );
+    gSystem->Load( "libStarGeneratorUtil" );
+    
 
     // FCS setup, if included
     if (useFCS) {
@@ -88,50 +109,56 @@ void sim( int n = 5, // nEvents to run
         cout << "Adding StFstFastSimMaker to chain" << endl;
         chain->AddMaker(fstFastSim);
 
-
+    
     // Configure the Forward Tracker
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
         
-        // config file set here for ideal simulation
-        if (!realisticSim){
-            cout << "Configured for ideal simulation (MC finding + MC mom seed)" << endl;
-            fwdTrack->setConfigForIdealSim( );
-        } else {
-            cout << "Configured for realistic simulation" << endl;
-            fwdTrack->setConfigForRealisticSim( );
-            cout << "Configured for realistic simulation DONE" << endl;
-        }
+        if ( fwdTrack ){
+            // config file set here for ideal simulation
+            if (!realisticSim){
+                cout << "Configured for ideal simulation (MC finding + MC mom seed)" << endl;
+                fwdTrack->setConfigForIdealSim( );
+            } else {
+                cout << "Configured for realistic simulation" << endl;
+                fwdTrack->setConfigForRealisticSim( );
+                cout << "Configured for realistic simulation DONE" << endl;
+            }
 
-        if ( _geom == "" ){
-            cout << "Using the Geometry cache: fGeom.root" << endl;
-            fwdTrack->setGeoCache( "fGeom.root" );
-        }
+            if ( _geom == "" ){
+                cout << "Using the Geometry cache: fGeom.root" << endl;
+                fwdTrack->setGeoCache( "fGeom.root" );
+            }
 
-        if (useFstForSeedFinding)
-            fwdTrack->setSeedFindingWithFst();
-        else
-            fwdTrack->setSeedFindingWithFtt();
+            if (useFstForSeedFinding)
+                fwdTrack->setSeedFindingWithFst();
+            else
+                fwdTrack->setSeedFindingWithFtt();
 
-        fwdTrack->setTrackRefit( enableTrackRefit );
-        fwdTrack->setOutputFilename( outputName );
-        fwdTrack->SetGenerateTree( true );
-        fwdTrack->SetGenerateHistograms( true );
-        fwdTrack->SetDebug();
+            fwdTrack->setTrackRefit( enableTrackRefit );
+            fwdTrack->setOutputFilename( outputName );
+            fwdTrack->SetGenerateTree( false );
+            fwdTrack->SetGenerateHistograms( false );
+            fwdTrack->SetVisualize( false );
+            fwdTrack->SetDebug();
 
-        // fwdTrack->setZeroB( true );
-	
-        StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
-        fwdFitQA->SetDebug();
-        chain->AddAfter("fwdTrack", fwdFitQA);
-	
-        cout << "fwd tracker setup" << endl;
-
+            // fwdTrack->setZeroB( true );
         
-        if (!useFCS){
+            bool doFitQA = true;
+            if ( doFitQA ){    
+                StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+                fwdFitQA->SetDebug();
+                chain->AddAfter("fwdTrack", fwdFitQA);
+            }
+            cout << "fwd tracker setup" << endl;
+        }
+        
+        bool doFwdAna = true;
+        if (!useFCS && doFwdAna ){
             StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
             fwdAna->SetDebug();
             chain->AddAfter("fwdTrack", fwdAna);
         }
+
 
     StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
     if (useFCS) {
@@ -143,14 +170,18 @@ void sim( int n = 5, // nEvents to run
         match->SetDebug();
         chain->AddMaker(match);
 
-        StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-        fwdAna->SetDebug();
-        chain->AddAfter("FcsTrkMatch", fwdAna);
+        if ( doFwdAna ){
+            StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+            fwdAna->SetDebug();
+            chain->AddAfter("FcsTrkMatch", fwdAna);
+        }
 
         // Produce MuDst output
-        chain->AddAfter( "FcsTrkMatch", muDstMaker );
+        if ( muDstMaker )
+            chain->AddAfter( "FcsTrkMatch", muDstMaker );
     } else {
-        chain->AddAfter( "fwdAna", muDstMaker );
+        if ( muDstMaker )
+            chain->AddAfter( "fwdAna", muDstMaker );
     }
 
     
@@ -179,7 +210,7 @@ chain_loop:
         //     cout << "muFwdTrack->mPt = " << muFwdTrack->momentum().Pt() << endl;
 
         // }
-
+        // reportMem();
         cout << "<---------- END EVENT" << endl;
     } // event loop
 }

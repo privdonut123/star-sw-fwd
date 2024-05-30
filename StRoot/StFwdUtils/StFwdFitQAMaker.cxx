@@ -70,6 +70,30 @@ int StFwdFitQAMaker::Finish() {
     string name = "StFwdFitQAMaker.root";
     TFile *fOutput = new TFile(name.c_str(), "RECREATE");
     fOutput->cd();
+
+
+    // accumulated analysis
+    addHist( (TH1*)(getHist( "RcMatchedMcEta" )->Clone( "EffEta" )) );
+    getHist("EffEta")->Divide( (TH1*)getHist( "McEta" ) );
+
+    addHist( (TH1*)(getHist( "RcMatchedMcPt" )->Clone( "EffPt" )) );
+    getHist("EffPt")->Divide( (TH1*)getHist( "McPt" ) );
+
+    addHist( (TH1*)(getHist( "RcMatchedMcPhi" )->Clone( "EffPhi" )) );
+    getHist("EffPhi")->Divide( (TH1*)getHist( "McPhi" ) );
+
+
+        // 3 FST hits on MC Track
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcEta" )->Clone( "Eff3FSTEta" )) );
+    getHist("Eff3FSTEta")->Divide( (TH1*)getHist( "McEta3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPt" )->Clone( "Eff3FSTPt" )) );
+    getHist("Eff3FSTPt")->Divide( (TH1*)getHist( "McPt3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhi" )->Clone( "Eff3FSTPhi" )) );
+    getHist("Eff3FSTPhi")->Divide( (TH1*)getHist( "McPhi3FST" ) );
+
+
     for (auto nh : mHists) {
         nh.second->SetDirectory(gDirectory);
         nh.second->Write();
@@ -93,15 +117,27 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH1F("McNumHits", ";NumHits; counts", 10, 0, 10) );
     addHist( new TH1F("McPt", ";McPt; counts", 100, 0, 5) );
     addHist( new TH1F("McEta", ";McEta; counts", 50, 0, 5) );
-    addHist( new TH1F("McPhi", ";McPhi; counts", 32, 0, 2*3.1415926) );
+    addHist( new TH1F("McPhi", ";McPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
     addHist( new TH1F("McStartVtx", ";StartVtx; counts", 10, 0, 10) );
     addHist( new TH1F("McPID", ";GEANT PID; counts", 20, 0, 20) );
+
+    addHist( new TH1F("McPt3FST", ";McPt; counts", 100, 0, 5) );
+    addHist( new TH1F("McEta3FST", ";McEta; counts", 50, 0, 5) );
+    addHist( new TH1F("McPhi3FST", ";McPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
 
     addHist( new TH1F("RcQ", ";RcQ; counts", 11, -5.5, 5.5) );
     addHist( new TH1F("RcPt", ";RcPt; counts", 100, 0, 5) );
     addHist( new TH1F("RcEta", ";RcEta; counts", 50, 0, 5) );
-    addHist( new TH1F("RcPhi", ";RcPhi; counts", 32, 0, 2*3.1415926) );
+    addHist( new TH1F("RcPhi", ";RcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
     addHist( new TH1F("RcPID", "RC;GEANT PID; counts", 20, 0, 20) );
+
+    addHist( new TH1F("RcMatchedMcPt", ";RcMatchedMcPt; counts", 100, 0, 5) );
+    addHist( new TH1F("RcMatchedMcEta", ";RcMatchedMcEta; counts", 50, 0, 5) );
+    addHist( new TH1F("RcMatchedMcPhi", ";RcMatchedMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
+
+    addHist( new TH1F("RcMatched3FSTMcPt", ";RcMatched3FSTMcPt; counts", 100, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcEta", ";RcMatched3FSTMcEta; counts", 50, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcPhi", ";RcMatched3FSTMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
 
     addHist( new TH1F("RcQOverP", ";RcQ/RcP; counts", 2000, -1, 1) );
     
@@ -162,8 +198,8 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         mcTracks.push_back( mct );
 
         getHist( "McPID" )->Fill( mct.pid );
-        getHist( "McPt" )->Fill( mct.p.Pt() );
         getHist( "McEta" )->Fill( mct.p.Eta() );
+        getHist( "McPt" )->Fill( mct.p.Pt() );
         getHist( "McPhi" )->Fill( mct.p.Phi() );
         getHist( "McQ" )->Fill( mct.p.Pt() );
     } // get MC tracks
@@ -209,19 +245,35 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         getHist( "McNumFst" )->Fill( mct.numFST );
         getHist( "McNumFtt" )->Fill( mct.numFTT );
         getHist( "McNumHits" )->Fill( mct.numFTT + mct.numFST );
+
+        if ( mct.numFST >= 3 ){
+            getHist( "McEta3FST" )->Fill( mct.p.Eta() );
+            getHist( "McPt3FST" )->Fill( mct.p.Pt() );
+            getHist( "McPhi3FST" )->Fill( mct.p.Phi() );
+        }
     }
 
     for ( auto fwdTrack : ftc->tracks() ){
         getHist( "RcIdTruth" )->Fill( fwdTrack->idTruth() );
-        getHist( "RcPt" )->Fill( fwdTrack->momentum().perp() );
         getHist( "RcEta" )->Fill( fwdTrack->momentum().pseudoRapidity() );
+        getHist( "RcPt" )->Fill( fwdTrack->momentum().perp() );
         getHist( "RcPhi" )->Fill( fwdTrack->momentum().phi() );
+        
 
         int idx = fwdTrack->idTruth() - 1;
         if ( idx < 0 || idx >= mcTracks.size() ) continue;
         McFwdTrack mct = mcTracks[idx];
+
+        getHist( "RcMatchedMcEta" )->Fill( mct.p.Eta() );
+        getHist( "RcMatchedMcPt" )->Fill( mct.p.Pt() );
+        getHist( "RcMatchedMcPhi" )->Fill( mct.p.Phi() );
+
         if ( mct.numFST < 3 ) continue;
         // if ( mct.numFTT < 4 ) continue;
+
+        getHist( "RcMatched3FSTMcEta" )->Fill( mct.p.Eta() );
+        getHist( "RcMatched3FSTMcPt" )->Fill( mct.p.Pt() );
+        getHist( "RcMatched3FSTMcPhi" )->Fill( mct.p.Phi() );
 
         getHist( "RcPID" )->Fill( mct.pid );
 
