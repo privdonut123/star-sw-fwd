@@ -175,7 +175,8 @@ class StFwdTrackMaker : public StMaker {
     // I could not get the library generation to succeed with these.
     // so I have removed them
     #ifndef __CINT__
-        vector<FwdHit> mFwdHits;
+        vector<FwdHit> mFwdHitsFtt;
+        vector<FwdHit> mFwdHitsFst;
         std::shared_ptr<SiRasterizer> mSiRasterizer;
         FwdTrackerConfig mFwdConfig;
         std::shared_ptr<ForwardTracker> mForwardTracker;
