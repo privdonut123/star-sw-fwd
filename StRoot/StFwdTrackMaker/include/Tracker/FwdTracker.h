@@ -39,19 +39,11 @@
 #include "StFwdTrackMaker/FwdTrackerConfig.h"
 #include "StFwdTrackMaker/Common.h"
 
-#include "stdlib.h"
-#include "stdio.h"
-#include "string.h"
-
-void reportMem2(){
-    memf << "\t" << getValueRAM() << endl;
-}
-
 // Utility class for evaluating ID and QA truth
 struct MCTruthUtils {
 
     static int dominantContribution(Seed_t hits, double &qa) {
-        
+
         // track_id, hits on track
         std::unordered_map<int,int> truth;
         for ( auto hit : hits ) {
@@ -71,7 +63,7 @@ struct MCTruthUtils {
         // vote the same way on the track
         if ( hits.size() > 0 )
             qa = double(dom->second) / double(hits.size()) ;
-        else 
+        else
             qa = 0;
 
         return dom->first;
@@ -81,8 +73,8 @@ struct MCTruthUtils {
 class GenfitTrackResult {
 public:
     GenfitTrackResult(){}
-    GenfitTrackResult(  Seed_t &fttSeed, 
-                        Seed_t &fstSeed, 
+    GenfitTrackResult(  Seed_t &fttSeed,
+                        Seed_t &fstSeed,
                         std::shared_ptr<genfit::Track> track ) {
         set( fttSeed, fstSeed, track );
     }
@@ -94,8 +86,8 @@ public:
             track->Clear();
         }
     }
-void set(   Seed_t &fttSeed, 
-                Seed_t &fstSeed, 
+void set(   Seed_t &fttSeed,
+                Seed_t &fstSeed,
                 std::shared_ptr<genfit::Track> track ){
         this->fttSeed = fttSeed;
         this->fstSeed = fstSeed;
@@ -158,7 +150,7 @@ void set(   Seed_t &fttSeed,
     size_t nFailedPoints = 0;
     size_t theNumFTT = 0;
 
-    
+
     void summary() {
         LOG_INFO << TString::Format( "TrackResult[p=(%f, %f, %f)/(%f, %f, %f), q=%f, nFTT=%lu, nFST=%lu, nPV=%lu, isFitConvergedFully=%d]", momentum.X(), momentum.Y(), momentum.Z(), momentum.Pt(), momentum.Eta(), momentum.Phi(), charge, fttSeed.size(), fstSeed.size(), nPV, isFitConvergedFully ).Data() << endm;
     }
@@ -169,7 +161,7 @@ class ForwardTrackMaker {
     ForwardTrackMaker() : mConfigFile("config.xml"), mEventVertex(-999, -999, -999) {
         // noop
     }
-    
+
     const std::vector<GenfitTrackResult> &getTrackResults() const { return mTrackResults; }
     const std::vector<Seed_t> &getTrackSeeds() const { return mRecoTracks; }
 
@@ -182,7 +174,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Set the Config File object
-     * 
+     *
      * @param cf : config filename
      */
     void setConfigFile(std::string cf) {
@@ -191,7 +183,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Set the Save Criteria Values object
-     * 
+     *
      * @param save : true to save crit values
      */
     void setSaveCriteriaValues(bool save) {
@@ -205,7 +197,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Initialize FwdTracker
-     * 
+     *
      * @param geoCache : name of cached geometry file
      * @param genHistograms : generate histograms
      */
@@ -222,7 +214,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Writes QA histograms and config to ROOT file
-     * 
+     *
      */
     void writeEventHistograms() {
         // no file, dont write anything
@@ -245,7 +237,7 @@ class ForwardTrackMaker {
         mQualityPlotter->writeHistograms();
     } //writeEventHistograms
 
-    /** 
+    /**
      * @brief Loads Criteria from XML configuration.
      * Utility function for loading criteria from XML config.
      * @param path : path in config to load
@@ -266,7 +258,7 @@ class ForwardTrackMaker {
 
             float vmin = mConfig.get<float>(p + ":min", 0);
             float vmax = mConfig.get<float>(p + ":max", 1);
-            
+
             KiTrack::ICriterion * crit = nullptr;
             if ( name == "Crit2_BDT" ){
                 crit = new BDTCrit2( vmin, vmax );
@@ -280,7 +272,7 @@ class ForwardTrackMaker {
                 crits.push_back(new CriteriaKeeper(crit)); // CriteriaKeeper intercepts values and saves them
             else
                 crits.push_back(crit);
-            
+
         }
 
         return crits;
@@ -298,7 +290,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Get the Criteria Values object
-     * 
+     *
      * @param crit_name : Criteria to get
      * @return std::vector<float> : list of values
      */
@@ -327,7 +319,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Get the Criteria All Values object
-     * 
+     *
      * @param crit_name : Criteria values to get
      * @return std::vector<std::map < std::string , float >> : map of values
      */
@@ -356,7 +348,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Get the Criteria Track Ids object
-     * 
+     *
      * @param crit_name : Name of criteria to get track ids for
      * @return std::vector<int> : list of track ids
      */
@@ -385,7 +377,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Clear the saved values for two hit and three hit criteria
-     * 
+     *
      */
     void clearSavedCriteriaValues() {
         if (mSaveCriteriaValues != true) {
@@ -405,7 +397,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Determine the total num of hits in the hitmap
-     * 
+     *
      * @param hitmap : hitmap to consider
      * @return size_t : total num of hits
      */
@@ -421,7 +413,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Counts the number of tracks with nHits hits
-     * 
+     *
      * @param nHits : number of hits
      * @return size_t : number of tracks of the given length
      */
@@ -438,7 +430,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Create QA histograms
-     * 
+     *
      */
     void setupHistograms() {
 
@@ -476,7 +468,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Writes histograms to file
-     * 
+     *
      */
     void writeHistograms() {
         if ( !mGenHistograms ){
@@ -491,7 +483,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Remove used hits from the hit map
-     * 
+     *
      * @param hitmap : hitmap with hits used this round
      * @param tracks : tracks formed from hits
      */
@@ -514,7 +506,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Perform track finding and fitting on an event
-     * 
+     *
      * @param iEvent : event number
      */
     void doEvent() {
@@ -569,7 +561,7 @@ class ForwardTrackMaker {
         }
         if (mConfig.exists("TrackFinder") && mConfig.get<bool>( "TrackFinder:mc", false ) == false ){
             mcTrackFinding = false;
-        } 
+        }
         if (mConfig.exists("TrackFinder") && mConfig.get<bool>( "TrackFinder:active", true ) == false){
             mcTrackFinding = true;
         }
@@ -585,7 +577,7 @@ class ForwardTrackMaker {
             if (mConfig.get<bool>("TrackFitter:refit", false)) {
                 if (useFttAsSource)
                     addFstHitsMc();
-                else 
+                else
                     addFttHitsMc();
             } else {
                 LOG_DEBUG << "Skipping Refit (MC tracking)" << endm;
@@ -624,11 +616,11 @@ class ForwardTrackMaker {
 
     /**
      * @brief Perform a single fit from seed points
-     * 
+     *
      * @param seed : seed points from either FTT or FST
      */
     void fitTrack(Seed_t &seed) {
-        
+
         // make sure this is consistent with above
         string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
         bool useFttAsSource = !(hitmapSource == "fst");
@@ -663,7 +655,7 @@ class ForwardTrackMaker {
             double qual = 0;
             //  Get the quality and MC truth id
             idt = MCTruthUtils::dominantContribution(seed, qual);
-            
+
             TVector3 mcSeedMom;
             auto mctm = mDataSource->getMcTracks();
             // get the MC track momentum if we can (may be used for state seed)
@@ -672,7 +664,7 @@ class ForwardTrackMaker {
                 mcSeedMom.SetPtEtaPhi(mct->mPt, mct->mEta, mct->mPhi);
             }
             /*******************************************************/
-            
+
             // use the MC pt, eta, phi as the seed for fitting
             mTrackFitter->fitTrack(seed, pVertex, &mcSeedMom);
         } else {
@@ -686,7 +678,7 @@ class ForwardTrackMaker {
             GenfitTrackResult gtr;
             if ( useFttAsSource )
                 gtr.set( seed, nonSeeds, genTrack );
-            else 
+            else
                 gtr.set( nonSeeds, seed, genTrack );
 
             if (gtr.status && gtr.status->isFitConvergedFully()) {
@@ -711,7 +703,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Loop on track seeds and fit each one
-     * 
+     *
      * @param trackSeeds : Track seeds
      */
     void doTrackFitting( std::vector<Seed_t> &trackSeeds) {
@@ -742,12 +734,12 @@ class ForwardTrackMaker {
         double perCardinals = (double) mGoodCardinals / (double) mGoodFits;
         LOG_DEBUG << "Track Fitting Results:" <<
                     TString::Format( "Attempts = %lu, Good = %lu (%f%), Failed = %lu (%f%), GoodCardinals = %lu (%f%)", mAttemptedFits, mGoodFits, perGood, mFailedFits, perFailed, mGoodCardinals, perCardinals ) << endm;
-        LOG_DEBUG << "Track fitting took " << duration << "ms" << endm; 
+        LOG_DEBUG << "Track fitting took " << duration << "ms" << endm;
     } // doTrackFitting
 
     /**
      * @brief MC track finding builds track seeds from available hits using MC association
-     * 
+     *
      * @param mcTrackMap : Mc tracks
      * @param useFttAsSource : Use FTT for seeds or (false) use Fst
      */
@@ -757,7 +749,7 @@ class ForwardTrackMaker {
 
         // we will build reco tracks from each McTrack
         for (auto kv : mcTrackMap) {
-            
+
             auto mc_track = kv.second;
 
 
@@ -777,25 +769,25 @@ class ForwardTrackMaker {
                     track.push_back(h);
                     uvid.insert(static_cast<FwdHit *>(h)->_vid);
                 }
-            } else { // FST 
+            } else { // FST
                 for (auto h : mc_track->mFstHits) {
                     track.push_back(h);
                     uvid.insert(static_cast<FwdHit *>(h)->_vid);
                 }
             }
-            
+
             if (uvid.size() == track.size()) { // only add tracks that have one hit per volume
                 mRecoTracks.push_back(track);
                 int idt = 0;
                 double qual = 0;
                 idt = MCTruthUtils::dominantContribution(track, qual);
             } else {
-                //Skipping track that doesnt have hits on all layers 
+                //Skipping track that doesnt have hits on all layers
             }
         }
 
         LOG_DEBUG << "McTrackFinding Found: " << mRecoTracks.size() << " tracks" << endm;
-        
+
         doTrackFitting(mRecoTracks);
 
         if ( mGenHistograms ){
@@ -806,12 +798,12 @@ class ForwardTrackMaker {
 
     /** sliceHitMapInPhi
     * @brief Slices a hitmap into a phi section
-    * 
+    *
     * @param inputMap INPUT hitmap to process
     * @param outputMap OUTPUT hitmap, will be cleared and filled with only the hits from inputMap that are within phi region
     * @param phi_min The minimum phi to accept
     * @param phi_max The maximum Phi to accept
-    * 
+    *
     * @returns The number of hits in the outputMap
     */
     size_t sliceHitMapInPhi( FwdDataSource::HitMap_t &inputMap, FwdDataSource::HitMap_t &outputMap, float phi_min, float phi_max ){
@@ -870,12 +862,12 @@ class ForwardTrackMaker {
             connPath = "TrackFinder.Connector";
 
         unsigned int distance = mConfig.get<unsigned int>(connPath + ":distance", 1);
-        
+
         FwdConnector connector(distance);
         builder.addSectorConnector(&connector);
-
+        LOG_DEBUG << "Connector added: " << endm;
         // Get the segments and return an automaton object for further work
-        
+
         KiTrack::Automaton automaton = builder.get1SegAutomaton();
         LOG_DEBUG << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
         LOG_DEBUG << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
@@ -999,8 +991,8 @@ class ForwardTrackMaker {
 
     /**
      * @brief Main tracking procedure
-     * 
-     * @param iIteration : The track iteration 
+     *
+     * @param iIteration : The track iteration
      * @param hitmap : the hitmap of available hits per plane
      */
     void doTrackIteration(size_t iIteration, FwdDataSource::HitMap_t &hitmap) {
@@ -1021,7 +1013,7 @@ class ForwardTrackMaker {
         if ( mGenHistograms ){
             mQualityPlotter->startIteration();
         }
-        
+
         std::string pslPath = "TrackFinder.Iteration["+ std::to_string(iIteration) + "]:nPhiSlices";
         if ( false == mConfig.exists( pslPath ) ) pslPath = "TrackFinder:nPhiSlices";
         size_t phi_slice_count = mConfig.get<size_t>( pslPath, 1 );
@@ -1036,7 +1028,7 @@ class ForwardTrackMaker {
         } else {
 
             FwdDataSource::HitMap_t slicedHitMap;
-            
+
             if ( phi_slice_count == 0 || phi_slice_count > 100 ){
                 LOG_WARN << "Invalid phi_slice_count = " << phi_slice_count << ", resetting to 1" << endm;
                 phi_slice_count= 1;
@@ -1046,6 +1038,7 @@ class ForwardTrackMaker {
 
                 float phi_min = phi_slice_index * phi_slice - TMath::Pi();
                 float phi_max = (phi_slice_index + 1) * phi_slice - TMath::Pi();
+                LOG_INFO << TString::Format( "phi slice = (%f, %f)", phi_min, phi_max ) << endm;
 
                 /*************************************************************/
                 // Step 1A
@@ -1062,7 +1055,7 @@ class ForwardTrackMaker {
                     // I think this incurs a copy, maybe we can find a way to avoid.
                     slicedHitMap = hitmap;
                 }
-                
+
                 /*************************************************************/
                 // Steps 2 - 4 here
                 /*************************************************************/
@@ -1081,7 +1074,7 @@ class ForwardTrackMaker {
         if ( true == mConfig.get<bool>( hrmPath + ":active", true ) ){
             removeHits( hitmap, mRecoTracksThisIteration );
         }
-        
+
         LOG_DEBUG << " FITTING " << mRecoTracksThisIteration.size() << " now" << endm;
 
         if ( mRecoTracksThisIteration.size() < 10001 ){
@@ -1089,11 +1082,11 @@ class ForwardTrackMaker {
         } else {
             LOG_ERROR << "BAILING OUT of fit, too many track candidates" << endm;
         }
-        
+
         if ( mGenHistograms ){
             mQualityPlotter->afterIteration( iIteration, mRecoTracksThisIteration );
         }
-        
+
         // Add the set of all accepted tracks (this iteration) to our collection of found tracks from all iterations
         mRecoTracks.insert( mRecoTracks.end(), mRecoTracksThisIteration.begin(), mRecoTracksThisIteration.end() );
 
@@ -1101,14 +1094,14 @@ class ForwardTrackMaker {
 
     /**
      * @brief Adds compatible FST hits to tracks seeded with FTT
-     * 
+     *
      */
     void addFstHitsMc() {
         FwdDataSource::HitMap_t hitmap = mDataSource->getFstHits();
 
         for (size_t i = 0; i < mTrackResults.size(); i++) {
             GenfitTrackResult &gtr = mTrackResults[i];
-            
+
             if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-3) {
                 LOG_DEBUG << "Skipping addFstHitsMc, fit failed" << endm;
                 return;
@@ -1152,10 +1145,10 @@ class ForwardTrackMaker {
                 LOG_DEBUG << "Found " << gtr.fttSeed.size() << " existing FTT seed points" << endm;
                 LOG_DEBUG << "Adding " << fst_hits_for_this_track_nnull.size() << " new FST seed points" << endm;
                 combinedSeed.insert( combinedSeed.begin(), fst_hits_for_this_track_nnull.begin(), fst_hits_for_this_track_nnull.end() );
-                combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() ); 
-                
+                combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() );
+
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
-                
+
                 if ( fabs(gtr.momentum.Z()) > 10000 ){
                     // this seems to help some fits perform better
                     gtr.momentum.SetXYZ( gtr.momentum.X(), gtr.momentum.Y(), 1000 );
@@ -1184,7 +1177,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Adds compatible FTT hits to tracks seeded with FST
-     * 
+     *
      */
     void addFttHits() {
         FwdDataSource::HitMap_t hitmap = mDataSource->getFttHits();
@@ -1226,13 +1219,13 @@ class ForwardTrackMaker {
                 this->mHist[ "nFttHitsFound" ]->Fill( 4, hits_near_plane3.size() );
             }
 
-            if ( hits_near_plane0.size() > 0 )  
+            if ( hits_near_plane0.size() > 0 )
                 hits_to_add.push_back( hits_near_plane0[0] );
-            if ( hits_near_plane1.size() > 0 )  
+            if ( hits_near_plane1.size() > 0 )
                 hits_to_add.push_back( hits_near_plane1[0] );
-            if ( hits_near_plane2.size() > 0 )  
+            if ( hits_near_plane2.size() > 0 )
                 hits_to_add.push_back( hits_near_plane2[0] );
-            if ( hits_near_plane3.size() > 0 )  
+            if ( hits_near_plane3.size() > 0 )
                 hits_to_add.push_back( hits_near_plane3[0] );
 
             if ( hits_to_add.size() > 0 ){
@@ -1240,7 +1233,7 @@ class ForwardTrackMaker {
                 if ( mGenHistograms ){
                     mHist["FitStatus"]->Fill("AttemptReFit", 1);
                 }
-                
+
                 Seed_t combinedSeed;
                 LOG_DEBUG << "Found " << t.fstSeed.size() << " existing FST seed points" << endm;
                 combinedSeed.insert( combinedSeed.begin(), t.fstSeed.begin(), t.fstSeed.end() ); // this is goofed but will fix
@@ -1266,13 +1259,13 @@ class ForwardTrackMaker {
 
             if ( mGenHistograms ){
                 mHist["FitStatus"]->Fill( TString::Format( "w%luFtt", hits_to_add.size() ).Data(), 1 );
-            }            
+            }
         } // loop over tracks
     } // addFttHits
 
     /**
      * @brief Adds compatible FTT hits using MC info
-     * 
+     *
      */
     void addFttHitsMc() {
         FwdDataSource::HitMap_t hitmap = mDataSource->getFttHits();
@@ -1280,7 +1273,7 @@ class ForwardTrackMaker {
 
         for (size_t i = 0; i < mTrackResults.size(); i++) {
             GenfitTrackResult &gtr = mTrackResults[i];
-            
+
             if ( gtr.status->isFitConverged() == false || gtr.momentum.Perp() < 1e-6) {
                 LOG_DEBUG << "Skipping addFttHitsMc on this track, fit failed" << endm;
                 return;
@@ -1350,7 +1343,7 @@ class ForwardTrackMaker {
 
     /**
      * @brief Adds compatible FST hits to a track seeded from FTT
-     * 
+     *
      */
     void addFstHits() {
         FwdDataSource::HitMap_t hitmap = mDataSource->getFstHits();
@@ -1360,7 +1353,7 @@ class ForwardTrackMaker {
             GenfitTrackResult &gtr = mTrackResults[i];
 
             if (gtr.isFitConverged == false) {
-                // Original Track fit did not converge, skipping 
+                // Original Track fit did not converge, skipping
                 return;
             }
 
@@ -1428,10 +1421,10 @@ class ForwardTrackMaker {
                 LOG_DEBUG << "Found " << gtr.fttSeed.size() << " existing FTT seed points" << endm;
                 LOG_DEBUG << "Adding " << fst_hits_for_this_track_nnull.size() << " new FST seed points" << endm;
                 combinedSeed.insert( combinedSeed.begin(), fst_hits_for_this_track_nnull.begin(), fst_hits_for_this_track_nnull.end() );
-                combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() ); 
-                
+                combinedSeed.insert( combinedSeed.end(), gtr.fttSeed.begin(), gtr.fttSeed.end() );
+
                 double vertex[3] = { mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() };
-                
+
                 if ( fabs(gtr.momentum.Z()) > 10000 ){
                     // this seems to help some fits perform better
                     gtr.momentum.SetXYZ( gtr.momentum.X(), gtr.momentum.Y(), 1000 );
@@ -1463,12 +1456,12 @@ class ForwardTrackMaker {
 
     /**
      * @brief Finds FST hits near projected state
-     * 
+     *
      * @param available_hits : FST hits to consider
      * @param msp : measured state on plabe from existing track projection
      * @param dphi : search distance in phi
      * @param dr : search distance in r
-     * @return Seed_t : compatible FST hits 
+     * @return Seed_t : compatible FST hits
      */
     Seed_t findFstHitsNearProjectedState(Seed_t &available_hits, genfit::MeasuredStateOnPlane &msp, double dphi = 0.004 * 20.5, double dr = 2.75 * 2) {
         double probe_phi = TMath::ATan2(msp.getPos().Y(), msp.getPos().X());
@@ -1482,7 +1475,7 @@ class ForwardTrackMaker {
             double mdphi = fabs(h_phi - probe_phi);
             if (mdphi > 2*3.1415926)
                 mdphi = mdphi - 2*3.1415926;
-            
+
             if ( mdphi < dphi && fabs( h_r - probe_r ) < dr) { // handle 2pi edge
                 found_hits.push_back(h);
             }
@@ -1493,13 +1486,13 @@ class ForwardTrackMaker {
 
     /**
      * @brief Finds FTT hits near projected state
-     * 
+     *
      * @param available_hits : FTT hits to consider
      * @param msp : measured state on plane from existing track fit projection
      * @param dx : search distance in x
      * @param dy : search distance in y
-     * 
-     * @return compatible FTT hits 
+     *
+     * @return compatible FTT hits
     */
     Seed_t findFttHitsNearProjectedState(Seed_t &available_hits, genfit::MeasuredStateOnPlane &msp, double dx = 1.5, double dy = 1.5) {
 
@@ -1517,13 +1510,13 @@ class ForwardTrackMaker {
         KiTrack::IHit *closest = nullptr;
 
         for (auto h : available_hits) {
-            
+
             lv2.SetPxPyPzE( h->getX(), h->getY(), 0, 1 );
             double sr = lv1.Pt() - lv2.Pt();
             double sp =  lv1.DeltaPhi( lv2 );
             double sx = h->getX() - msp.getPos().X();
             double sy = h->getY() - msp.getPos().Y();
-            
+
             if ( fabs(sr) < fabs(mindr) )
                 mindr = sr;
             if ( fabs(sp) < fabs(mindp) ){
@@ -1542,7 +1535,7 @@ class ForwardTrackMaker {
                 mHist[ "FttSearchDeltaP" ]->Fill( sp );
             }
 
-            
+
         }
 
         if ( mGenHistograms ){
@@ -1552,7 +1545,7 @@ class ForwardTrackMaker {
             mHist[ "FttSearchMinDeltaP" ]->Fill( mindp );
         }
 
-        if (  fabs(mindp) < 0.04*5 && fabs(mindr) < 9 ) { 
+        if (  fabs(mindp) < 0.04*5 && fabs(mindr) < 9 ) {
             found_hits.push_back(closest);
         }
 
@@ -1575,13 +1568,13 @@ class ForwardTrackMaker {
     FwdTrackerConfig mConfig;
     std::string mConfigFile;
     size_t mTotalHitsRemoved;
-    
+
     std::vector<GenfitTrackResult> mTrackResults;
 
     std::vector<Seed_t> mRecoTracks; // the tracks recod from all iterations
     std::vector<Seed_t> mRecoTracksThisIteration;
 
-    // Metrics about the event 
+    // Metrics about the event
     size_t mAttemptedFits = 0;
     size_t mGoodFits = 0;
     size_t mFailedFits = 0;
@@ -1601,7 +1594,7 @@ class ForwardTrackMaker {
     // histograms of the raw input data
     bool mGenHistograms = false; // controls these histograms and use of QualityPlotter
     TString mGeoCache;
-    std::map<std::string, TH1 *> mHist;  
+    std::map<std::string, TH1 *> mHist;
 };
 
 #endif
