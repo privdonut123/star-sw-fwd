@@ -427,7 +427,7 @@ class TrackFitter {
         if (nmeas >= 1)
             mcurv = mcurv / nmeas;
         else
-            mcurv = 100;
+            mcurv = 0;
 
         // Now lets get eta information
         p0.SetXYZ(trackSeed[vol_map[idx[0]]]->getX(), trackSeed[vol_map[idx[0]]]->getY(), trackSeed[vol_map[idx[0]]]->getZ());

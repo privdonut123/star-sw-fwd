@@ -872,7 +872,7 @@ class ForwardTrackMaker {
         LOG_DEBUG << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
         LOG_DEBUG << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
 
-        if (automaton.getNumberOfConnections() > 900 ){
+        if (automaton.getNumberOfConnections() > 9000 ){
             LOG_ERROR << "Got too many connections, bailing out of tracking" << endm;
             return acceptedTracks;
         }
@@ -919,7 +919,7 @@ class ForwardTrackMaker {
         duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         if (mGenHistograms)
             mHist["Step3Duration"]->Fill( duration );
-        if (duration > 200 || automaton.getNumberOfConnections() > 900){
+        if (duration > 2000 || automaton.getNumberOfConnections() > 9000){
             LOG_WARN << "The Three Hit Criteria took more than 200ms to process, duration: " << duration << " ms" << endm;
             LOG_WARN << "bailing out (skipping subset HNN)" << endm;
             std::vector<Seed_t> acceptedTracks;
@@ -1558,6 +1558,7 @@ class ForwardTrackMaker {
 
     TrackFitter *getTrackFitter() { return mTrackFitter; }
     void setEventVertex( TVector3 v ) { mEventVertex = v; }
+    TVector3 getEventVertex() { return mEventVertex; }
 
   protected:
     unsigned long long int nEvents;

@@ -39,74 +39,10 @@ class McTrack;
 // STL includes
 #include <vector>
 #include <memory>
-
-
-// 877-369-6347
 class StFwdTrack;
 class GenfitTrackResult;
 
-
-
-const size_t MAX_TREE_ELEMENTS = 4000;
-struct FwdTreeData {
-  
-    /** @brief Ftt hit related info*/
-    int fttN;
-    vector<float> fttX, fttY, fttZ;
-    vector<int> fttVolumeId;
-    // Note: Below are only avalaible for hits if MC
-    vector<float> fttPt;
-    vector<int> fttTrackId, fttVertexId;
-
-    /** @brief Fst hit related info*/
-    int fstN;
-    vector<float> fstX, fstY, fstZ;
-    vector<int> fstTrackId;
-
-    /** @brief Fcs hit related info*/
-    int fcsN;
-    vector<float> fcsX, fcsY, fcsZ, fcsE;
-    vector<int> fcsDet;
-
-    /** @brief EPD hit related info */
-    vector<float> epdX, epdY, epdZ, epdE;
-
-    /** @brief RC track related info*/
-    int rcN;
-    vector<float> rcPt, rcEta, rcPhi, rcQuality, rcEpdX, rcEpdY;
-    vector<int> rcTrackId, rcNumFST, rcCharge, rcNumFTT, rcNumPV;
-
-    /** @brief MC Track related info*/
-    int mcN;
-    vector<float> mcPt, mcEta, mcPhi;
-    vector<int> mcVertexId, mcCharge;
-    vector<int> mcNumFtt, mcNumFst;
-
-    /** @brief MC Vertex related info*/
-    int vmcN;
-    vector<float> vmcX, vmcY, vmcZ;
-
-    /** @brief Track Projection related info*/
-    int tprojN;
-    vector<float> tprojX, tprojY, tprojZ;
-    vector<float> tprojPx, tprojPy, tprojPz;
-    vector<int> tprojIdD, tprojIdT;
-
-    /** @brief RAVE RC Vertex related info*/
-    int vrcN;
-    vector<float> vrcX, vrcY, vrcZ;
-
-    /** @brief Track-to-hit delta related info*/
-    int thdN;
-    vector<float> thdX, thdY, thdP, thdR, thaX, thaY, thaZ;
-
-    /** @brief Seed finding Criteria related info*/
-    bool saveCrit = false;
-    std::map<string, std::vector<float>> Crits;
-    std::map<string, std::vector<int>> CritTrackIds;
-
-    void clear();
-};
+#include "StFwdTrackMaker/StFwdTrackTTree.h"
 
 class StFwdTrackMaker : public StMaker {
 
@@ -195,7 +131,18 @@ class StFwdTrackMaker : public StMaker {
         int loadFstHitsFromStEventFastSim( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap, std::map<int, std::vector<KiTrack::IHit *>> &hitMap );
     #endif
 
+    /** @brief Fill TTree for debugging 
+     * - if mGenTree is true, fill TTree
+     * - if mGenTree is false, do nothing
+    */
     void FillTTree(); // if debugging ttree is turned on (mGenTree)
+    void FillTTreePrimaryVertex(TVector3 &eventPV);
+    void FillTTreeTrackSeeds();
+    void FillTTreeRcTrack( GenfitTrackResult& gtr);
+    void FillTTreeFttHit( float x, float y, float z, int volid, int detid );
+    void FillTTreeFstHit( float x, float y, float z, int volid, int detid );
+
+    /** @brief Fit the primary vertex using FWD tracks */
     void FitVertex();
 
     static std::string defaultConfigIdealSim;

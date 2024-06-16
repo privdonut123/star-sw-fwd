@@ -307,7 +307,7 @@ public:
             for ( auto p : fstHits ){
              
                 float fstphi = TMath::ATan2( p.Y(), p.X() );
-                printf( "FST PHI: %f \n", fstphi );
+                // printf( "FST PHI: %f \n", fstphi );
                 // tri( ofile, TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.1f, 0.1f, 3.0f, fstphi );
                 sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.3, 10, 10, ofile );
             }
