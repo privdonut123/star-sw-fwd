@@ -94,6 +94,8 @@ class FwdHit : public KiTrack::IHit {
         }
     };
 
+    std::shared_ptr<McTrack> getMcTrack() { return _mcTrack; }
+
     const KiTrack::ISectorSystem *getSectorSystem() const {
         return FwdSystem::sInstance;
     }
@@ -108,7 +110,8 @@ class FwdHit : public KiTrack::IHit {
     StHit *_hit;
 };
 
-using Seed_t = std::vector<KiTrack::IHit *>;
+// Track Seed typdef
+typedef std::vector<KiTrack::IHit *> Seed_t;
 
 class FwdConnector : public KiTrack::ISectorConnector {
   public:
