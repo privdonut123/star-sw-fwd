@@ -106,13 +106,15 @@ void set(   Seed_t &fttSeed,
 
             this->nPV = this->track->getNumPoints() - (numFTT() + numFST());
 
-            this->momentum = this->trackRep->getMom( this->track->getFittedState(0, this->trackRep) );
-            LOG_DEBUG << "GenfitTrackResult::set Track successful" << endm;
-            size_t numTotal = numFTT() + numFST();
+            LOG_DEBUG << "Converged?: " << isFitConverged << ", Fully?: " << isFitConvergedFully << ", Partially?: " << isFitConvergedPartially << ", nFailedPoints: " << nFailedPoints << ", charge: " << charge << endm;
             LOG_DEBUG << "GTR has track->numPoints=" << this->track->getNumPoints() << " vs. numFST: " << numFST() << ", numFTT: " << numFTT() << endm;
+            if ( isFitConvergedPartially == true && this->track->getNumPoints() != nFailedPoints ){
+                this->momentum = this->trackRep->getMom( this->track->getFittedState(0, this->trackRep) );
+            }
+            LOG_DEBUG << "GenfitTrackResult::set Track successful" << endm;
 
         } catch ( genfit::Exception &e ) {
-            LOG_ERROR << "CANNOT GET TRACK" << endm;
+            LOG_ERROR << "CANNOT GET TRACK : GenfitException: " << e.what() << endm;
             this->track = nullptr;
             this->trackRep = nullptr;
 
@@ -535,6 +537,8 @@ class ForwardTrackMaker {
         bool useFttAsSource = !(hitmapSource == "fst");
 
         if ( useFttAsSource == false ){
+            LOG_INFO << "Forward Track seed finding using FST" << endm;
+            LOG_INFO << "FST Hitmap has:" << fstHitmap.size() << " hits to consider" << endm;
             for (auto hp : fstHitmap){
                 LOG_DEBUG << "HITMAP [" << hp.first << ", { ";
                 for ( auto h: hp.second ){
@@ -542,6 +546,9 @@ class ForwardTrackMaker {
                 }
                 LOG_DEBUG << " }" << endm;
             }
+        } else {
+            LOG_INFO << "Forward Track seed finding using FTT" << endm;
+            LOG_INFO << "FTT Hitmap has:" << fttHitmap.size() << " hits to consider" << endm;
         }
         FwdDataSource::McTrackMap_t &mcTrackMap = mDataSource->getMcTracks();
 
