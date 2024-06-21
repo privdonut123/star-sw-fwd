@@ -396,7 +396,7 @@ int viz_event( int eventIndex, ProjectionType projType = kRZSigned, bool frame =
 
 
 
-void viz( TString fn = "fwdtree.root", int mode = 0) {
+void viz( TString fn = "fwdtree.root", int mode = 0, int maxEvents = 100) {
 
     ProjectionType pjt = (ProjectionType)view;
     fData = new TFile( fn );
@@ -430,6 +430,7 @@ void viz( TString fn = "fwdtree.root", int mode = 0) {
 
     // gPad->SetMargin(0.1, 0.05, 0.15, 0.05);
     int nEvents = fwd->GetEntries();
+    if (nEvents > maxEvents) nEvents = maxEvents;
     // Viz event by event - all tracks hits etc. together for this event
     if ( mode == 0 ){
         
