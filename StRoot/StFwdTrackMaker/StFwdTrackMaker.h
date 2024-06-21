@@ -51,7 +51,6 @@ class StFwdTrackMaker : public StMaker {
     StFwdTrackMaker();
     ~StFwdTrackMaker(){/* nada */};
 
-    void test();
     int Init();
     int Finish();
     int Make();

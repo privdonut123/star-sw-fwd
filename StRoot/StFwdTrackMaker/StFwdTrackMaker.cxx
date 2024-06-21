@@ -784,10 +784,6 @@ int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t 
 
         // Add the hit to the hit map
         mFstHits.push_back( TVector3( hit->position().x(), hit->position().y(), hit->position().z())  );
-
-        FillTTreeFstHit( hit->position().x(), hit->position().y(), hit->position().z(), hit->layer(), 2 );
-        count++;
-
     }
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
