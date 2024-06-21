@@ -116,19 +116,16 @@ void FwdTreeRecoTrack::set( StMuFwdTrack *muFwd ){
     projs.clear();
     seeds.clear();
     for ( auto p : muFwd->mProjections ){
-        LOG_INFO << "Adding Track Projection to Reco Track" << endm;
         FwdTreeTrackProjection tp;
         tp.set( p.mDetId, p.mXYZ, p.mMom, p.mCov );
         projs.push_back( tp );
     }
     for ( auto s : muFwd->mFSTPoints ){
-        LOG_INFO << "Adding Track Seed to Reco Track" << endm;
         FwdTreeHit h;
         h.set( s.mXYZ.X(), s.mXYZ.Y(), s.mXYZ.Z(), 1, 1 );
         seeds.push_back( h );
     }
     for ( auto s : muFwd->mFTTPoints ){
-        LOG_INFO << "Adding Track Seed to Reco Track" << endm;
         FwdTreeHit h;
         h.set( s.mXYZ.X(), s.mXYZ.Y(), s.mXYZ.Z(), 1, 1 );
         seeds.push_back( h );
@@ -150,19 +147,16 @@ void FwdTreeRecoTrack::set( StFwdTrack *fwd ){
     projs.clear();
     seeds.clear();
     for ( auto p : fwd->mProjections ){
-        LOG_INFO << "Adding Track Projection to Reco Track" << endm;
         FwdTreeTrackProjection tp;
         tp.set( p.mDetId, TVector3(p.mXYZ.x(), p.mXYZ.y(), p.mXYZ.z()), TVector3(p.mMom.x(), p.mMom.y(), p.mMom.z()), p.mCov );
         projs.push_back( tp );
     }
     for ( auto s : fwd->mFSTPoints ){
-        LOG_INFO << "Adding Track Seed to Reco Track" << endm;
         FwdTreeHit h;
         h.set( s.mXYZ.x(), s.mXYZ.y(), s.mXYZ.z(), 1, 1 );
         seeds.push_back( h );
     }
     for ( auto s : fwd->mFTTPoints ){
-        LOG_INFO << "Adding Track Seed to Reco Track" << endm;
         FwdTreeHit h;
         h.set( s.mXYZ.x(), s.mXYZ.y(), s.mXYZ.z(), 1, 1 );
         seeds.push_back( h );
@@ -201,7 +195,7 @@ int StFwdQAMaker::Finish() {
     return kStOk;
 }
 int StFwdQAMaker::Make() {
-    LOG_INFO << "SETUP START" << endm;
+
     // setup the datasets / makers
     mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
@@ -219,15 +213,18 @@ int StFwdQAMaker::Make() {
     mFwdTrackMaker = (StFwdTrackMaker*) GetMaker( "fwdTrack" );
     if (!mFwdTrackMaker) {
         LOG_WARN << "No StFwdTrackMaker found, skipping StFwdQAMaker" << endm;
-        return kStOk;
+        // return kStOk;
     }
 
     // Event header info from stevent
     StEvent *mStEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-    LOG_INFO << "SETUP COMPLETE" << endm;
-    // Get the primary vertex used by the FWD Tracker
-    auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
-    mTreeData.header.set( 0, 0, 0, eventPV  );
+    
+    TVector3 eventPV;
+    if (mFwdTrackMaker){
+        // Get the primary vertex used by the FWD Tracker
+        eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
+        mTreeData.header.set( 0, 0, 0, eventPV  );
+    }
 
     // Fill Header from StEvent
     if ( mMuDstMaker ){
@@ -249,34 +246,35 @@ int StFwdQAMaker::Make() {
             }
         } // btofC != nullptr
     }
-    LOG_INFO << "HEADER COMPLETE" << endm;
+    
 
     FwdTreeHit fh;
 
-    auto fttHits = mFwdTrackMaker -> GetFttHits();
-    for ( auto h : fttHits ){
-        fh.set( h.getX(), h.getY(), h.getZ(), 1, 2 );
-        mTreeData.ftt.add( fh );
-    }
-    LOG_INFO << "FTT COMPLETE" << endm;
-    auto fstHits = mFwdTrackMaker -> GetFstHits();
-    for ( auto h : fstHits ){
-        fh.set( h.getX(), h.getY(), h.getZ(), 1, 1 );
-        mTreeData.fst.add( fh );
-    }
-    LOG_INFO << "FST COMPLETE" << endm;
-    auto seeds = mFwdTrackMaker -> getTrackSeeds();
-    size_t iSeed = 0;
-    for ( auto s : seeds ){
-        for ( auto h : s ){
-            fh.set( h->getX(), h->getY(), h->getZ(), 1, 1 );
-            fh.trackId = iSeed;
-            mTreeData.seeds.add( fh );
+    if (mFwdTrackMaker ){
+        auto fttHits = mFwdTrackMaker -> GetFttHits();
+        for ( auto h : fttHits ){
+            fh.set( h.getX(), h.getY(), h.getZ(), 1, 2 );
+            mTreeData.ftt.add( fh );
         }
-        iSeed++;
-    } // for s in seeds
-    LOG_INFO << "SEEDS COMPLETE" << endm;
-    
+        LOG_INFO << "FTT COMPLETE" << endm;
+        auto fstHits = mFwdTrackMaker -> GetFstHits();
+        for ( auto h : fstHits ){
+            fh.set( h.getX(), h.getY(), h.getZ(), 1, 1 );
+            mTreeData.fst.add( fh );
+        }
+        LOG_INFO << "FST COMPLETE" << endm;
+        auto seeds = mFwdTrackMaker -> getTrackSeeds();
+        size_t iSeed = 0;
+        for ( auto s : seeds ){
+            for ( auto h : s ){
+                fh.set( h->getX(), h->getY(), h->getZ(), 1, 1 );
+                fh.trackId = iSeed;
+                mTreeData.seeds.add( fh );
+            }
+            iSeed++;
+        } // for s in seeds
+        LOG_INFO << "SEEDS COMPLETE" << endm;
+    }
     size_t iTrack = 0;
     FwdTreeRecoTrack frt;
     FwdTreeHit fth;
@@ -357,10 +355,8 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         fcsclu.set( clu, mFcsDb );
 
         if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
-            LOG_INFO << "Adding WCAL Cluster to FwdTree" << endm;
             mTreeData.wcal.add( fcsclu );
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
-            LOG_INFO << "Adding HCAL Cluster to FwdTree" << endm;
             mTreeData.hcal.add( fcsclu );
         }
     }
@@ -410,7 +406,7 @@ void StFwdQAMaker::FillFttClusters(){
     FwdTreeHit fh;
     FwdTreeFttCluster ftc;
     StEvent *event = static_cast<StEvent *>(GetInputDS("StEvent"));
-    if ( !event->fttCollection() ) return;
+    if ( !event || !event->fttCollection() ) return;
 
     LOG_INFO << "FTT RawHits: " << event->fttCollection()->numberOfRawHits() << endm;
     LOG_INFO << "FTT Clusters: " << event->fttCollection()->numberOfClusters() << endm;
