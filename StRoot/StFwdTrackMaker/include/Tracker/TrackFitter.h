@@ -121,8 +121,8 @@ class TrackFitter {
         // to customize the mFitter behavior
         mFitter->setMaxFailedHits(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxFailedHits", -1)); // default -1, no limit
         mFitter->setDebugLvl(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:DebugLvl", 0)); // default 0, no output
-        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 4)); // default 4 iterations
-        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 0)); // default 0 iterations
+        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 40)); // default 4 iterations
+        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 3)); // default 0 iterations
 
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
         FwdGeomUtils fwdGeoUtils( gMan );
@@ -338,12 +338,12 @@ class TrackFitter {
             curv = sc.getRadius();
         } catch (KiTrack::InvalidParameter &e) {
             // if we got here we failed to get  a valid seed. We will still try to move forward but the fit will probably fail
-            LOG_WARN << "Circle fit failed, FWD track fit will likely faile" << endm;
+            LOG_WARN << "Circle fit failed, FWD track fit will likely fail also" << endm;
         }
 
         //  make sure the curv is valid
         if (isinf(curv)){
-            curv = 999999.9;
+            curv = 0.0;
         }
 
         return curv;
@@ -427,7 +427,7 @@ class TrackFitter {
         if (nmeas >= 1)
             mcurv = mcurv / nmeas;
         else
-            mcurv = 0;
+            mcurv = 10000;
 
         // Now lets get eta information
         p0.SetXYZ(trackSeed[vol_map[idx[0]]]->getX(), trackSeed[vol_map[idx[0]]]->getY(), trackSeed[vol_map[idx[0]]]->getZ());
@@ -754,6 +754,60 @@ class TrackFitter {
     } //refitwith GBL
 
 
+    void fitSpacePoints( Seed_t trackSeed, double *Vertex = 0, TVector3 *seedMomentum = 0 ){
+
+        auto seedPos = TVector3(0, 0, 0);
+        auto seedMom = TVector3(0, 0, 10);
+        auto theTrackRep = new genfit::RKTrackRep(mPdgMuon);
+        // setup track for fit with positive and negative reps
+        // mFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
+        mFitTrack = std::make_shared<genfit::Track>(theTrackRep, seedPos, seedMom);
+
+        // Create Spaces points from each seed
+        vector<genfit::SpacepointMeasurement*> spoints;
+        for (size_t i = 0; i < trackSeed.size(); i++) {
+            auto seed = trackSeed[i];
+            TMatrixDSym cm(3);
+            cm(0, 0) = 0.01;
+            cm(1, 1) = 0.01;
+            cm(2, 2) = 0.01;
+            auto rhc = TVectorD( 3 );
+            rhc[0] = seed->getX();
+            rhc[1] = seed->getY();
+            rhc[2] = seed->getZ();
+            auto spoint = new genfit::SpacepointMeasurement(rhc, cm, 0, i, nullptr);
+            spoints.push_back(spoint);
+        }
+
+        LOG_INFO << "Fitting track with " << spoints.size() << " space points" << endm;
+        // try adding the points to track and fitting
+        try {
+            for ( size_t i = 0; i < spoints.size(); i++ ){
+                mFitTrack->insertPoint(new genfit::TrackPoint(spoints[i], mFitTrack.get()));
+            }
+
+            mFitter->processTrack(mFitTrack.get());
+            mFitTrack->determineCardinalRep();
+
+        } catch (genfit::Exception &e) {
+            LOG_ERROR << "GenFit failed to fit track with: " << e.what() << endm;
+        }
+
+        try {
+            mFitTrack->checkConsistency();
+
+            mFitTrack->determineCardinalRep();
+            auto cardinalRep = mFitTrack->getCardinalRep();
+            // static const TVector3 p = cardinalRep->getMom(mFitTrack->getFittedState(1, cardinalRep));
+            // sucess, return momentum
+            LOG_INFO << "Fit status: " << mFitTrack->getFitStatus(cardinalRep)->isFitConverged() << endm;
+            return;
+        } catch (genfit::Exception &e) {
+            LOG_ERROR << "GenFit failed to fit track consistency with: " << e.what() << endm;
+        }
+        return ;
+    }
+
     /**
      * @brief Generic method for fitting space points with GenFit
      *
@@ -765,21 +819,29 @@ class TrackFitter {
     TVector3 fitSpacePoints( vector<genfit::SpacepointMeasurement*> spoints, TVector3 &seedPos, TVector3 &seedMom ){
 
         // setup track reps
-        auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
-        auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
+        // auto trackRepPos = new genfit::RKTrackRep(mPdgPositron);
+        // auto trackRepNeg = new genfit::RKTrackRep(mPdgElectron);
 
+
+        // return TVector3(0, 0, 0);
+        auto theTrackRep = new genfit::RKTrackRep(mPdgMuon);
         // setup track for fit with positive and negative reps
-        auto mFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
-        mFitTrack->addTrackRep(trackRepNeg);
+        // mFitTrack = new genfit::Track(trackRepPos, seedPos, seedMom);
+        mFitTrack = std::make_shared<genfit::Track>(theTrackRep, seedPos, seedMom);
+        // mFitTrack->addTrackRep(trackRepNeg);
+        //
 
+        LOG_INFO << "Fitting track with " << spoints.size() << " space points" << endm;
         // try adding the points to track and fitting
         try {
             for ( size_t i = 0; i < spoints.size(); i++ ){
-                mFitTrack->insertPoint(new genfit::TrackPoint(spoints[i], mFitTrack));
+                mFitTrack->insertPoint(new genfit::TrackPoint(spoints[i], mFitTrack.get()));
             }
             // do the fit against the two possible fits
-            mFitter->processTrackWithRep(mFitTrack, trackRepPos);
-            mFitter->processTrackWithRep(mFitTrack, trackRepNeg);
+            // mFitter->processTrackWithRep(mFitTrack, trackRepPos);
+            // mFitter->processTrackWithRep(mFitTrack, trackRepNeg);
+            mFitter->processTrack(mFitTrack.get());
+            mFitTrack->determineCardinalRep();
 
         } catch (genfit::Exception &e) {
             LOG_ERROR << "GenFit failed to fit track with: " << e.what() << endm;
