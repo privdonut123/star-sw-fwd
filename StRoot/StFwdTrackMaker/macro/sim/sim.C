@@ -141,14 +141,10 @@ void sim( int n = 100, // nEvents to run
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
 
-            fwdTrack->setUseMcSeedForFit( true );
-
             // fwdTrack->setZeroB( true );
-            //
             StFwdQAMaker *fwdQA = new StFwdQAMaker();
             fwdQA->SetDebug();
             chain->AddAfter("fwdTrack", fwdQA);
-
             bool doFitQA = true;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
