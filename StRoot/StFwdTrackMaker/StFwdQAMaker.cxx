@@ -174,7 +174,7 @@ int StFwdQAMaker::Init() {
     mTree = new TTree("fwd", "fwd tracking tree");
 
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
-    mTree->Branch("nSeedTracks",         &mTreeData.nSeedTracks, "nSeedTracks/I");
+    mTree->Branch("nSeedTracks",      &mTreeData.nSeedTracks, "nSeedTracks/I");
     mTreeData.fst.createBranch(mTree, "fst");
     mTreeData.ftt.createBranch(mTree, "ftt");
     mTreeData.fttClusters.createBranch(mTree, "fttClusters");

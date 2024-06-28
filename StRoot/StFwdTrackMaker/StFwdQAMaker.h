@@ -71,14 +71,15 @@ class FwdTreeHeader : public TObject {
         run = 0;
         event = 0;
         tofmult = 0;
-        TVector3 pv(-1, -1, -1);
+        vpdVz = -999;
+        pv.SetXYZ(0, 0, 0);
     }
 
-    void set( int r, int e, int t, TVector3 &pv ){
+    void set( int r, int e, int t, TVector3 &p ){
         run = r;
         event = e;
         tofmult = t;
-        pv = pv;
+        pv = p;
     }
 
     void clear() {
@@ -89,6 +90,7 @@ class FwdTreeHeader : public TObject {
         vpdVz = -999;
     }
 
+    TVector3 pv;
     int run, event, tofmult;
     float vpdVz;
 
@@ -222,6 +224,7 @@ class FwdTreeTrackProjection : public TObject {
 
 class FwdTreeRecoTrack : public TObject {
     public:
+    TString classname() { return "FwdTreeRecoTrack"; }
     FwdTreeRecoTrack() : TObject() {
         id = 0;
         q = 0;
@@ -251,17 +254,10 @@ class FwdTreeRecoTrack : public TObject {
         mom = hit->mom;
         seeds = hit->seeds;
         mChi2 = hit->mChi2;
-        // for ( auto h : hit->seeds ){
-        //     LOG_INFO << "Copying seed " << TString::Format( "(%f, %f, %f)", h.pos.X(), h.pos.Y(), h.pos.Z() ) << endm;
-        //     seeds.push_back( h );
-        // }
-
         projs = hit->projs;
         nFailedPoints = hit->nFailedPoints;
     }
 
-
-    TString classname() { return "FwdTreeRecoTrack"; }
     int id, q, status;
     int nFailedPoints;
     float mChi2;
