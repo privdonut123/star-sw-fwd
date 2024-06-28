@@ -129,17 +129,21 @@ void sim( int n = 100, // nEvents to run
                 fwdTrack->setGeoCache( "fGeom.root" );
             }
 
-            if (useFstForSeedFinding)
+            // choose 
                 fwdTrack->setSeedFindingWithFst();
-            else
-                fwdTrack->setSeedFindingWithFtt();
+            // other options
+                // fwdTrack->setSeedFindingWithFtt();
+                // fwdTrack->setSeedFindingWithFstFttSequential();
+                // fwdTrack->setSeedFindingWithFstFttSimultaneous();
 
-            fwdTrack->setTrackRefit( enableTrackRefit );
+            fwdTrack->setTrackRefit( false );
             fwdTrack->setOutputFilename( outputName );
             // fwdTrack->SetGenerateTree( false );
             fwdTrack->SetGenerateHistograms( false );
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
+            // fwdTrack->setTrackFittingOff();
+            // fwdTrack->setConfigKeyValue("")
 
             // fwdTrack->setZeroB( true );
             StFwdQAMaker *fwdQA = new StFwdQAMaker();

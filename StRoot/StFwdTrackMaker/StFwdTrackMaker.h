@@ -93,6 +93,7 @@ class StFwdTrackMaker : public StMaker {
     // for Wavefront OBJ export
     size_t eventIndex = 0; // counts up for processed events
     size_t mEventNum = 0; // global event num (index)
+    TVector3 mEventVertex; // primary vertex used in fwd tracking this event
 
     bool mGenHistograms = false;
     std::string mConfigFile;
@@ -119,6 +120,8 @@ class StFwdTrackMaker : public StMaker {
     // I could not get the library generation to succeed with these.
     // so I have removed them
     #ifndef __CINT__
+        enum FwdVertexSource { kFwdVertexSourceUnknown, kFwdVertexSourceNone, kFwdVertexSourceTpc, kFwdVertexSourceMc, kFwdVertexSourceVpd }; // unknown means we havent looked yet
+        FwdVertexSource mFwdVertexSource = StFwdTrackMaker::kFwdVertexSourceUnknown;
         vector<FwdHit> mFwdHitsFtt;
         vector<FwdHit> mFwdHitsFst;
         std::shared_ptr<SiRasterizer> mSiRasterizer;
@@ -206,6 +209,14 @@ class StFwdTrackMaker : public StMaker {
     void setFstRasterPhi( double phi = 0.00409 /*2*pi/(12*128)*/ ){ mFwdConfig.set<double>( "SiRasterizer:phi", phi ); }
 
     //Track Finding
+    /** @brief Use FST and Ftt hits (sequentially) in the Seed Finding - then merge tracks
+     *
+    */
+    void setSeedFindingWithFstFttSequential() { mFwdConfig.set( "TrackFinder:source", "seq" ); }
+    /** @brief Use FST and Ftt hits (simultaneously) in the Seed Finding
+     *
+    */
+    void setSeedFindingWithFstFttSimultaneous() { mFwdConfig.set( "TrackFinder:source", "sim" ); }
     /** @brief Use Ftt hits in the Seed Finding
      *
     */

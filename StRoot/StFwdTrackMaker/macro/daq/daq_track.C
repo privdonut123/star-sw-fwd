@@ -35,19 +35,17 @@ void daq_track(    int n = 50,
             fwdTrack->setConfigForData();
             fwdTrack->setZeroB();
             fwdTrack->setSeedFindingWithFst();
-            // write debug histograms and ttree?
-            fwdTrack->SetGenerateTree( true );
-            fwdTrack->SetGenerateHistograms( true );
             // write out wavefront OBJ files
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug(2);
+            fwdTrack->setTrackRefit(true);
             fwdTrack->setGeoCache( "fGeom.root" );
             // fwdTrack->setDebug();
 
+            // Generate FWD QA
             StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
             fwdQAMk->SetDebug(2);
             chain->AddAfter("fwdTrack", fwdQAMk);
-            // chain->Add(fwdQAMk)
         }
     }
 

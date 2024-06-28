@@ -80,12 +80,6 @@
 #include "sys/sysinfo.h"
 
 FwdSystem* FwdSystem::sInstance = nullptr;
-TMVA::Reader * BDTCrit2::reader = nullptr;
-float BDTCrit2::Crit2_RZRatio = -999;
-float BDTCrit2::Crit2_DeltaRho = -999;
-float BDTCrit2::Crit2_DeltaPhi = -999;
-float BDTCrit2::Crit2_StraightTrackRatio = -999;
-
 
 //_______________________________________________________________________________________
 class GenfitUtils{
@@ -198,14 +192,8 @@ class ForwardTracker : public ForwardTrackMaker {
         // Create the forward system...
         FwdSystem::sInstance = new FwdSystem();
 
-        // make our quality plotter
-        mQualityPlotter = new QualityPlotter(mConfig);
-        if ( genHistograms )
-            mQualityPlotter->makeHistograms(mConfig.get<size_t>("TrackFinder:nIterations", 1));
-
         // initialize the track fitter
         mTrackFitter = new TrackFitter(mConfig, geoCache);
-        mTrackFitter->setGenerateHistograms(genHistograms);
         mTrackFitter->setup();
 
         ForwardTrackMaker::initialize( geoCache, genHistograms );
@@ -213,18 +201,9 @@ class ForwardTracker : public ForwardTrackMaker {
 
     void finish() {
 
-        if ( mGenHistograms ){
-            mQualityPlotter->finish();
-            writeEventHistograms();
-        }
-
         if (FwdSystem::sInstance){
             delete FwdSystem::sInstance;
             FwdSystem::sInstance = 0;
-        }
-        if (mQualityPlotter){
-            delete mQualityPlotter;
-            mQualityPlotter = 0;
         }
         if (mTrackFitter){
             delete mTrackFitter;
@@ -465,6 +444,7 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     LOG_DEBUG << "Loading FTT Hits from Data" << endm;
     StEvent *event = (StEvent *)GetDataSet("StEvent");
     StFttCollection *col = event->fttCollection();
+    size_t numFwdHitsPrior = mFwdHitsFtt.size();
 
     if ( col && col->numberOfPoints() > 0 ){
         LOG_DEBUG << "The Ftt Collection has " << col->numberOfPoints() << " points" << endm;
@@ -485,14 +465,22 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
                 mHistograms[TString::Format("stgc%dHitMapSec", point->plane()).Data()]->Fill(xcm, ycm);
             }
         } // end of loop over points
-
-        return;
     } else {
         LOG_DEBUG << "The Ftt Collection is EMPTY points" << endm;
     }
 
-    // ADD to hitmap
-    // LOG_DEBUG << "Number of FTT in TTree: " << mTreeData.fttN << endm;
+    // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
+    size_t numFwdHitsPost = mFwdHitsFtt.size();
+    for ( size_t iFwdHit = numFwdHitsPrior; iFwdHit < numFwdHitsPost; iFwdHit++){
+        FwdHit *hit = &(mFwdHitsFtt[ iFwdHit ]);
+        // Add the hit to the hit map
+        if ( hit->getLayer() >= 0 )
+            hitMap[hit->getSector()].push_back(hit);
+    }
+
+    if ( numFwdHitsPost != numFwdHitsPrior ){
+        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from StEvent" << endm;
+    }
 }
 
 void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, int count ){
@@ -500,8 +488,7 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     // STGC Hits
     St_g2t_fts_hit *g2t_stg_hits = (St_g2t_fts_hit *)GetDataSet("geant/g2t_stg_hit");
 
-
-    // mTreeData.fttN = 0;
+    size_t numFwdHitsPrior = mFwdHitsFtt.size();
     if (!g2t_stg_hits){
         LOG_WARN << "geant/g2t_stg_hit is empty" << endm;
         return;
@@ -563,22 +550,29 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
             }
         }
 
-        // FwdHit *hit = new FwdHit(count++, x, y, z, -plane_id, track_id, hitCov3, mcTrackMap[track_id]);
         mFwdHitsFtt.push_back(FwdHit(count++, x, y, z, -plane_id, track_id, hitCov3, mcTrackMap[track_id]));
 
         // Add the hit to the hit map
         mFttHits.push_back( TVector3( x, y, z )  );
-
-        // Add hit pointer to the track
-        if (mcTrackMap[track_id]){
-            // TODO: add hit to mcTrackMap
-            // mcTrackMap[track_id]->addHit(hit);
-        } else {
-            LOG_ERROR << "Cannot find MC track for GEANT hit (FTT), track_id = " << track_id << endm;
-        }
     } // loop on hits
 
-    // TODO add to hitmap and track
+    // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
+    size_t numFwdHitsPost = mFwdHitsFtt.size();
+    for ( size_t iFwdHit = numFwdHitsPrior; iFwdHit < numFwdHitsPost; iFwdHit++){
+        FwdHit *hit = &(mFwdHitsFtt[ iFwdHit ]);
+        // Add the hit to the hit map
+        if ( hit->getLayer() >= 0 )
+            hitMap[hit->getSector()].push_back(hit);
+        
+        if ( dynamic_cast<FwdHit*>(hit)->_mcTrack ){
+            dynamic_cast<FwdHit*>(hit)->_mcTrack->addHit(hit);
+        }
+    }
+
+    if ( numFwdHitsPost != numFwdHitsPrior ){
+        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from MuDst" << endm;
+    }
+
 } // loadFttHits
 
 /**
@@ -720,7 +714,6 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 
                     // we use d+4 so that both FTT and FST start at 4
                     mFwdHitsFst.push_back(FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr));
-                    count++;
                 }
             } // loop is
         } // loop iw
@@ -1043,6 +1036,19 @@ void StFwdTrackMaker::loadFcs( ) {
 TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
     TVector3 pv(0, 0, 0);
 
+    if ( mFwdVertexSource == kFwdVertexSourceNone ){
+        // Note - maybe we will add beamline or assume that when None
+        return pv; // the default vertex, but in general it should not be used
+    }
+
+    if ( mFwdVertexSource != kFwdVertexSourceUnknown ){
+        return mEventVertex;
+    }
+
+    // if something is found it will overwrite this, if not 
+    // it will indicate that we have searched and found nothing
+    mFwdVertexSource = kFwdVertexSourceNone;
+
     // MuDst only for now
     int count = 0;
     StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
@@ -1051,6 +1057,7 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
         pv.SetX(muPV->position().x());
         pv.SetY(muPV->position().y());
         pv.SetZ(muPV->position().z());
+        mFwdVertexSource = kFwdVertexSourceTpc;
         return pv;
     } else {
         LOG_DEBUG << "FWD Tracking on event without available Mu Primary Vertex" << endm;
@@ -1080,46 +1087,14 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
             // default event vertex
             LOG_DEBUG << "FWD Tracking on event using VPD z vertex: (, 0, 0, " << btofHeader->vpdVz() << " )" << endm;
             // mForwardTracker->setEventVertex( TVector3( 0, 0, btofHeader->vpdVz() ) );
+            mFwdVertexSource = kFwdVertexSourceVpd;
             pv.SetXYZ( 0, 0, btofHeader->vpdVz() );
+            return pv;
         }
     }
 
+    
     return pv;
-}
-
-bool StFwdTrackMaker::SkipEvent(){
-
-    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-    if (!stEvent) return true;
-
-    if ( mEventFilterMinTofMult > 0 || mEventFilterRequireVpdVertex ){
-        StBTofCollection *btofC = stEvent->btofCollection();
-        if (!btofC) {
-            LOG_WARN << "Cannot get BTOF collections, Cannot use VPD vertex" << endm;
-            return true;
-        }
-
-        StBTofHeader * btofHeader = btofC->tofHeader();
-        if (!btofHeader){
-            LOG_WARN << "Cannot get BTOF Header, Cannot use VPD vertex" << endm;
-            return true;
-        }
-
-        int nEast = btofHeader->numberOfVpdHits( east );
-        int nWest = btofHeader->numberOfVpdHits( west );
-        int nTof = btofC->tofHits().size();
-
-        if ( mEventFilterRequireVpdVertex && ( btofHeader->vpdVz() < mEventFilterMinVpdZ || btofHeader->vpdVz() > mEventFilterMaxVpdZ ) ){
-            LOG_INFO << "Skip event without VPD vertex in range: " << TString::Format( "%f < %f < %f", mEventFilterMinVpdZ, btofHeader->vpdVz(), mEventFilterMaxVpdZ ) << endm;
-            return true;
-        }
-
-        if ( mEventFilterMinTofMult > 0 && nTof < mEventFilterMinTofMult ){
-            LOG_INFO << "Skip event with less than " << mEventFilterMinTofMult << " TOF hits" << endm;
-            return true;
-        }
-    }
-    return false;
 }
 
 //________________________________________________________________________
@@ -1130,23 +1105,27 @@ int StFwdTrackMaker::Make() {
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     if (!stEvent) return kStOk;
 
-    // TODO: improve event skip mechanims
-    // if ( SkipEvent() ){
-    //     LOG_INFO << "Skipping FwdTracking on event" << endm;
-    //     return kStOk;
-    // }
-
     /**********************************************************************/
     // Access forward Tracker maps
     FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
     FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
     FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
 
-    // default event vertex
     /**********************************************************************/
-    auto eventPV = GetEventPrimaryVertex();
-    mForwardTracker->setEventVertex( eventPV );
-
+    // get the primary vertex for use with FWD tracking
+    mFwdVertexSource = StFwdTrackMaker::kFwdVertexSourceUnknown;
+    mEventVertex = GetEventPrimaryVertex();
+    if ( mFwdVertexSource == kFwdVertexSourceNone ){
+        // TODO: add clean support for beamline constraints
+        setIncludePrimaryVertexInFit( false );
+    } else if ( mFwdVertexSource == kFwdVertexSourceUnknown ){
+        LOG_WARN << "FwdVertexSource=Unknown even after looking, shouldnt be possible. Not using primary vertex in forward tracking" << endm;
+        // this should not be possible
+        setIncludePrimaryVertexInFit( false );
+    } else {
+        LOG_DEBUG << "Setting FWD event vertex to: " << TString::Format("mEventVertex=(%f, %f, %f)", mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() ) << endm;
+        mForwardTracker->setEventVertex( mEventVertex );
+    }
 
     /**********************************************************************/
     // Load MC tracks
@@ -1157,13 +1136,13 @@ int StFwdTrackMaker::Make() {
         return kStOk;
     }
     LOG_DEBUG << "We have " << nForwardTracks << " forward MC tracks" << endm;
+    
     /**********************************************************************/
     // Load sTGC
     LOG_DEBUG << ">>StFwdTrackMaker::loadFttHits" << endm;
     if ( IAttr("useFtt") ) {
         loadFttHits( mcTrackMap, hitMap );
     }
-
 
     /**********************************************************************/
     // Load FST
@@ -1185,8 +1164,8 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << ">>START Event Forward Tracking" << endm;
     mForwardTracker->doEvent();
     LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
-    LOG_INFO << "<<Found " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds" << endm;
-    LOG_INFO << "Fit " << mForwardTracker -> getTrackResults().size() << " GenFit Tracks" << endm;
+    LOG_INFO << "<<Fwd Tracking Found : " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds" << endm;
+    LOG_INFO << "<<Fwd Tracking Fit :" << mForwardTracker -> getTrackResults().size() << " GenFit Tracks" << endm;
     /**********************************************************************/
 
 
@@ -1216,7 +1195,6 @@ int StFwdTrackMaker::Make() {
             LOG_DEBUG << "Skipping visualization, too many FWD tracks" << endm;
         }
     }
-
 
     LOG_DEBUG << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
     if ( IAttr("fillEvent") ) {
@@ -1260,14 +1238,12 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     fwdTrack->setNDF( gtr.status->getNdf() );
     fwdTrack->setPval( gtr.status->getPVal() );
 
-    // auto cr = gtr.track->getCardinalRep();
     // charge at first point
     fwdTrack->setCharge( gtr.charge );
 
     TVector3 p = gtr.momentum;//cr->getMom( gtr.track->getFittedState( 0, cr ));
     fwdTrack->setPrimaryMomentum( StThreeVectorD( gtr.momentum.X(), gtr.momentum.Y(), gtr.momentum.Z() ) );
-    auto pv = mForwardTracker->getEventVertex();
-
+    
     int nSeedPoints = 0;
     // store the seed points from FTT
     for ( auto s : gtr.fttSeed ){
@@ -1318,7 +1294,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     }
     // compute projections to z-planes of various detectors
     vector<float> zPlanes = {
-        GetEventPrimaryVertex().Z(), // PV TODO, update with cached, no need to recompute every track
+        GetEventPrimaryVertex().Z(), // PV or (0) if none found
         mFstZFromGeom[0], mFstZFromGeom[1], mFstZFromGeom[2], // FST
         mFttZFromGeom[0], mFttZFromGeom[1], mFttZFromGeom[2], mFttZFromGeom[3], // FTT
         375.0, // EPD
@@ -1471,22 +1447,22 @@ std::string StFwdTrackMaker::defaultConfigData = R"(
             <SegmentBuilder>
                 <!-- <Criteria name="Crit2_RZRatio" min="0" max="1.20" /> -->
                 <!-- <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/> -->
-                <Criteria name="Crit2_DeltaPhi" min="0" max="15.0" />
+                <Criteria name="Crit2_DeltaPhi" min="0" max="10.0" />
                 <!-- <Criteria name="Crit2_StraightTrackRatio" min="0.01" max="5.85"/> -->
             </SegmentBuilder>
 
             <ThreeHitSegments>
-				<!-- <Criteria name="Crit3_3DAngle" min="0" max="60" /> -->
-                <!-- <Criteria name="Crit3_PT" min="0" max="100" />
+				<!-- <Criteria name="Crit3_3DAngle" min="0" max="60" />
+                <Criteria name="Crit3_PT" min="0" max="100" />
 				<Criteria name="Crit3_ChangeRZRatio" min="0.8" max="1.21" />
 				<Criteria name="Crit3_2DAngle" min="0" max="30" /> -->
             </ThreeHitSegments>
 
         </Iteration>
 
-        <Connector distance="1"/>
+        <Connector distance="2"/>
 
-        <SubsetNN active="false" min-hits-on-track="3" >
+        <SubsetNN active="true" min-hits-on-track="2" >
             <!-- <InitialTemp>2.1</InitialTemp> -->
             <!-- <InfTemp>0.1</InfTemp> -->
             <Omega>0.99</Omega>
