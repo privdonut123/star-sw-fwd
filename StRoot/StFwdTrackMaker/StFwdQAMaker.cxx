@@ -104,7 +104,7 @@ void FwdTreeFcsCluster::set( StMuFcsCluster *clu, StFcsDb * fcsDb ) {
 
 void FwdTreeRecoTrack::set( StMuFwdTrack *muFwd ){
     if ( !muFwd ){
-        LOG_INFO << "Invalid muFwdTrack found, skipping FwdTreeRecoTrack::set" << endm;
+        LOG_DEBUG << "Invalid muFwdTrack found, skipping FwdTreeRecoTrack::set" << endm;
         return;
     }
 
@@ -134,7 +134,7 @@ void FwdTreeRecoTrack::set( StMuFwdTrack *muFwd ){
 
 void FwdTreeRecoTrack::set( StFwdTrack *fwd ){
     if ( !fwd ){
-        LOG_INFO << "Invalid fwdTrack found, skipping FwdTreeRecoTrack::set" << endm;
+        LOG_DEBUG << "Invalid fwdTrack found, skipping FwdTreeRecoTrack::set" << endm;
         return;
     }
 
@@ -191,12 +191,16 @@ int StFwdQAMaker::Finish() {
         mTreeFile->cd();
         mTree->Write();
         mTreeFile->Write();
-        LOG_INFO << "StFwdQA File written" << endm;
+        LOG_DEBUG << "StFwdQA File written" << endm;
     }
     return kStOk;
 }
 int StFwdQAMaker::Make() {
+<<<<<<< HEAD
 
+=======
+    LOG_DEBUG << "SETUP START" << endm;
+>>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
     // setup the datasets / makers
     mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
@@ -204,10 +208,10 @@ int StFwdQAMaker::Make() {
         mMuForwardTrackCollection = mMuDst->muFwdTrackCollection();
         mMuFcsCollection = mMuDst->muFcsCollection();
         if (mMuForwardTrackCollection){
-            LOG_INFO << "Number of StMuFwdTracks: " << mMuForwardTrackCollection->numberOfFwdTracks() << endm;
+            LOG_DEBUG << "Number of StMuFwdTracks: " << mMuForwardTrackCollection->numberOfFwdTracks() << endm;
         }
     } else {
-        LOG_INFO << "No StMuDstMaker found: " << mMuDstMaker << endm;
+        LOG_DEBUG << "No StMuDstMaker found: " << mMuDstMaker << endm;
     }
     mFcsDb = static_cast<StFcsDb *>(GetDataSet("fcsDb"));
 
@@ -219,6 +223,7 @@ int StFwdQAMaker::Make() {
 
     // Event header info from stevent
     StEvent *mStEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
+<<<<<<< HEAD
     
     TVector3 eventPV;
     if (mFwdTrackMaker){
@@ -226,6 +231,12 @@ int StFwdQAMaker::Make() {
         eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
         mTreeData.header.set( 0, 0, 0, eventPV  );
     }
+=======
+    LOG_DEBUG << "SETUP COMPLETE" << endm;
+    // Get the primary vertex used by the FWD Tracker
+    auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
+    mTreeData.header.set( 0, 0, 0, eventPV );
+>>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
 
     // Fill Header from StEvent
     if ( mMuDstMaker ){
@@ -247,7 +258,11 @@ int StFwdQAMaker::Make() {
             }
         } // btofC != nullptr
     }
+<<<<<<< HEAD
     
+=======
+    LOG_DEBUG << "HEADER COMPLETE" << endm;
+>>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
 
     FwdTreeHit fh;
 
@@ -256,15 +271,15 @@ int StFwdQAMaker::Make() {
         fh.set( h.getX(), h.getY(), h.getZ(), 1, 2 );
         mTreeData.ftt.add( fh );
     }
-    LOG_INFO << "FTT COMPLETE" << endm;
+    LOG_DEBUG << "FTT COMPLETE" << endm;
     auto fstHits = mFwdTrackMaker -> GetFstHits();
     for ( auto h : fstHits ){
         fh.set( h.getX(), h.getY(), h.getZ(), 1, 1 );
         mTreeData.fst.add( fh );
     }
-    LOG_INFO << "FST COMPLETE" << endm;
+    LOG_DEBUG << "FST COMPLETE" << endm;
     auto seeds = mFwdTrackMaker -> getTrackSeeds();
-    LOG_INFO << "Number of Seeds to save: " << seeds.size() << endm;
+    LOG_DEBUG << "Number of Seeds to save: " << seeds.size() << endm;
     if (seeds.size() > 5000){
         LOG_WARN << "Number of seeds is too large, truncating to 5000" << endm;
         // seeds.resize(1000);
@@ -279,14 +294,14 @@ int StFwdQAMaker::Make() {
         iSeed++;
         if (iSeed > 5000) break;
     } // for s in seeds
-    LOG_INFO << "SEEDS COMPLETE, saved " << iSeed << " seed hits" << endm;
+    LOG_DEBUG << "SEEDS COMPLETE, saved " << iSeed << " seed hits" << endm;
     mTreeData.nSeedTracks = (int)iSeed;
 
     size_t iTrack = 0;
     FwdTreeRecoTrack frt;
     FwdTreeHit fth;
     if ( mMuForwardTrackCollection ){
-        LOG_INFO << "Adding " << mMuForwardTrackCollection->numberOfFwdTracks() << " FwdTracks (MuDst)" << endm;
+        LOG_DEBUG << "Adding " << mMuForwardTrackCollection->numberOfFwdTracks() << " FwdTracks (MuDst)" << endm;
         for ( size_t iTrack = 0; iTrack < mMuForwardTrackCollection->numberOfFwdTracks(); iTrack++ ){
             auto muTrack = mMuForwardTrackCollection->getFwdTrack(iTrack);
             frt.set( muTrack );
@@ -298,7 +313,7 @@ int StFwdQAMaker::Make() {
     if ( mStEvent && mStEvent->fwdTrackCollection() ){
         iTrack = 0;
         auto fwdTracks = mStEvent->fwdTrackCollection()->tracks();
-        LOG_INFO << "Adding " << fwdTracks.size() << " FwdTracks (StEvent)" << endm;
+        LOG_DEBUG << "Adding " << fwdTracks.size() << " FwdTracks (StEvent)" << endm;
         for ( auto ft : fwdTracks ){
             frt.set( ft );
             mTreeData.reco.add( frt );
@@ -306,7 +321,7 @@ int StFwdQAMaker::Make() {
             iTrack++;
         }
     }
-    LOG_INFO << "TRACKS COMPLETE" << endm;
+    LOG_DEBUG << "TRACKS COMPLETE" << endm;
 
 
     FillFttClusters();
@@ -327,12 +342,12 @@ void StFwdQAMaker::Clear(const Option_t *opts) {
 void StFwdQAMaker::FillFcsStMuDst( ) {
 
     if ( !mMuDst ){
-        LOG_INFO << "No mMuDst found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
+        LOG_DEBUG << "No mMuDst found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
         return;
     }
     StMuFcsCollection* fcs = mMuDst->muFcsCollection();
     if ( !fcs ){
-        LOG_INFO << "No muFcsCollection found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
+        LOG_DEBUG << "No muFcsCollection found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
         return;
     }
 
@@ -341,12 +356,19 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
     // LOAD ECAL / HCAL CLUSTERS
     for( size_t i = 0; i < fcs->numberOfClusters(); i++){
         StMuFcsCluster * clu = fcs->getCluster(i);
-        LOG_INFO << "FCS CLUSTERS: " << fcs->numberOfClusters() << endm;
+        LOG_DEBUG << "FCS CLUSTERS: " << fcs->numberOfClusters() << endm;
         fcsclu.set( clu, mFcsDb );
 
         if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
+<<<<<<< HEAD
             mTreeData.wcal.add( fcsclu );
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
+=======
+            LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
+            mTreeData.wcal.add( fcsclu );
+        } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
+            LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
+>>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
             mTreeData.hcal.add( fcsclu );
         }
     }
@@ -354,12 +376,12 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
 
 void StFwdQAMaker::FillFcsStEvent( ) {
     if ( !mStEvent ){
-        LOG_INFO << "No StEvent found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
+        LOG_DEBUG << "No StEvent found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
         return;
     }
     StFcsCollection* fcsCol = mStEvent->fcsCollection();
     if ( !fcsCol ){
-        LOG_INFO << "No StFcsCollection found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
+        LOG_DEBUG << "No StFcsCollection found, skipping StFwdQAMaker::FillFcsStEvent" << endm;
         return;
     }
 
@@ -369,7 +391,7 @@ void StFwdQAMaker::FillFcsStEvent( ) {
     // LOAD ECAL / HCAL CLUSTERS
     for ( int idet = 0; idet  < 4; idet++ ){
         StSPtrVecFcsCluster& clusters = fcsCol->clusters(idet);
-        LOG_INFO << "FCS CLUSTERS [" << idet << "]: " << clusters.size() << endm;
+        LOG_DEBUG << "FCS CLUSTERS [" << idet << "]: " << clusters.size() << endm;
         int nc=fcsCol->numberOfClusters(idet);
         for ( int i = 0; i < nc; i++ ){
             StFcsCluster* clu = clusters[i];
@@ -377,10 +399,10 @@ void StFwdQAMaker::FillFcsStEvent( ) {
             fcsclu.set( clu, mFcsDb );
 
             if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
-                LOG_INFO << "Adding WCAL Cluster to FwdTree" << endm;
+                LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
                 mTreeData.wcal.add( fcsclu );
             } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
-                LOG_INFO << "Adding HCAL Cluster to FwdTree" << endm;
+                LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
                 mTreeData.hcal.add( fcsclu );
             }
 
@@ -398,8 +420,8 @@ void StFwdQAMaker::FillFttClusters(){
     StEvent *event = static_cast<StEvent *>(GetInputDS("StEvent"));
     if ( !event || !event->fttCollection() ) return;
 
-    LOG_INFO << "FTT RawHits: " << event->fttCollection()->numberOfRawHits() << endm;
-    LOG_INFO << "FTT Clusters: " << event->fttCollection()->numberOfClusters() << endm;
+    LOG_DEBUG << "FTT RawHits: " << event->fttCollection()->numberOfRawHits() << endm;
+    LOG_DEBUG << "FTT Clusters: " << event->fttCollection()->numberOfClusters() << endm;
 
     for ( size_t i = 0; i < event->fttCollection()->numberOfClusters(); i++ ){
         StFttCluster* c = event->fttCollection()->clusters()[i];
