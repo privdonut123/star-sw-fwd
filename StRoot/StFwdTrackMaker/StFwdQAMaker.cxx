@@ -174,6 +174,7 @@ int StFwdQAMaker::Init() {
     mTree = new TTree("fwd", "fwd tracking tree");
 
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
+    mTree->Branch("nSeedTracks",         &mTreeData.nSeedTracks, "nSeedTracks/I");
     mTreeData.fst.createBranch(mTree, "fst");
     mTreeData.ftt.createBranch(mTree, "ftt");
     mTreeData.fttClusters.createBranch(mTree, "fttClusters");
@@ -204,7 +205,7 @@ int StFwdQAMaker::Make() {
         mMuFcsCollection = mMuDst->muFcsCollection();
         if (mMuForwardTrackCollection){
             LOG_INFO << "Number of StMuFwdTracks: " << mMuForwardTrackCollection->numberOfFwdTracks() << endm;
-            }
+        }
     } else {
         LOG_INFO << "No StMuDstMaker found: " << mMuDstMaker << endm;
     }
@@ -250,31 +251,37 @@ int StFwdQAMaker::Make() {
 
     FwdTreeHit fh;
 
-    if (mFwdTrackMaker ){
-        auto fttHits = mFwdTrackMaker -> GetFttHits();
-        for ( auto h : fttHits ){
-            fh.set( h.getX(), h.getY(), h.getZ(), 1, 2 );
-            mTreeData.ftt.add( fh );
-        }
-        LOG_INFO << "FTT COMPLETE" << endm;
-        auto fstHits = mFwdTrackMaker -> GetFstHits();
-        for ( auto h : fstHits ){
-            fh.set( h.getX(), h.getY(), h.getZ(), 1, 1 );
-            mTreeData.fst.add( fh );
-        }
-        LOG_INFO << "FST COMPLETE" << endm;
-        auto seeds = mFwdTrackMaker -> getTrackSeeds();
-        size_t iSeed = 0;
-        for ( auto s : seeds ){
-            for ( auto h : s ){
-                fh.set( h->getX(), h->getY(), h->getZ(), 1, 1 );
-                fh.trackId = iSeed;
-                mTreeData.seeds.add( fh );
-            }
-            iSeed++;
-        } // for s in seeds
-        LOG_INFO << "SEEDS COMPLETE" << endm;
+    auto fttHits = mFwdTrackMaker -> GetFttHits();
+    for ( auto h : fttHits ){
+        fh.set( h.getX(), h.getY(), h.getZ(), 1, 2 );
+        mTreeData.ftt.add( fh );
     }
+    LOG_INFO << "FTT COMPLETE" << endm;
+    auto fstHits = mFwdTrackMaker -> GetFstHits();
+    for ( auto h : fstHits ){
+        fh.set( h.getX(), h.getY(), h.getZ(), 1, 1 );
+        mTreeData.fst.add( fh );
+    }
+    LOG_INFO << "FST COMPLETE" << endm;
+    auto seeds = mFwdTrackMaker -> getTrackSeeds();
+    LOG_INFO << "Number of Seeds to save: " << seeds.size() << endm;
+    if (seeds.size() > 5000){
+        LOG_WARN << "Number of seeds is too large, truncating to 5000" << endm;
+        // seeds.resize(1000);
+    }
+    size_t iSeed = 0;
+    for ( auto s : seeds ){
+        for ( auto h : s ){
+            fh.set( h->getX(), h->getY(), h->getZ(), 1, 1 );
+            fh.trackId = iSeed;
+            mTreeData.seeds.add( fh );
+        }
+        iSeed++;
+        if (iSeed > 5000) break;
+    } // for s in seeds
+    LOG_INFO << "SEEDS COMPLETE, saved " << iSeed << " seed hits" << endm;
+    mTreeData.nSeedTracks = (int)iSeed;
+
     size_t iTrack = 0;
     FwdTreeRecoTrack frt;
     FwdTreeHit fth;
@@ -284,40 +291,23 @@ int StFwdQAMaker::Make() {
             auto muTrack = mMuForwardTrackCollection->getFwdTrack(iTrack);
             frt.set( muTrack );
             mTreeData.reco.add( frt );
+            if ( iTrack > 5000 ) break;
         }
     }
 
     if ( mStEvent && mStEvent->fwdTrackCollection() ){
+        iTrack = 0;
         auto fwdTracks = mStEvent->fwdTrackCollection()->tracks();
         LOG_INFO << "Adding " << fwdTracks.size() << " FwdTracks (StEvent)" << endm;
         for ( auto ft : fwdTracks ){
             frt.set( ft );
             mTreeData.reco.add( frt );
+            if ( iTrack > 5000 ) break;
+            iTrack++;
         }
     }
     LOG_INFO << "TRACKS COMPLETE" << endm;
 
-    /** MonteCarlo Tracks */
-    // Get geant tracks
-    // St_g2t_track *g2t_track = (St_g2t_track *)GetDataSet("geant/g2t_track");
-
-    // if (g2t_track){
-    //     LOG_DEBUG << g2t_track->GetNRows() << " mc tracks in geant/g2t_track " << endm;
-    //     for (int irow = 0; irow < g2t_track->GetNRows(); irow++) {
-    //         g2t_track_st *track = (g2t_track_st *)g2t_track->At(irow);
-
-    //         if (nullptr == track)
-    //             continue;
-
-    //         int track_id = track->id;
-    //         float pt2 = track->p[0] * track->p[0] + track->p[1] * track->p[1];
-    //         float pt = std::sqrt(pt2);
-    //         float eta = track->eta;
-    //         float phi = std::atan2(track->p[1], track->p[0]); //track->phi;
-    //         int q = track->charge;
-    //         // TODO add MC tracks to tree
-    //     } // loop on track (irow)
-    // }
 
     FillFttClusters();
     if ( mMuDstMaker ){

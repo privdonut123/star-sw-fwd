@@ -349,6 +349,7 @@ struct FwdTreeData {
 
     TClonesArrayWriter<FwdTreeRecoTrack> reco;
 
+    int nSeedTracks;
     TClonesArrayWriter<FwdTreeHit> seeds;
 
 
