@@ -196,11 +196,7 @@ int StFwdQAMaker::Finish() {
     return kStOk;
 }
 int StFwdQAMaker::Make() {
-<<<<<<< HEAD
-
-=======
     LOG_DEBUG << "SETUP START" << endm;
->>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
     // setup the datasets / makers
     mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
@@ -223,20 +219,10 @@ int StFwdQAMaker::Make() {
 
     // Event header info from stevent
     StEvent *mStEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-<<<<<<< HEAD
-    
-    TVector3 eventPV;
-    if (mFwdTrackMaker){
-        // Get the primary vertex used by the FWD Tracker
-        eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
-        mTreeData.header.set( 0, 0, 0, eventPV  );
-    }
-=======
     LOG_DEBUG << "SETUP COMPLETE" << endm;
     // Get the primary vertex used by the FWD Tracker
     auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
     mTreeData.header.set( 0, 0, 0, eventPV );
->>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
 
     // Fill Header from StEvent
     if ( mMuDstMaker ){
@@ -258,11 +244,7 @@ int StFwdQAMaker::Make() {
             }
         } // btofC != nullptr
     }
-<<<<<<< HEAD
-    
-=======
     LOG_DEBUG << "HEADER COMPLETE" << endm;
->>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
 
     FwdTreeHit fh;
 
@@ -360,15 +342,10 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         fcsclu.set( clu, mFcsDb );
 
         if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
-<<<<<<< HEAD
-            mTreeData.wcal.add( fcsclu );
-        } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
-=======
             LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
             mTreeData.wcal.add( fcsclu );
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
             LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
->>>>>>> c6cb8018ba (StFwdQAMaker, debug logs)
             mTreeData.hcal.add( fcsclu );
         }
     }
