@@ -1,4 +1,4 @@
-//usr/bin/env root -l -b -q  $0; exit $?
+//usr/bin/env root -l -b -q  $0'('$1')'; exit $?
 #include "TFile.h"
 #include "TH1F.h"
 #include "TH2F.h"
@@ -331,15 +331,15 @@ void viz_tracks(int nTrk, int eventIndex, ProjectionType projType, bool seeds = 
             // printf( "(%f, %f) -> (%f, %f)\n", seedX1, seedY1, seedX2, seedY2 );
             ll.DrawLine( seedX1, seedY1, seedX2, seedY2 );
             
-            // TMarker *mk1 = new TMarker( seedX1, seedY1, 20 );
-            // mk1->SetMarkerSize( 2.5 );
-            // mk1->SetMarkerColor(kBlue);
-            // mk1->Draw("same");
+            TMarker *mk1 = new TMarker( seedX1, seedY1, 20 );
+            mk1->SetMarkerSize( 2.5 );
+            mk1->SetMarkerColor(kBlue);
+            mk1->Draw("same");
 
-            // TMarker *mk2 = new TMarker( seedX2, seedY2, 20 );
-            // mk2->SetMarkerSize( 2.5 );
-            // mk2->SetMarkerColor(kBlue);
-            // mk2->Draw("same");
+            TMarker *mk2 = new TMarker( seedX2, seedY2, 20 );
+            mk2->SetMarkerSize( 2.5 );
+            mk2->SetMarkerColor(kBlue);
+            mk2->Draw("same");
         } // end loop j
     } // end loop i
 
@@ -409,12 +409,12 @@ int viz_event( int eventIndex, ProjectionType projType = kRZSigned, bool frame =
     viz_points( "FTT", "ftt.pos.fX:ftt.pos.fY:ftt.pos.fZ", kRed, eventIndex, projType );
     // viz_points( "FTC", "fttClusters.pos.fX:fttClusters.pos.fY:-fttClusters.pos.fZ", kGreen, eventIndex, projType, "fttClusters.mNStrips>2" );
     viz_points( "FST", "fst.pos.fX:fst.pos.fY:fst.pos.fZ", kRed, eventIndex, projType );
-    // viz_points( "FCS", "wcalClusters.pos.fX:wcalClusters.pos.Y():wcalClusters.pos.Z()+715.0:wcalClusters.mEnergy", kGray, eventIndex, projType );
+    viz_points( "FCS", "wcalClusters.pos.fX:wcalClusters.pos.Y():wcalClusters.pos.Z()+715.0:wcalClusters.mEnergy", kGray, eventIndex, projType );
 
     // viz_ftt_clusters(eventIndex, projType);
 
     
-    viz_tracks(nTrk, eventIndex, projType, true);
+    viz_tracks(nTrk, eventIndex, projType, false);
     viz_seeds(nTrk, eventIndex, projType);
 
     printf( "DONE with event!\n" );
@@ -423,7 +423,7 @@ int viz_event( int eventIndex, ProjectionType projType = kRZSigned, bool frame =
 
 
 
-void viz( TString fn = "fwdtree.root", int mode = 0, int maxEvents = 500) {
+void viz( int mode = 1, int maxEvents = 10, TString fn = "fwdtree.root") {
 
     fData = new TFile( fn );
     fwd = (TTree*)fData->Get( "fwd" );
@@ -485,7 +485,7 @@ void viz( TString fn = "fwdtree.root", int mode = 0, int maxEvents = 500) {
 
     if ( mode != 1 ) return;
     // visualize the event one track at a time
-    for ( int inEvent = 0; inEvent < 5; inEvent++ ){     
+    for ( int inEvent = 0; inEvent < nEvents; inEvent++ ){     
         fwd->Draw( "reco.mom.fX", "", "goff", 1, inEvent );
         int nTrk = fwd->GetSelectedRows();
         printf( "Event %d has %lld Tracks \n", inEvent, nTrk );

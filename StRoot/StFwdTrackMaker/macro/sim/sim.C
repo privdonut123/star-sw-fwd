@@ -72,6 +72,8 @@ void sim( int n = 100, // nEvents to run
         StFcsDbMaker* fcsdbmkr = (StFcsDbMaker*) chain->GetMaker("fcsDbMkr");
         cout << "fcsdbmkr="<<fcsdbmkr<<endl;
         StFcsDb* fcsdb = (StFcsDb*) chain->GetDataSet("fcsDb");
+        fcsdb->forceFixGain();
+        fcsdb->forceFixGainCorrection();
         cout << "fcsdb="<<fcsdb<<endl;
         //fcsdbmkr->setDbAccess(1);
 
@@ -143,12 +145,10 @@ void sim( int n = 100, // nEvents to run
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
             // fwdTrack->setTrackFittingOff();
+            fwdTrack->setIncludePrimaryVertexInFit( false );
+            fwdTrack->setUseMcSeedForFit(true);
             // fwdTrack->setConfigKeyValue("")
-
             // fwdTrack->setZeroB( true );
-            StFwdQAMaker *fwdQA = new StFwdQAMaker();
-            fwdQA->SetDebug();
-            chain->AddAfter("fwdTrack", fwdQA);
             bool doFitQA = true;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
@@ -190,6 +190,18 @@ void sim( int n = 100, // nEvents to run
             chain->AddAfter( "fwdAna", muDstMaker );
     }
 
+    if (muDstMaker){
+        StFwdQAMaker *fwdQA = new StFwdQAMaker();
+        fwdQA->SetDebug(2);
+        chain->AddAfter("MuDst", fwdQA);
+    }
+
+    // The PicoDst
+    gSystem->Load("libStPicoEvent");
+    gSystem->Load("libStPicoDstMaker");
+    StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+    cout << "picoMk = " << picoMk << endl;
+    picoMk->setVtxMode(StPicoDstMaker::Default);
 
 
 chain_loop:

@@ -931,11 +931,12 @@ size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
         float pt2 = track->p[0] * track->p[0] + track->p[1] * track->p[1];
         float pt = std::sqrt(pt2);
         float eta = track->eta;
+        TVector3 pp( track->p[0], track->p[1], track->p[2] );
         float phi = std::atan2(track->p[1], track->p[0]); //track->phi;
         int q = track->charge;
-
+        // sometimes the track->eta is wrong, pt, phi
         if (!mcTrackMap[track_id] )
-            mcTrackMap[track_id] = shared_ptr<McTrack>(new McTrack(pt, eta, phi, q, track->start_vertex_p));
+            mcTrackMap[track_id] = shared_ptr<McTrack>(new McTrack(pp.Pt(), pp.Eta(), pp.Phi(), q, track->start_vertex_p));
 
     } // loop on track (irow)
 
@@ -1357,6 +1358,17 @@ void StFwdTrackMaker::FillEvent() {
     }
 
     LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
+
+    // Pico Dst requires a primary vertex,
+    // if we have a PicoDst maker in the chain, we need to add a primary vertex
+    // when one does not exist to get a "FWD" picoDst
+    auto mk = GetMaker("PicoDst");
+    if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
+        LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
+        stEvent->addPrimaryVertex( new StPrimaryVertex() );
+        LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
+    }
+    
     // ProcessFwdTracks();
 }
 

@@ -270,7 +270,9 @@ class FwdTreeRecoTrack : public TObject {
 
 class StFcsDb;
 class StFcsCluster;
+class StFcsHit;
 class StMuFcsCluster;
+class StMuFcsHit;
 class FwdTreeFcsCluster : public TObject {
     public:
     TString classname() { return "FwdTreeFcsCluster"; }
@@ -311,6 +313,49 @@ class FwdTreeFcsCluster : public TObject {
 
     ClassDef(FwdTreeFcsCluster, 1);
 };
+class FwdTreeFcsHit : public TObject {
+    public:
+    TString classname() { return "FwdTreeFcsHit"; }
+    void set( StMuFcsHit *h, StFcsDb* fcsDb);
+
+    void copy( FwdTreeFcsHit * h ){
+        zs = h->zs;
+        detectorId = h->detectorId;
+        id = h->id;
+        ns = h->ns;
+        ehp = h->ehp;
+        dep = h->dep;
+        channel = h->channel;
+        nTimeBin = h->nTimeBin;
+        timebin = h->timebin;
+        adcSum = h->adcSum;
+        fitPeak = h->fitPeak;
+        fitSigma = h->fitSigma;
+        fitChi2 = h->fitChi2;
+        nPeak = h->nPeak;
+        energy = h->energy;
+        starXYZ = h->starXYZ;
+    }
+
+    UShort_t zs;
+    UShort_t detectorId;
+    UShort_t id; 
+    UShort_t ns;         //from DEP
+    UShort_t ehp;        //from DEP
+    UShort_t dep;        //from DEP
+    UShort_t channel;    //from DEP
+    UInt_t   nTimeBin;
+    UShort_t timebin;
+    UInt_t   adcSum;
+    Float_t fitPeak;
+    Float_t fitSigma;
+    Float_t fitChi2;
+    UInt_t   nPeak;
+    Float_t energy;
+    TVector3 starXYZ;
+    ClassDef(FwdTreeFcsHit, 1);
+};
+
 
 class FwdTreeMonteCarloTrack : public TObject {
     public:
@@ -341,7 +386,9 @@ struct FwdTreeData {
     TClonesArrayWriter<FwdTreeHit> fst;
 
     TClonesArrayWriter<FwdTreeFcsCluster> wcal;
+    TClonesArrayWriter<FwdTreeFcsHit> wcalHits;
     TClonesArrayWriter<FwdTreeFcsCluster> hcal;
+    TClonesArrayWriter<FwdTreeFcsHit> hcalHits;
 
     TClonesArrayWriter<FwdTreeRecoTrack> reco;
 

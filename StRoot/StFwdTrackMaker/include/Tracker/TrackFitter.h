@@ -823,6 +823,7 @@ class TrackFitter {
 
         if (seedMomentum != nullptr) {
             seedMom = *seedMomentum;
+            LOG_DEBUG << "Using provided seedMomentum: " << TString::Format( "(pt=%f, eta=%f, phi=%f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;
         }
 
         setupTrack(trackSeed, seedMom, seedPos, Vertex);

@@ -102,6 +102,28 @@ void FwdTreeFcsCluster::set( StMuFcsCluster *clu, StFcsDb * fcsDb ) {
     mChi2Ndf2Photon = clu->chi2Ndf2Photon();
 }
 
+void FwdTreeFcsHit::set( StMuFcsHit *hit, StFcsDb* fcsDb ) {
+    zs = hit->zs();
+    detectorId = hit->detectorId();
+    id = hit->id(); 
+    ns = hit->ns();         
+    ehp = hit->ehp();        
+    dep = hit->dep();        
+    channel = hit->channel();    
+    nTimeBin = hit->nTimeBin();
+    // timebin = hit->timebin();
+    adcSum = hit->adcSum();
+    fitPeak = hit->fitPeak();
+    fitSigma = hit->fitSigma();
+    fitChi2 = hit->fitChi2();
+    nPeak = hit->nPeak();
+    energy = hit->energy();
+    if ( fcsDb ){
+        auto xyz = fcsDb->getStarXYZ( hit->detectorId(),hit->id() );
+        starXYZ.SetXYZ( xyz.x(), xyz.y(), xyz.z() );
+    }
+}
+
 void FwdTreeRecoTrack::set( StMuFwdTrack *muFwd ){
     if ( !muFwd ){
         LOG_DEBUG << "Invalid muFwdTrack found, skipping FwdTreeRecoTrack::set" << endm;
@@ -181,6 +203,9 @@ int StFwdQAMaker::Init() {
     mTreeData.wcal.createBranch(mTree, "wcalClusters");
     mTreeData.hcal.createBranch(mTree, "hcalClusters");
 
+    mTreeData.wcalHits.createBranch(mTree, "wcalHits");
+    mTreeData.hcalHits.createBranch(mTree, "hcalHits");
+
     mTreeData.reco.createBranch(mTree, "reco");
     mTreeData.seeds.createBranch(mTree, "seeds");
     return kStOk;
@@ -196,7 +221,7 @@ int StFwdQAMaker::Finish() {
     return kStOk;
 }
 int StFwdQAMaker::Make() {
-    LOG_DEBUG << "SETUP START" << endm;
+    LOG_INFO << "SETUP START" << endm;
     // setup the datasets / makers
     mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
@@ -336,6 +361,7 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
     StEpdGeom epdgeo;
     FwdTreeFcsCluster fcsclu;
     // LOAD ECAL / HCAL CLUSTERS
+    LOG_INFO << "MuDst has #fcs clusters: " << fcs->numberOfClusters() << endm;
     for( size_t i = 0; i < fcs->numberOfClusters(); i++){
         StMuFcsCluster * clu = fcs->getCluster(i);
         LOG_DEBUG << "FCS CLUSTERS: " << fcs->numberOfClusters() << endm;
@@ -347,6 +373,23 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
             LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
             mTreeData.hcal.add( fcsclu );
+        }
+    }
+
+    FwdTreeFcsHit fcshit;
+    // LOAD ECAL / HCAL CLUSTERS
+    LOG_INFO << "MuDst has #fcs hits: " << fcs->numberOfHits() << endm;
+    for( size_t i = 0; i < fcs->numberOfHits(); i++){
+        StMuFcsHit * hit = fcs->getHit(i);
+        // LOG_DEBUG << "FCS CLUSTERS: " << fcs->numberOfClusters() << endm;
+        fcshit.set( hit, mFcsDb );
+
+        if ( hit->detectorId() == kFcsEcalNorthDetId || hit->detectorId() == kFcsEcalSouthDetId ){
+            LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
+            mTreeData.wcalHits.add( fcshit );
+        } else if ( hit->detectorId() == kFcsHcalNorthDetId || hit->detectorId() == kFcsHcalSouthDetId ){
+            LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
+            mTreeData.hcalHits.add( fcshit );
         }
     }
 }
