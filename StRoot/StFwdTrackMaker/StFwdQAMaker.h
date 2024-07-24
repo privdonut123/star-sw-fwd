@@ -29,21 +29,21 @@ class TClonesArrayWriter {
 	~TClonesArrayWriter() {}
 
 	void createBranch( TTree *tree, const char* name, int buffSize = 256000, int splitLevel = 99){
-		_tca = new TClonesArray( BranchType().classname() );
+        _tca = new TClonesArray( BranchType::Class_Name() );
 		tree->Branch( name, &this->_tca, buffSize, splitLevel );
 	}
 
 	void add( BranchType &branch ){
 		if ( nullptr == this->_tca ) return;
 		BranchType *new_branch = new ((*this->_tca)[this->_n]) BranchType( );
-		new_branch->copy( &branch );
+        *new_branch = branch;
 		this->_n++;
 	}
 
 	void add( BranchType *branch ){
 		if ( nullptr == this->_tca || nullptr == branch) return;
 		BranchType *new_branch = new ((*this->_tca)[this->_n]) BranchType( );
-		new_branch->copy( branch );
+        *new_branch = *branch;
 		this->_n++;
 	}
 
@@ -97,265 +97,14 @@ class FwdTreeHeader : public TObject {
     ClassDef(FwdTreeHeader, 1)
 };
 
-class FwdTreeFttCluster : public TObject {
-    public:
-    TString classname() { return "FwdTreeFttCluster"; }
-    void clear(){
-        TObject::Clear();
-        pos.SetXYZ(-1, -1, -1);
-        mPlane = 0;
-        mQuadrant = 0;
-        mRow = 0;
-        mOrientation = kFttUnknownOrientation;
-        mNStrips = 0;
-        mSumAdc = 0.0;
-        mX = 0.0;
-        mSigma = 0.0;
-    }
-
-    void copy( FwdTreeFttCluster *cluster ){
-        pos = cluster->pos;
-        mPlane = cluster->mPlane;
-        mQuadrant = cluster->mQuadrant;
-        mRow = cluster->mRow;
-        mOrientation = cluster->mOrientation;
-        mNStrips = cluster->mNStrips;
-        mSumAdc = cluster->mSumAdc;
-        mX = cluster->mX;
-        mSigma = cluster->mSigma;
-    }
-
-    TVector3 pos;
-    UChar_t mId = 0;
-    UChar_t mPlane = 0;
-    UChar_t mQuadrant = 0;
-    UChar_t mRow = 0;
-    UChar_t mOrientation = kFttUnknownOrientation;        // Orientation of cluster
-    Int_t mNStrips=0;         // Number of strips
-    Float_t mSumAdc=0.0;      // Total ADC (0th moment)
-    Float_t mX=0.0;             // Mean x ("center of gravity") in local grid coordinate (1st moment)
-    Float_t mSigma=0.0;
-
-    ClassDef(FwdTreeFttCluster, 1);
-};
-
-class FwdTreeHit : public TObject {
-    public:
-    TString classname() { return "FwdTreeHit"; }
-    FwdTreeHit() : TObject() {
-        pos.SetXYZ(-1, -1, -1);
-        id = 0;
-        vol = 0;
-        det = 0;
-        trackId = -1;
-    }
-    FwdTreeHit(float x, float y, float z, int v, int d, int trkId = -1) : TObject() {
-        pos.SetXYZ(x, y, z);
-        id = 0;
-        vol = v;
-        det = d;
-        trackId = trkId;
-    }
-
-    void set(float x, float y, float z, int v, int d, int trkId = -1) {
-        pos.SetXYZ(x, y, z);
-        id = 0;
-        vol = v;
-        det = d;
-        trackId = trkId;
-    }
-
-    int id, vol, det, trackId;
-    TVector3 pos;
-
-    void copy( FwdTreeHit *hit ){
-        id = hit->id;
-        vol = hit->vol;
-        det = hit->det;
-        pos = hit->pos;
-        trackId = hit->trackId;
-    }
-
-    ClassDef(FwdTreeHit, 2)
-};
-
-class FwdTreeTrackProjection : public TObject {
-    public:
-    FwdTreeTrackProjection() {}
-    FwdTreeTrackProjection(   unsigned short detId, 
-                            TVector3 xyz, 
-                            TVector3 mom, 
-                            float c[9] ) {
-        set( detId, xyz, mom, c );
-    }
-
-    void set(   unsigned short detId, 
-                TVector3 xyz, 
-                TVector3 mom, 
-                float c[9]) {
-        mDetId = detId;
-        mXYZ = xyz;
-        mMom = mom;
-        memcpy( mCov, c, sizeof(mCov) ); 
-    }
-    void copy(   FwdTreeTrackProjection *other ){
-        mDetId = other->mDetId;
-        mXYZ   = other->mXYZ;
-        mMom   = other->mMom;
-        memcpy( mCov, other->mCov, sizeof(mCov) ); 
-    }
-    TVector3 mXYZ;
-	TVector3 mMom;
-    unsigned char mDetId;
-    float mCov[9];
-
-    float dx(){
-        return sqrt( mCov[0] );
-    }
-    float dy(){
-        return sqrt( mCov[4] );
-    }
-    float dz(){
-        return sqrt( mCov[8] );
-    }
-
-    ClassDef(FwdTreeTrackProjection, 1)
-};
-
-class FwdTreeRecoTrack : public TObject {
-    public:
-    TString classname() { return "FwdTreeRecoTrack"; }
-    FwdTreeRecoTrack() : TObject() {
-        id = 0;
-        q = 0;
-        status = 0;
-        mom.SetXYZ(0, 0, 0);
-        projs.clear();
-    }
-
-    virtual void Clear(){
-        TObject::Clear();
-        seeds.clear();
-        projs.clear();
-    }
-
-    void set( StMuFwdTrack *muFwdTrack );
-    void set( StFwdTrack *fwdTrack );
-
-    /**
-    * Copies the values of the given FwdTreeRecoTrack object to the current object.
-    *
-    * @param hit The FwdTreeRecoTrack object to copy from.
-    */
-    void copy( FwdTreeRecoTrack *hit ){
-        id = hit->id;
-        q = hit->q;
-        status = hit->status;
-        mom = hit->mom;
-        seeds = hit->seeds;
-        mChi2 = hit->mChi2;
-        projs = hit->projs;
-        nFailedPoints = hit->nFailedPoints;
-    }
-
-    int id, q, status;
-    int nFailedPoints;
-    float mChi2;
-    TVector3 mom;
-    vector<FwdTreeTrackProjection> projs;
-    vector<FwdTreeHit> seeds;
-    
-    ClassDef(FwdTreeRecoTrack, 4);
-};
-
 class StFcsDb;
 class StFcsCluster;
 class StFcsHit;
 class StMuFcsCluster;
 class StMuFcsHit;
-class FwdTreeFcsCluster : public TObject {
-    public:
-    TString classname() { return "FwdTreeFcsCluster"; }
-    void copy( FwdTreeFcsCluster * clu ){
-        mId = clu->mId;
-        mDetectorId = clu->mDetectorId;
-        mCategory = clu->mCategory;
-        mNTowers = clu->mNTowers;
-        mEnergy = clu->mEnergy;
-        mX = clu->mX;
-        mY = clu->mY;
-        mSigmaMin = clu->mSigmaMin;
-        mSigmaMax = clu->mSigmaMax;
-        mTheta = clu->mTheta;
-        mChi2Ndf1Photon = clu->mChi2Ndf1Photon;
-        mChi2Ndf2Photon = clu->mChi2Ndf2Photon;
-        mFourMomentum = clu->mFourMomentum;
-        pos = clu->pos;
-    }
-
-    void set( StFcsCluster *clu, StFcsDb* fcsDb );
-    void set( StMuFcsCluster *clu, StFcsDb* fcsDb );
-
-    Int_t mId=-1;             // Eventwise cluster ID
-    UShort_t mDetectorId=0;   // Detector starts from 1
-    Int_t mCategory=0;        // Category of cluster (see StFcsClusterCategory)
-    Int_t mNTowers=0;         // Number of non-zero-energy tower hits in the cluster
-    Float_t mEnergy=0.0;      // Total energy contained in this cluster (0th moment)
-    Float_t mX=0.0;  // Mean x ("center of gravity") in local grid coordinate (1st moment)
-    Float_t mY=0.0;  // Mean y ("center of gravity") in local grid coordinate (1st moment)
-    Float_t mSigmaMin=0.0;        // Minimum 2nd moment
-    Float_t mSigmaMax=0.0;        // Maximum 2nd moment (along major axis)
-    Float_t mTheta=0.0;           //Angle in x-y plane that defines the direction of least-2nd-sigma
-    Float_t mChi2Ndf1Photon=0.0;  // &chi;<sup>2</sup> / ndf for 1-photon fit
-    Float_t mChi2Ndf2Photon=0.0;  // &chi;<sup>2</sup> / ndf for 2-photon fit
-    TLorentzVector mFourMomentum;  // Cluster four momentum
-    TVector3 pos;                   // STAR XYZ position
-
-    ClassDef(FwdTreeFcsCluster, 1);
-};
-class FwdTreeFcsHit : public TObject {
-    public:
-    TString classname() { return "FwdTreeFcsHit"; }
-    void set( StMuFcsHit *h, StFcsDb* fcsDb);
-
-    void copy( FwdTreeFcsHit * h ){
-        zs = h->zs;
-        detectorId = h->detectorId;
-        id = h->id;
-        ns = h->ns;
-        ehp = h->ehp;
-        dep = h->dep;
-        channel = h->channel;
-        nTimeBin = h->nTimeBin;
-        timebin = h->timebin;
-        adcSum = h->adcSum;
-        fitPeak = h->fitPeak;
-        fitSigma = h->fitSigma;
-        fitChi2 = h->fitChi2;
-        nPeak = h->nPeak;
-        energy = h->energy;
-        starXYZ = h->starXYZ;
-    }
-
-    UShort_t zs;
-    UShort_t detectorId;
-    UShort_t id; 
-    UShort_t ns;         //from DEP
-    UShort_t ehp;        //from DEP
-    UShort_t dep;        //from DEP
-    UShort_t channel;    //from DEP
-    UInt_t   nTimeBin;
-    UShort_t timebin;
-    UInt_t   adcSum;
-    Float_t fitPeak;
-    Float_t fitSigma;
-    Float_t fitChi2;
-    UInt_t   nPeak;
-    Float_t energy;
-    TVector3 starXYZ;
-    ClassDef(FwdTreeFcsHit, 1);
-};
-
+class StMuFttCluster;
+class StMuFttPoint;
+class StMuFwdTrackSeedPoint;
 
 class FwdTreeMonteCarloTrack : public TObject {
     public:
@@ -380,20 +129,19 @@ struct FwdTreeData {
 
     /** @brief Primary event vertex*/
     FwdTreeHeader header;
-    TClonesArrayWriter<FwdTreeHit> ftt;
-    // TClonesArrayWriter<FwdTreeHit> fttClusters;
-    TClonesArrayWriter<FwdTreeFttCluster> fttClusters;
-    TClonesArrayWriter<FwdTreeHit> fst;
+    TClonesArrayWriter<StMuFwdTrackSeedPoint> fttSeeds;
+    TClonesArrayWriter<StMuFttPoint> fttPoints;
+    TClonesArrayWriter<StMuFttCluster> fttClusters;
+    TClonesArrayWriter<StMuFwdTrackSeedPoint> fstSeeds;
 
-    TClonesArrayWriter<FwdTreeFcsCluster> wcal;
-    TClonesArrayWriter<FwdTreeFcsHit> wcalHits;
-    TClonesArrayWriter<FwdTreeFcsCluster> hcal;
-    TClonesArrayWriter<FwdTreeFcsHit> hcalHits;
-
-    TClonesArrayWriter<FwdTreeRecoTrack> reco;
+    TClonesArrayWriter<StMuFcsCluster> wcal;
+    TClonesArrayWriter<StMuFcsHit> wcalHits;
+    TClonesArrayWriter<StMuFcsCluster> hcal;
+    TClonesArrayWriter<StMuFcsHit> hcalHits;
+    TClonesArrayWriter<StMuFwdTrack> reco;
 
     int nSeedTracks;
-    TClonesArrayWriter<FwdTreeHit> seeds;
+    TClonesArrayWriter<StMuFwdTrackSeedPoint> seeds;
 
 
     void clear();
@@ -423,6 +171,7 @@ class StFwdQAMaker : public StMaker {
     void FillFttClusters();
     void FillFcsStEvent();
     void FillFcsStMuDst();
+    void FillTracks();
 
   protected:
     TFile *mTreeFile = nullptr;

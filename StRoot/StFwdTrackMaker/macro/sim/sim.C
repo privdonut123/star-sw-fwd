@@ -132,7 +132,11 @@ void sim( int n = 100, // nEvents to run
             }
 
             // choose 
-                fwdTrack->setSeedFindingWithFst();
+                if (useFstForSeedFinding)
+                    fwdTrack->setSeedFindingWithFst();
+                else { // default for this true/false option
+                    fwdTrack->setSeedFindingWithFtt();
+                }
             // other options
                 // fwdTrack->setSeedFindingWithFtt();
                 // fwdTrack->setSeedFindingWithFstFttSequential();

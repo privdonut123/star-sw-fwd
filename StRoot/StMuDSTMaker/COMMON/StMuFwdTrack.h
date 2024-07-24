@@ -74,10 +74,26 @@ struct StMuFwdTrackSeedPoint : public TObject{
                             short sec, 
                             unsigned short trackId, 
                             float cov[9] ){
+        set( xyz, sec, trackId, cov );
+    }
+
+    // setter
+    void set(  TVector3 xyz, 
+                short sec, 
+                unsigned short trackId, 
+                float cov[9] ){
         mXYZ = xyz;
         mSector = sec;
         mTrackId = trackId;
         memcpy( mCov, cov, sizeof( mCov ));
+    }
+
+    // copy ctor
+    StMuFwdTrackSeedPoint( const StMuFwdTrackSeedPoint & other ){
+        mXYZ = other.mXYZ;
+        mSector = other.mSector;
+        mTrackId = other.mTrackId;
+        memcpy( mCov, other.mCov, sizeof( mCov ) );
     }
     
     TVector3 mXYZ;
