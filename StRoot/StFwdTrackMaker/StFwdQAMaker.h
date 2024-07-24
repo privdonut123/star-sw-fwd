@@ -13,11 +13,13 @@
 #include "TVector3.h"
 #include "TLorentzVector.h"
 #include "StEvent/StEnumerations.h"
+#include "StThreeVectorD.hh"
 
 class StMuFwdTrack;
 class StMuFwdTrackProjection;
 class ForwardTracker;
 class StFwdTrack;
+class StMuMcTrack;
 
 /** @brief TClonesArray writer
  * Helper class for writing TClonesArrays to TTree of custom class type
@@ -106,6 +108,39 @@ class StMuFttCluster;
 class StMuFttPoint;
 class StMuFwdTrackSeedPoint;
 
+
+/**
+ * @brief Store Cluster with STAR XYZ position
+ * 
+ */
+class FcsClusterWithStarXYZ: public TObject {
+    public:
+    FcsClusterWithStarXYZ() {
+        mXYZ.SetXYZ(0, 0, 0);
+        mClu = nullptr;
+    }
+    FcsClusterWithStarXYZ( StMuFcsCluster *clu, StFcsDb *fcsDb );
+    TVector3 mXYZ;
+    StMuFcsCluster *mClu;
+    ClassDef(FcsClusterWithStarXYZ, 1);
+};
+
+/**
+ * @brief Store Hit with STAR XYZ position
+ * 
+ */
+class FcsHitWithStarXYZ: public TObject {
+    public:
+    FcsHitWithStarXYZ() {
+        mXYZ.SetXYZ(0, 0, 0);
+        mHit = nullptr;
+    }
+    FcsHitWithStarXYZ( StMuFcsHit *hit, StFcsDb *fcsDb );
+    TVector3 mXYZ;
+    StMuFcsHit *mHit;
+    ClassDef(FcsHitWithStarXYZ, 1);
+};
+
 class FwdTreeMonteCarloTrack : public TObject {
     public:
 
@@ -129,15 +164,16 @@ struct FwdTreeData {
 
     /** @brief Primary event vertex*/
     FwdTreeHeader header;
+    TClonesArrayWriter<StMuMcTrack> mcTracks;
     TClonesArrayWriter<StMuFwdTrackSeedPoint> fttSeeds;
     TClonesArrayWriter<StMuFttPoint> fttPoints;
     TClonesArrayWriter<StMuFttCluster> fttClusters;
     TClonesArrayWriter<StMuFwdTrackSeedPoint> fstSeeds;
 
-    TClonesArrayWriter<StMuFcsCluster> wcal;
-    TClonesArrayWriter<StMuFcsHit> wcalHits;
-    TClonesArrayWriter<StMuFcsCluster> hcal;
-    TClonesArrayWriter<StMuFcsHit> hcalHits;
+    TClonesArrayWriter<FcsClusterWithStarXYZ> wcal;
+    TClonesArrayWriter<FcsHitWithStarXYZ> wcalHits;
+    TClonesArrayWriter<FcsClusterWithStarXYZ> hcal;
+    TClonesArrayWriter<FcsHitWithStarXYZ> hcalHits;
     TClonesArrayWriter<StMuFwdTrack> reco;
 
     int nSeedTracks;
@@ -172,6 +208,7 @@ class StFwdQAMaker : public StMaker {
     void FillFcsStEvent();
     void FillFcsStMuDst();
     void FillTracks();
+    void FillMcTracks();
 
   protected:
     TFile *mTreeFile = nullptr;

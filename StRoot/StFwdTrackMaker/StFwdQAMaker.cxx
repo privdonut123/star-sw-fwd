@@ -32,10 +32,14 @@
 #include "StMuDSTMaker/COMMON/StMuFcsHit.h"
 #include "StMuDSTMaker/COMMON/StMuFttCluster.h"
 #include "StMuDSTMaker/COMMON/StMuFttPoint.h"
+#include "StMuDSTMaker/COMMON/StMuMcTrack.h"
+
+// ClassImp(FcsClusterWithStarXYZ);
 
 /** Clear the FwdTreeData from one event to next */
 void FwdTreeData::clear(){
     header.clear();
+    mcTracks.reset();
     fttSeeds.reset();
     fttPoints.reset();
     fttClusters.reset();
@@ -46,7 +50,31 @@ void FwdTreeData::clear(){
     hcal.reset();
 }
 
+FcsClusterWithStarXYZ::FcsClusterWithStarXYZ( StMuFcsCluster *clu, StFcsDb *fcsDb ) {
+    if ( nullptr == clu ) return;
+    StThreeVectorD xyz = fcsDb->getStarXYZfromColumnRow(clu->detectorId(),clu->x(),clu->y());
+    float detOffset = 0.0;
+    if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
+        detOffset = 715.0; // cm from IP
+    } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
+        detOffset = 807.0; // cm from IP
+    }
+    mXYZ.SetXYZ( xyz.x(), xyz.y(), xyz.z() + detOffset );
+    mClu = clu;
+}
 
+FcsHitWithStarXYZ::FcsHitWithStarXYZ( StMuFcsHit *hit, StFcsDb *fcsDb ) {
+    if ( nullptr == hit ) return;
+    StThreeVectorD xyz = fcsDb->getStarXYZ(hit->detectorId(),hit->id());
+    float detOffset = 0.0;
+    if ( hit->detectorId() == kFcsEcalNorthDetId || hit->detectorId() == kFcsEcalSouthDetId ){
+        detOffset = 715.0; // cm from IP
+    } else if ( hit->detectorId() == kFcsHcalNorthDetId || hit->detectorId() == kFcsHcalSouthDetId ){
+        detOffset = 807.0; // cm from IP
+    }
+    mXYZ.SetXYZ( xyz.x(), xyz.y(), xyz.z() + detOffset );
+    mHit = hit;
+}
 
 StFwdQAMaker::StFwdQAMaker() : StMaker("fwdQAMaker"), mTreeFile(nullptr), mTree(nullptr) {
 
@@ -58,6 +86,7 @@ int StFwdQAMaker::Init() {
     mTree = new TTree("fwd", "fwd tracking tree");
 
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
+    mTreeData.mcTracks.createBranch(mTree, "mcTracks");
     mTree->Branch("nSeedTracks",      &mTreeData.nSeedTracks, "nSeedTracks/I");
     mTreeData.fstSeeds.createBranch(mTree, "fst");
     mTreeData.fttSeeds.createBranch(mTree, "ftt");
@@ -111,6 +140,7 @@ int StFwdQAMaker::Make() {
     auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
     LOG_DEBUG << "HEADER COMPLETE" << endm;
 
+    FillMcTracks();
     FillTracks();
     FillFttClusters();
     FillFcsStMuDst();
@@ -149,31 +179,58 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         return;
     }
 
+    StFcsDb* fcsDb=static_cast<StFcsDb*>(GetDataSet("fcsDb"));
+
     StEpdGeom epdgeo;
     // LOAD ECAL / HCAL CLUSTERS
     LOG_INFO << "MuDst has #fcs clusters: " << fcs->numberOfClusters() << endm;
     for( size_t i = 0; i < fcs->numberOfClusters(); i++){
         StMuFcsCluster * clu = fcs->getCluster(i);
+        FcsClusterWithStarXYZ *cluSTAR = new FcsClusterWithStarXYZ(clu, fcsDb);
         if ( clu->detectorId() == kFcsEcalNorthDetId || clu->detectorId() == kFcsEcalSouthDetId ){
-            LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
-            mTreeData.wcal.add( clu );
+            LOG_INFO << "Adding WCAL Cluster to FwdTree" << endm;
+            mTreeData.wcal.add( cluSTAR );
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
-            LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
-            mTreeData.hcal.add( clu );
+            LOG_INFO << "Adding HCAL Cluster to FwdTree" << endm;
+            mTreeData.hcal.add( cluSTAR );
+        } else if ( clu->detectorId() == kFcsPresNorthDetId || clu->detectorId() == kFcsPresSouthDetId ){
+            LOG_INFO << "Adding PRES Cluster to FwdTree" << endm;
+            // mTreeData.pres.add( cluSTAR );
         }
+
+        delete cluSTAR;
     }
 
     // LOAD ECAL / HCAL CLUSTERS
     LOG_INFO << "MuDst has #fcs hits: " << fcs->numberOfHits() << endm;
     for( size_t i = 0; i < fcs->numberOfHits(); i++){
         StMuFcsHit * hit = fcs->getHit(i);
+        FcsHitWithStarXYZ *hitSTAR = new FcsHitWithStarXYZ(hit, fcsDb);
         if ( hit->detectorId() == kFcsEcalNorthDetId || hit->detectorId() == kFcsEcalSouthDetId ){
             LOG_DEBUG << "Adding WCAL Cluster to FwdTree" << endm;
-            mTreeData.wcalHits.add( hit );
+            mTreeData.wcalHits.add( hitSTAR );
         } else if ( hit->detectorId() == kFcsHcalNorthDetId || hit->detectorId() == kFcsHcalSouthDetId ){
             LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
-            mTreeData.hcalHits.add( hit );
+            mTreeData.hcalHits.add( hitSTAR );
         }
+        delete hitSTAR;
+    }
+
+    // TODO, cleanup?
+}
+
+void StFwdQAMaker::FillMcTracks(){
+    // Retrieve pointer to MC tracks
+    TClonesArray *mcTracks = mMuDst->mcArray(1);
+    LOG_INFO << "MuDst has #mc tracks: " << mcTracks->GetEntriesFast() << endm;
+    // Loop over MC vertices
+    for (Int_t iVtx=0; iVtx<mcTracks->GetEntriesFast(); iVtx++) {
+        // Retrieve i-th MC vertex from MuDst
+        StMuMcTrack *mcTrack = (StMuMcTrack*)mcTracks->UncheckedAt(iVtx);
+        if ( !mcTrack ) continue;
+
+        // Add MC track to the tree
+        mTreeData.mcTracks.add( mcTrack );
     }
 }
 
