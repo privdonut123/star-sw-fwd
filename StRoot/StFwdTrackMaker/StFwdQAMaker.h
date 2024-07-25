@@ -107,6 +107,7 @@ class StMuFcsHit;
 class StMuFttCluster;
 class StMuFttPoint;
 class StMuFwdTrackSeedPoint;
+class StMuFstHit;
 
 
 /**
@@ -141,22 +142,6 @@ class FcsHitWithStarXYZ: public TObject {
     ClassDef(FcsHitWithStarXYZ, 1);
 };
 
-class FwdTreeMonteCarloTrack : public TObject {
-    public:
-
-    FwdTreeMonteCarloTrack() : TObject() {
-        id = 0;
-        q = 0;
-        status = 0;
-        mom.SetXYZ(0, 0, 0);
-    }
-
-    int id, q, status;
-    TVector3 mom;
-
-    ClassDef(FwdTreeMonteCarloTrack, 1);
-};
-
 /** @brief
 * This class is a container for the data that will be written to the output tree.
 */
@@ -169,6 +154,7 @@ struct FwdTreeData {
     TClonesArrayWriter<StMuFttPoint> fttPoints;
     TClonesArrayWriter<StMuFttCluster> fttClusters;
     TClonesArrayWriter<StMuFwdTrackSeedPoint> fstSeeds;
+    TClonesArrayWriter<StMuFstHit> fstPoints;
 
     TClonesArrayWriter<FcsClusterWithStarXYZ> wcal;
     TClonesArrayWriter<FcsHitWithStarXYZ> wcalHits;
@@ -209,6 +195,7 @@ class StFwdQAMaker : public StMaker {
     void FillFcsStMuDst();
     void FillTracks();
     void FillMcTracks();
+    void FillFstPoints();
 
   protected:
     TFile *mTreeFile = nullptr;
