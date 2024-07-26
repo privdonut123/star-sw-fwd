@@ -255,7 +255,7 @@ void viz_tracks(int nTrk, int eventIndex, ProjectionType projType, bool seeds = 
         if ( iTrack >= 0 && i != iTrack ) continue;
 
         // fwd->Draw( TString::Format("reco[%d].projs.mXYZ.fX:reco[%d].projs.mXYZ.fY:reco[%d].projs.mXYZ.fZ", i, i, i), TString::Format("reco[%d].status>=1 && fabs(reco[%d].mChi2) > 0.5", i, i), "goff", 1, eventIndex );
-        fwd->Draw( TString::Format("reco[%d].projs.mXYZ.fX:reco[%d].projs.mXYZ.fY:reco[%d].projs.mXYZ.fZ:reco[%d].mChi2:reco[%d].nFailedPoints:reco[%d].q", i, i, i, i, i, i), "", "goff", 1, eventIndex );
+        fwd->Draw( TString::Format("reco[%d].mProjections.mXYZ.fX:reco[%d].mProjections.mXYZ.fY:reco[%d].mProjections.mXYZ.fZ:reco[%d].mChi2:reco[%d].mDidFitConverge:reco[%d].mCharge", i, i, i, i, i, i), "", "goff", 1, eventIndex );
         // fwd->Draw( TString::Format("0:5:reco[%d].projs.mXYZ.fZ", i, i, i), "", "goff", 1, eventIndex );
         auto trkX = fwd->GetV1();
         auto trkY = fwd->GetV2();
@@ -309,7 +309,7 @@ void viz_tracks(int nTrk, int eventIndex, ProjectionType projType, bool seeds = 
     for ( int i = 0; i < nTrk; i++ ){
         if ( iTrack >= 0 && i != iTrack ) continue;
 
-        fwd->Draw( TString::Format("reco[%d].seeds.pos.fX:reco[%d].seeds.pos.fY:reco[%d].seeds.pos.fZ", i, i, i), TString::Format("reco[%d].nFailedPoints==0", i), "goff", 1, eventIndex );
+        fwd->Draw( TString::Format("reco[%d].seeds.pos.fX:reco[%d].seeds.pos.fY:reco[%d].seeds.pos.fZ", i, i, i), TString::Format("reco[%d].mDidFitConverge!=0", i), "goff", 1, eventIndex );
         auto seedX = fwd->GetV1();
         auto seedY = fwd->GetV2();
         auto seedZ = fwd->GetV3();
@@ -355,15 +355,15 @@ void viz_stats( int eventIndex ){
     text.SetTextSize(36);
     text.DrawTextNDC( 0.05, statTextY, TString::Format("Event : %d", eventIndex) ); n();
 
-    fwd->Draw( "reco.mom.fX", "", "goff", 1, eventIndex );
+    fwd->Draw( "reco.mPrimaryMomentum.fX", "", "goff", 1, eventIndex );
     text.DrawTextNDC( 0.05, statTextY, TString::Format("#Tracks : %d", fwd->GetSelectedRows()) ); n();
 
-    fwd->Draw( "reco.mom.fX", "reco.mChi2<100", "goff", 1, eventIndex );
+    fwd->Draw( "reco.mPrimaryMomentum.fX", "reco.mChi2<100", "goff", 1, eventIndex );
     text.DrawTextNDC( 0.05, statTextY, TString::Format("#Tracks (good) : %d", fwd->GetSelectedRows()) ); n();
 
-    fwd->Draw( "reco.mom.fX", "reco.mChi2<100 && reco.q==1", "goff", 1, eventIndex );
+    fwd->Draw( "reco.mPrimaryMomentum.fX", "reco.mChi2<100 && reco.mCharge==1", "goff", 1, eventIndex );
     text.DrawTextNDC( 0.05, statTextY, TString::Format("#Pos Tracks (good) : %d", fwd->GetSelectedRows()) ); n();
-    fwd->Draw( "reco.mom.fX", "reco.mChi2<100 && reco.q==-1", "goff", 1, eventIndex );
+    fwd->Draw( "reco.mPrimaryMomentum.fX", "reco.mChi2<100 && reco.mCharge==-1", "goff", 1, eventIndex );
     text.DrawTextNDC( 0.05, statTextY, TString::Format("#Neg Tracks (good) : %d", fwd->GetSelectedRows()) ); n();
 
     // fwd->Draw( "seeds.trackId", "", "goff", 1, eventIndex );
@@ -399,23 +399,23 @@ int viz_event( int eventIndex, ProjectionType projType = kRZSigned, bool frame =
 
     printf( "Visualizing Event %d \n", eventIndex );
 
-    fwd->Draw( "reco.mom.fX", "", "goff", 1, eventIndex );
+    fwd->Draw( "reco.mPrimaryMomentum.fX", "", "goff", 1, eventIndex );
     int nTrk = fwd->GetSelectedRows();
     printf( "Event has %lld Tracks \n", nTrk );
 
 
     hFrame->Draw("colz");
 
-    viz_points( "FTT", "ftt.pos.fX:ftt.pos.fY:ftt.pos.fZ", kRed, eventIndex, projType );
+    viz_points( "FTT", "fttPoints.mXYZ.fX:fttPoints.mXYZ.fY:fttPoints.mXYZ.fZ", kRed, eventIndex, projType );
     // viz_points( "FTC", "fttClusters.pos.fX:fttClusters.pos.fY:-fttClusters.pos.fZ", kGreen, eventIndex, projType, "fttClusters.mNStrips>2" );
-    viz_points( "FST", "fst.pos.fX:fst.pos.fY:fst.pos.fZ", kRed, eventIndex, projType );
-    viz_points( "FCS", "wcalClusters.pos.fX:wcalClusters.pos.Y():wcalClusters.pos.Z()+715.0:wcalClusters.mEnergy", kGray, eventIndex, projType );
+    viz_points( "FST", "fstHits.mXYZ.fX:fstHits.mXYZ.fY:fstHits.mXYZ.fZ", kRed, eventIndex, projType );
+    viz_points( "FCS", "wcalClusters.mXYZ.fX:wcalClusters.mXYZ.Y():wcalClusters.mXYZ.Z():wcalClusters.mClu.mEnergy", kGray, eventIndex, projType );
 
     // viz_ftt_clusters(eventIndex, projType);
 
     
     viz_tracks(nTrk, eventIndex, projType, false);
-    viz_seeds(nTrk, eventIndex, projType);
+    //viz_seeds(nTrk, eventIndex, projType);
 
     printf( "DONE with event!\n" );
     return 1;
@@ -423,7 +423,7 @@ int viz_event( int eventIndex, ProjectionType projType = kRZSigned, bool frame =
 
 
 
-void viz( int mode = 1, int maxEvents = 10, TString fn = "fwdtree.root") {
+void viz( int mode = 0, int maxEvents = 10, TString fn = "fwdtree.root") {
 
     fData = new TFile( fn );
     fwd = (TTree*)fData->Get( "fwd" );
@@ -486,7 +486,7 @@ void viz( int mode = 1, int maxEvents = 10, TString fn = "fwdtree.root") {
     if ( mode != 1 ) return;
     // visualize the event one track at a time
     for ( int inEvent = 0; inEvent < nEvents; inEvent++ ){     
-        fwd->Draw( "reco.mom.fX", "", "goff", 1, inEvent );
+        fwd->Draw( "reco.mPrimaryMomentum.fX", "", "goff", 1, inEvent );
         int nTrk = fwd->GetSelectedRows();
         printf( "Event %d has %lld Tracks \n", inEvent, nTrk );
 
