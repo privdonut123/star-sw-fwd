@@ -45,8 +45,8 @@ void trig( Int_t n=1 )
     // Clear the chain from the previous event
     chain->Clear();
 
-    kinematics->Kine( numParticles, nameParticle.Data(), 0.05, 5.0, 2.5, 4.00  );
-	// kinematics->Kine( numParticles, "pi-", 0.2, 50.0, 2.5, 4.00  );
+    kinematics->Kine( numParticles, nameParticle.Data(), 0.05, 15.0, 2.0, 5.00  );
+	  // kinematics->Kine( numParticles, "pi-", 0.05, 15.0, 2.0, 5.00  );
 
     // Generate the event
     chain->Make();
