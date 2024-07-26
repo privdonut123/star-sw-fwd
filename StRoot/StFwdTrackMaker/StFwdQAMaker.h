@@ -192,6 +192,7 @@ class StFwdQAMaker : public StMaker {
     void Clear(const Option_t *opts = "");
 
     void FillFttClusters();
+    void FillFstPoints();
     void FillFcsStEvent();
     void FillFcsStMuDst();
     void FillTracks();
