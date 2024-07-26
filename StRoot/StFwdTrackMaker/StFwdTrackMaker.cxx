@@ -597,7 +597,7 @@ int StFwdTrackMaker::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDa
     if ( count > 0 ) return count; // only load from one source at a time
 
     bool siRasterizer = mFwdConfig.get<bool>( "SiRasterizer:active", false );
-
+    
     if ( !siRasterizer ) count += loadFstHitsFromStEventFastSim( mcTrackMap, hitMap );
     if ( count > 0 ) return count; // only load from one source at a time
 
@@ -700,7 +700,7 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
                     const float dz0 = fabs( vZ - mFstZFromGeom[0] );
                     const float dz1 = fabs( vZ - mFstZFromGeom[1] );
                     const float dz2 = fabs( vZ - mFstZFromGeom[2] );
-                    static const float fstThickness = 2.0; // thickness in cm between inner and outer on sigle plane
+                    static const float fstThickness = 3.0; // thickness in cm between inner and outer on sigle plane
 
                     // assign disk according to which z value the hit has, within the z-plane thickness
                     int d = 0 * ( dz0 < fstThickness ) + 1 * ( dz1 < fstThickness ) + 2 * ( dz2 < fstThickness );
@@ -711,9 +711,16 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 
                     LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;
                     mFstHits.push_back( TVector3( x0, y0, vZ)  );
+                    int track_id = fsthits[ih]->idTruth();
+                    LOG_DEBUG << "FST Hit: idTruth = " << track_id << endm;
+                    shared_ptr<McTrack> mcTrack = nullptr;
+                    if ( mcTrackMap.count(track_id) ) {
+                        mcTrack = mcTrackMap[track_id];
+                        LOG_DEBUG << "Adding McTrack to FST hit" << endm;
+                    }
 
                     // we use d+4 so that both FTT and FST start at 4
-                    mFwdHitsFst.push_back(FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr));
+                    mFwdHitsFst.push_back(FwdHit(count++, x0, y0, vZ, d+4, track_id, hitCov3, mcTrack));
                 }
             } // loop is
         } // loop iw
@@ -726,6 +733,10 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
         // Add the hit to the hit map
         if ( hit->getLayer() >= 0 )
             hitMap[hit->getSector()].push_back(hit);
+        // add to MC track map
+        if ( hit->getMcTrack() ){
+            hit->getMcTrack()->addFstHit(hit);
+        }
     }
     if ( numFwdHitsPost != numFwdHitsPrior ){
         LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from StEvent" << endm;
@@ -734,6 +745,7 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
 } //loadFstHitsFromStEvent
 
 int StFwdTrackMaker::loadFstHitsFromStEventFastSim( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    LOG_DEBUG << "Looking for FST hits in StEvent FastSim Collection" << endm;
     int count = 0;
     // Get the StEvent handle
     StEvent *event = (StEvent *)GetDataSet("StEvent");
@@ -1221,30 +1233,8 @@ int StFwdTrackMaker::Make() {
  */
 StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t indexTrack ){
     LOG_DEBUG << "StFwdTrackMaker::makeStFwdTrack()" << endm;
-    StFwdTrack *fwdTrack = new StFwdTrack(  );
-    
-    // Fit failed beyond use
-    if ( gtr.track == nullptr  ){
-        gtr.Clear();
-        LOG_DEBUG << "GenfitTrack is nullptr, not making StFwdTrack" << endm;
-        return nullptr;
-    }
-    // Fill charge and quality info
-    fwdTrack->setDidFitConverge( gtr.status->isFitConverged() );
-    fwdTrack->setDidFitConvergeFully( gtr.status->isFitConvergedFully() );
-    fwdTrack->setNumberOfFailedPoints( gtr.status->getNFailedPoints() );
+    StFwdTrack *fwdTrack = new StFwdTrack( );
 
-    fwdTrack->setNumberOfFitPoints( gtr.track->getNumPoints() );
-    fwdTrack->setChi2( gtr.status->getChi2() );
-    fwdTrack->setNDF( gtr.status->getNdf() );
-    fwdTrack->setPval( gtr.status->getPVal() );
-
-    // charge at first point
-    fwdTrack->setCharge( gtr.charge );
-
-    TVector3 p = gtr.momentum;//cr->getMom( gtr.track->getFittedState( 0, cr ));
-    fwdTrack->setPrimaryMomentum( StThreeVectorD( gtr.momentum.X(), gtr.momentum.Y(), gtr.momentum.Z() ) );
-    
     int nSeedPoints = 0;
     // store the seed points from FTT
     for ( auto s : gtr.fttSeed ){
@@ -1289,6 +1279,28 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     idt = MCTruthUtils::dominantContribution(combinedSeed, qual);
     fwdTrack->setMc( idt, qual );
 
+    // Fit failed beyond use
+    if ( gtr.track == nullptr ){
+        gtr.Clear();
+        LOG_DEBUG << "GenfitTrack is nullptr, making StFwdTrack with seed info only" << endm;
+        return fwdTrack;
+    }
+    // Fill charge and quality info
+    fwdTrack->setDidFitConverge( gtr.status->isFitConverged() );
+    fwdTrack->setDidFitConvergeFully( gtr.status->isFitConvergedFully() );
+    fwdTrack->setNumberOfFailedPoints( gtr.status->getNFailedPoints() );
+
+    fwdTrack->setNumberOfFitPoints( gtr.track->getNumPoints() );
+    fwdTrack->setChi2( gtr.status->getChi2() );
+    fwdTrack->setNDF( gtr.status->getNdf() );
+    fwdTrack->setPval( gtr.status->getPVal() );
+
+    // charge at first point
+    fwdTrack->setCharge( gtr.charge );
+
+    TVector3 p = gtr.momentum;//cr->getMom( gtr.track->getFittedState( 0, cr ));
+    fwdTrack->setPrimaryMomentum( StThreeVectorD( gtr.momentum.X(), gtr.momentum.Y(), gtr.momentum.Z() ) );
+
     if ( !gtr.status->isFitConvergedPartially() ){
         gtr.Clear();
         return fwdTrack;
@@ -1304,12 +1316,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     };
 
     // Match these to the z-planes above
-    const int FST = kFstId;
-    const int FTT = kFttId;
     vector<int> detMap = {
         kTpcId,
-        FST, FST, FST,
-        FTT, FTT, FTT, FTT,
+        kFstId, kFstId, kFstId,
+        kFttId, kFttId, kFttId, kFttId,
         kFcsPresId,
         kFcsWcalId,
         kFcsHcalId
@@ -1436,8 +1446,6 @@ std::string StFwdTrackMaker::defaultConfigIdealSim = R"(
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <Output url="fwdTrackMaker_ideal_sim.root" />
-    <Source ftt="GEANT"  />
-
 	<TrackFitter refit="false" mcSeed="true" active="true">
         <Vertex sigmaXY="0.001" sigmaZ="0.01" includeInFit="true" smearMcVertex="true" />
     </TrackFitter>

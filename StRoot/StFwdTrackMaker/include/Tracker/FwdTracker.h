@@ -743,6 +743,8 @@ class ForwardTrackMaker {
             if (mctm.count(idt)) {
                 auto mct = mctm[idt];
                 mcSeedMom.SetPtEtaPhi(mct->mPt, mct->mEta, mct->mPhi);
+            } else {
+                LOG_WARN << "Requested McSeed, but couldnt find mct for idt: " << idt << ", qual: " << qual << endm;
             }
             /*******************************************************/
 
@@ -823,13 +825,14 @@ class ForwardTrackMaker {
         for (auto kv : mcTrackMap) {
 
             auto mc_track = kv.second;
-
+            LOG_DEBUG << "McTrack: nFtt=" << mc_track->mFttHits.size() << ", nFst=" << mc_track->mFstHits.size() << endm;
 
             if (seedSource == kFttSeed && mc_track->mFttHits.size() < 2){ // require min 4 FTT hits on track
                 continue;
             }
 
             if (seedSource == kFstSeed && mc_track->mFstHits.size() < 2 ) { // require min 3 FST hits on track
+                LOG_DEBUG << "Skipping McSeedFinding bc FST hits < 2" << endm;
                 continue;
             }
 
