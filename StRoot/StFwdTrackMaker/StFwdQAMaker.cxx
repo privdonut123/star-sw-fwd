@@ -40,14 +40,16 @@
 void FwdTreeData::clear(){
     header.clear();
     mcTracks.reset();
-    fttSeeds.reset();
     fttPoints.reset();
     fttClusters.reset();
-    fstSeeds.reset();
+    fstPoints.reset();
     reco.reset();
     seeds.reset();
     wcal.reset();
     hcal.reset();
+    wcalHits.reset();
+    hcalHits.reset();
+    epdHits.reset();
 }
 
 FcsClusterWithStarXYZ::FcsClusterWithStarXYZ( StMuFcsCluster *clu, StFcsDb *fcsDb ) {
@@ -71,6 +73,18 @@ FcsHitWithStarXYZ::FcsHitWithStarXYZ( StMuFcsHit *hit, StFcsDb *fcsDb ) {
         detOffset = 715.0; // cm from IP
     } else if ( hit->detectorId() == kFcsHcalNorthDetId || hit->detectorId() == kFcsHcalSouthDetId ){
         detOffset = 807.0; // cm from IP
+    } else if ( hit->detectorId() == kFcsPresNorthDetId || hit->detectorId() == kFcsPresSouthDetId ){
+        StEpdGeom epdgeo;
+        double zepd=375.0;
+        int pp,tt,n;
+        double x[5],y[5];
+        fcsDb->getEPDfromId(hit->detectorId(),hit->id(),pp,tt);
+        epdgeo.GetCorners(100*pp+tt,&n,x,y);
+        double x0 = (x[0] + x[1] + x[2] + x[3]) / 4.0;
+        double y0 = (y[0] + y[1] + y[2] + y[3]) / 4.0;
+        xyz.setX(x0);
+        xyz.setY(y0);
+        xyz.setZ(zepd);
     }
     mXYZ.SetXYZ( xyz.x(), xyz.y(), xyz.z() + detOffset );
     mHit = hit;
@@ -88,8 +102,7 @@ int StFwdQAMaker::Init() {
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
     mTreeData.mcTracks.createBranch(mTree, "mcTracks");
     mTree->Branch("nSeedTracks",      &mTreeData.nSeedTracks, "nSeedTracks/I");
-    mTreeData.fstSeeds.createBranch(mTree, "fst");
-    mTreeData.fttSeeds.createBranch(mTree, "ftt");
+    mTreeData.fstPoints.createBranch(mTree, "fstHits");
     mTreeData.fttPoints.createBranch(mTree, "fttPoints");
     mTreeData.fttClusters.createBranch(mTree, "fttClusters");
     mTreeData.wcal.createBranch(mTree, "wcalClusters");
@@ -97,6 +110,7 @@ int StFwdQAMaker::Init() {
 
     mTreeData.wcalHits.createBranch(mTree, "wcalHits");
     mTreeData.hcalHits.createBranch(mTree, "hcalHits");
+    mTreeData.epdHits.createBranch(mTree, "epdHits");
 
     mTreeData.reco.createBranch(mTree, "reco");
     mTreeData.seeds.createBranch(mTree, "seeds");
@@ -113,6 +127,14 @@ int StFwdQAMaker::Finish() {
     return kStOk;
 }
 int StFwdQAMaker::Make() {
+    LOG_INFO << "FWD Report:" << endm;
+    StEvent *mStEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
+    if ( mStEvent ){
+        // report number of fwd tracks
+        auto fwdTracks = mStEvent->fwdTrackCollection();
+        LOG_INFO << "Number of FwdTracks (StFwdTrackCollection): " << fwdTracks->tracks().size() << endm;
+        LOG_INFO << "Number of Ftt Points (StEvent)" << mStEvent->fttCollection()->points().size() << endm;
+    }
     LOG_INFO << "SETUP START" << endm;
     // setup the datasets / makers
     mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
@@ -133,13 +155,19 @@ int StFwdQAMaker::Make() {
         LOG_WARN << "No StFwdTrackMaker found, skipping StFwdQAMaker" << endm;
         // return kStOk;
     }
-    // Event header info from stevent
-    StEvent *mStEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     LOG_DEBUG << "SETUP COMPLETE" << endm;
     // Get the primary vertex used by the FWD Tracker
     auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
     LOG_DEBUG << "HEADER COMPLETE" << endm;
 
+    auto muFstCollection = mMuDst->muFstCollection();
+    if ( muFstCollection ){
+        LOG_DEBUG << "MuDst has #fst hits: " << muFstCollection->numberOfHits() << endm;
+        for ( size_t i = 0; i < muFstCollection->numberOfHits(); i++ ){
+            StMuFstHit * h = muFstCollection->getHit(i);
+            mTreeData.fstPoints.add( h );
+        }
+    }
     FillMcTracks();
     FillTracks();
     FillFttClusters();
@@ -153,11 +181,21 @@ void StFwdQAMaker::Clear(const Option_t *opts) {
 }
 
 void StFwdQAMaker::FillTracks() {
+    mTreeData.nSeedTracks = 0;
     if ( mMuForwardTrackCollection ){
         LOG_DEBUG << "Adding " << mMuForwardTrackCollection->numberOfFwdTracks() << " FwdTracks (MuDst)" << endm;
         for ( size_t iTrack = 0; iTrack < mMuForwardTrackCollection->numberOfFwdTracks(); iTrack++ ){
             auto muTrack = mMuForwardTrackCollection->getFwdTrack(iTrack);
             mTreeData.reco.add( muTrack );
+
+            for (auto fsth : muTrack->mFSTPoints){
+                mTreeData.seeds.add( fsth );
+                mTreeData.nSeedTracks++;
+            }
+            for (auto ftth : muTrack->mFTTPoints){
+                mTreeData.seeds.add( ftth );
+                mTreeData.nSeedTracks++;
+            }
             if ( iTrack > 5000 ) {
                 LOG_WARN << "Truncating to 5000 tracks" << endm;
                 break;
@@ -181,7 +219,6 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
 
     StFcsDb* fcsDb=static_cast<StFcsDb*>(GetDataSet("fcsDb"));
 
-    StEpdGeom epdgeo;
     // LOAD ECAL / HCAL CLUSTERS
     LOG_INFO << "MuDst has #fcs clusters: " << fcs->numberOfClusters() << endm;
     for( size_t i = 0; i < fcs->numberOfClusters(); i++){
@@ -193,10 +230,7 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
             LOG_INFO << "Adding HCAL Cluster to FwdTree" << endm;
             mTreeData.hcal.add( cluSTAR );
-        } else if ( clu->detectorId() == kFcsPresNorthDetId || clu->detectorId() == kFcsPresSouthDetId ){
-            LOG_INFO << "Adding PRES Cluster to FwdTree" << endm;
-            // mTreeData.pres.add( cluSTAR );
-        }
+        } 
 
         delete cluSTAR;
     }
@@ -212,6 +246,9 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         } else if ( hit->detectorId() == kFcsHcalNorthDetId || hit->detectorId() == kFcsHcalSouthDetId ){
             LOG_DEBUG << "Adding HCAL Cluster to FwdTree" << endm;
             mTreeData.hcalHits.add( hitSTAR );
+        } else if ( hit->detectorId() == kFcsPresNorthDetId || hit->detectorId() == kFcsPresSouthDetId ){
+            LOG_DEBUG << "Adding PRES hit to FwdTree" << endm;
+            mTreeData.epdHits.add( hitSTAR );
         }
         delete hitSTAR;
     }
@@ -249,68 +286,5 @@ void StFwdQAMaker::FillFttClusters(){
             StMuFttPoint * c = muFttCollection->getPoint(i);
             mTreeData.fttPoints.add( c );
         }
-
-
     }
-
-    
-
-    // float pz[] = {280.90499, 303.70498, 326.60501, 349.40499};
-    // float SCALE = 1.0;
-    // TVector3 cp;
-    // FwdTreeHit fh;
-    // FwdTreeFttCluster ftc;
-    // StEvent *event = static_cast<StEvent *>(GetInputDS("StEvent"));
-    // if ( !event || !event->fttCollection() ) return;
-
-    // LOG_DEBUG << "FTT RawHits: " << event->fttCollection()->numberOfRawHits() << endm;
-    // LOG_DEBUG << "FTT Clusters: " << event->fttCollection()->numberOfClusters() << endm;
-
-    // for ( size_t i = 0; i < event->fttCollection()->numberOfClusters(); i++ ){
-    //     StFttCluster* c = event->fttCollection()->clusters()[i];
-    //     if ( c->nStrips() < 1 ) continue;
-    //     float dw = 0.05, dlh = 60.0, dlv = 60.0;
-    //     float mx = 0.0, my = 0.0;
-    //     float sx = 1.0, sy = 1.0;
-
-
-    //     if ( c->quadrant() == kFttQuadrantA ){
-    //         mx = 0; my = 0;
-    //         sx = 1.0; sy = 1.0;
-    //     } else if ( c->quadrant() == kFttQuadrantB ){
-    //         mx = 10.16*SCALE; my = 0.0*SCALE;
-    //         sy = -1;
-    //         dlv = -dlv;
-
-    //     } else if ( c->quadrant() == kFttQuadrantC ){
-    //         mx = -10.16*SCALE ; my = -00.0*SCALE;
-    //         sx = -1.0; sy = -1.0;
-    //         dlh = -dlh; dlv = -dlv;
-
-    //     } else if ( c->quadrant() == kFttQuadrantD ){
-    //         sx = -1;
-    //         dlh = -dlh;
-    //     }
-
-    //     cp.SetZ( -pz[ c->plane() ] * SCALE );
-    //     if ( c->orientation() == kFttHorizontal ){
-    //         cp.SetY( my + sy * c->x()/10.0 * SCALE );
-    //         cp.SetX( mx );
-    //     } else if ( c->orientation() == kFttVertical ){
-    //         cp.SetX( mx + sx * c->x()/10.0 * SCALE );
-    //         cp.SetY( my );
-    //     }
-    //     // fh.set( cp.X(), cp.Y(), cp.Z(), c->nStrips(), c->quadrant() );
-    //     ftc.pos.SetXYZ( cp.X(), cp.Y(), cp.Z() );
-    //     ftc.mQuadrant = c->quadrant();
-    //     ftc.mRow = c->row();
-    //     ftc.mOrientation = c->orientation();
-    //     ftc.mPlane = c->plane();
-    //     ftc.mId = c->id();
-    //     ftc.mNStrips = c->nStrips();
-    //     ftc.mX = c->x();
-    //     ftc.mSumAdc = c->sumAdc();
-
-    //     mTreeData.fttClusters.add( ftc );
-    // }
 }

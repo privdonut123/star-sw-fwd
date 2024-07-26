@@ -106,12 +106,13 @@ class StMuFcsCluster;
 class StMuFcsHit;
 class StMuFttCluster;
 class StMuFttPoint;
+class StMuFstHit;
 class StMuFwdTrackSeedPoint;
 
 
 /**
  * @brief Store Cluster with STAR XYZ position
- * 
+ *
  */
 class FcsClusterWithStarXYZ: public TObject {
     public:
@@ -127,7 +128,7 @@ class FcsClusterWithStarXYZ: public TObject {
 
 /**
  * @brief Store Hit with STAR XYZ position
- * 
+ *
  */
 class FcsHitWithStarXYZ: public TObject {
     public:
@@ -141,21 +142,6 @@ class FcsHitWithStarXYZ: public TObject {
     ClassDef(FcsHitWithStarXYZ, 1);
 };
 
-class FwdTreeMonteCarloTrack : public TObject {
-    public:
-
-    FwdTreeMonteCarloTrack() : TObject() {
-        id = 0;
-        q = 0;
-        status = 0;
-        mom.SetXYZ(0, 0, 0);
-    }
-
-    int id, q, status;
-    TVector3 mom;
-
-    ClassDef(FwdTreeMonteCarloTrack, 1);
-};
 
 /** @brief
 * This class is a container for the data that will be written to the output tree.
@@ -164,16 +150,17 @@ struct FwdTreeData {
 
     /** @brief Primary event vertex*/
     FwdTreeHeader header;
+    /** @brief MC tracks */
     TClonesArrayWriter<StMuMcTrack> mcTracks;
-    TClonesArrayWriter<StMuFwdTrackSeedPoint> fttSeeds;
     TClonesArrayWriter<StMuFttPoint> fttPoints;
     TClonesArrayWriter<StMuFttCluster> fttClusters;
-    TClonesArrayWriter<StMuFwdTrackSeedPoint> fstSeeds;
+    TClonesArrayWriter<StMuFstHit> fstPoints;
 
     TClonesArrayWriter<FcsClusterWithStarXYZ> wcal;
     TClonesArrayWriter<FcsHitWithStarXYZ> wcalHits;
     TClonesArrayWriter<FcsClusterWithStarXYZ> hcal;
     TClonesArrayWriter<FcsHitWithStarXYZ> hcalHits;
+    TClonesArrayWriter<FcsHitWithStarXYZ> epdHits;
     TClonesArrayWriter<StMuFwdTrack> reco;
 
     int nSeedTracks;
