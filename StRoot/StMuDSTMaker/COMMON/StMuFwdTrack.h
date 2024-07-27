@@ -16,10 +16,7 @@
 
 #include "StMuFcsCluster.h"
 
-
 class StFwdTrack;
-
-
 struct StMuFwdTrackProjection : public TObject {
     StMuFwdTrackProjection() {}
     StMuFwdTrackProjection ( const StMuFwdTrackProjection & other) {
