@@ -153,50 +153,33 @@ public:
     void setCharge( short  lCharge ) { mCharge = lCharge;}
     void setMc( UShort_t idt, UShort_t qual ) { mIdTruth = idt; mQATruth = qual; }
 
-    // ECAL clusters
-    // StPtrVecFcsCluster& ecalClusters();
-    // const StPtrVecFcsCluster& ecalClusters() const;
-    // void addEcalCluster(StFcsCluster* p);
-    // void sortEcalClusterByET();
-    // // HCAL clusters
-    // StPtrVecFcsCluster& hcalClusters();
-    // const StPtrVecFcsCluster& hcalClusters() const;
-    // void addHcalCluster(StFcsCluster* p);
-    // void sortHcalClusterByET();
-
-    // vector<StMuFcsCluster*> 
-
     void addEcalCluster( StMuFcsCluster* clu);
     void addHcalCluster( StMuFcsCluster* clu);
 
+    // FCS Cluster matches
     TRefArray mEcalClusters;
     TRefArray mHcalClusters;
     
 protected:
 
     // Track quality and convergence
-    bool mDidFitConverge;
-    bool mDidFitConvergeFully;
-    short mNumberOfFailedPoints;
-    short mNumberOfSeedPoints;
-    short mNumberOfFitPoints;
-    float mChi2;
-    float mNDF;
-    float mPval;
-    short mCharge;
-    TVector3 mPrimaryMomentum;
+    bool mDidFitConverge;   // == 0 if the fit did not converge
+    bool mDidFitConvergeFully; // == 0 if the fit did not converge fully
+    short mNumberOfFailedPoints; // Number of points that failed to be fitted
+    short mNumberOfSeedPoints; // Number of points used in the track seed step
+    short mNumberOfFitPoints; // Number of fit points used by GenFit
+    float mChi2; // Chi^2 of the fit
+    float mNDF; // Number of degrees of freedom of the fit
+    float mPval; // P-value of the fit
+    short mCharge; // Charge of the track
+    TVector3 mPrimaryMomentum; // Momentum of the track at the primary vertex
     
-
-    // StPtrVecFcsCluster mEcalClusters;
-    // StPtrVecFcsCluster mHcalClusters;
-
     /// MC track id
     UShort_t mIdTruth;
     /// MC track quality (percentage of hits coming from corresponding MC track)
     UShort_t mQATruth;
     
     ClassDef(StMuFwdTrack,3)
-
 };
 
 #endif
