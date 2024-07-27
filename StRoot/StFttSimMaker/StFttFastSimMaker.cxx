@@ -69,6 +69,7 @@ Int_t StFttFastSimMaker::Make() {
         StThreeVectorD xyz;
         xyz.set(x, y, z);
         point->setXYZ( xyz );
+        point->setIdTruth( track_id );
         event->fttCollection()->addPoint(point);
     } // loop on hits
     return kStOk;
