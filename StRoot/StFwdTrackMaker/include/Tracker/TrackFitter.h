@@ -707,16 +707,7 @@ class TrackFitter {
      * @param seedPos : seed position
      * @param Vertex : primary vertex
      */
-    void setupTrack(Seed_t trackSeed, TVector3 seedMom, TVector3 seedPos, double *Vertex = 0) {
-        // If we use the PV, use that as the start pos for the track
-        TVectorD pv(3);
-        if (Vertex != 0) {
-            seedPos.SetXYZ(Vertex[0], Vertex[1], Vertex[2]);
-            pv[0] = Vertex[0];
-            pv[1] = Vertex[1];
-            pv[2] = Vertex[2];
-        }
-
+    void setupTrack(Seed_t trackSeed, TVector3 seedMom, TVector3 seedPos) {
         // create the track representations
         // Note that multiple track reps differing only by charge results in a silent failure of GenFit
         auto theTrackRep = new genfit::RKTrackRep(mPdgMuon);
@@ -726,20 +717,6 @@ class TrackFitter {
         // now add the points to the track
 
         int hitId(0);       // hit ID
-        /******************************************************************************************************************
-        * Include the Primary vertex if desired
-        ******************************************************************************************************************/
-        if (mIncludeVertexInFit) {
-            LOG_DEBUG << "Including vertex in fit" << endm;
-            TMatrixDSym hitCov3(3);
-            hitCov3(0, 0) = mVertexSigmaXY * mVertexSigmaXY;
-            hitCov3(1, 1) = mVertexSigmaXY * mVertexSigmaXY;
-            hitCov3(2, 2) = mVertexSigmaZ * mVertexSigmaZ;
-
-            genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, hitCov3, 0, ++hitId, nullptr);
-            mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
-        }
-
         size_t planeId(0);     // detector plane ID
 
         // initialize the hit coords on plane
@@ -755,7 +732,20 @@ class TrackFitter {
             hitCoords[0] = h->getX();
             hitCoords[1] = h->getY();
 
-            genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), h->getSector(), ++hitId, nullptr);
+            /******************************************************************************************************************
+            * If the Primary vertex is included
+            ******************************************************************************************************************/
+            if (fh->isPV()) {
+                LOG_DEBUG << "Including primary vertex in fit" << endm;
+                TVectorD pv(3);
+                pv[0] = h->getX();
+                pv[1] = h->getY();
+                pv[2] = h->getZ();
+                genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, nullptr);
+                mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
+            }
+
+            genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), fh->_detid, ++hitId, nullptr);
 
             planeId = h->getSector();
             genfit::SharedPlanePtr plane;
@@ -811,7 +801,7 @@ class TrackFitter {
      * @param seedMomentum : seed momentum (can be from MC)
      * @return void : the results can be accessed via the getTrack() method
      */
-    long long fitTrack(Seed_t trackSeed, double *Vertex = 0, TVector3 *seedMomentum = 0) {
+    long long fitTrack(Seed_t trackSeed, TVector3 *seedMomentum = 0) {
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         LOG_DEBUG << "Fitting track with " << trackSeed.size() << " seed points" << endm;
         
@@ -826,7 +816,7 @@ class TrackFitter {
             LOG_DEBUG << "Using provided seedMomentum: " << TString::Format( "(pt=%f, eta=%f, phi=%f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;
         }
 
-        setupTrack(trackSeed, seedMom, seedPos, Vertex);
+        setupTrack(trackSeed, seedMom, seedPos);
         LOG_DEBUG << "Ready to fit with " << mFitTrack->getNumPoints() << " track points" << endm;
 
         /******************************************************************************************************************
