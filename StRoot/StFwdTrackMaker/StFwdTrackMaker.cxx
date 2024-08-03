@@ -389,13 +389,22 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             float xcm = point->xyz().x()*mm_to_cm;
             float ycm = point->xyz().y()*mm_to_cm;
             float zcm = point->xyz().z();
+
+            // get the track id
+            int track_id = point->idTruth();
+            shared_ptr<McTrack> mcTrack = nullptr;
+            if ( mcTrackMap.count(track_id) ) {
+                mcTrack = mcTrackMap[track_id];
+                LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;
+            }
+
             mFwdHitsFtt.push_back(FwdHit(count++, // id
                 xcm, ycm, zcm, 
                 -point->plane(), // volume id 
                 kFttId, // detid
-                0, // track id
+                track_id, // track id
                 hitCov3, // covariance matrix
-                nullptr) // mcTrack
+                mcTrack) // mcTrack
                 );
             mFttHits.push_back( TVector3( xcm, ycm, zcm)  );
         } // end of loop over points
@@ -410,6 +419,10 @@ void StFwdTrackMaker::loadFttHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
         // Add the hit to the hit map
         if ( hit->getLayer() >= 0 )
             hitMap[hit->getSector()].push_back(hit);
+        // add to MC track map
+        if ( hit->getMcTrack() ){
+            hit->getMcTrack()->addFttHit(hit);
+        }
     }
 
     if ( numFwdHitsPost != numFwdHitsPrior ){
@@ -483,7 +496,7 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
             hitMap[hit->getSector()].push_back(hit);
         
         if ( dynamic_cast<FwdHit*>(hit)->_mcTrack ){
-            dynamic_cast<FwdHit*>(hit)->_mcTrack->addHit(hit);
+            dynamic_cast<FwdHit*>(hit)->_mcTrack->addFttHit(hit);
         }
     }
 
@@ -658,6 +671,8 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
                             mcTrack // mcTrack
                         )
                     );
+                    // store a pointer to the original StFstHit
+                    mFwdHitsFst.back()._hit = fsthits[ih];
                 }
             } // loop is
         } // loop iw
@@ -1050,7 +1065,7 @@ int StFwdTrackMaker::Make() {
         LOG_WARN << "Skipping event with more than " << maxForwardTracks << " forward tracks" << endm;
         return kStOk;
     }
-    LOG_DEBUG << "We have " << nForwardTracks << " forward MC tracks" << endm;
+    LOG_DEBUG << "We have " << nForwardTracks << " forward MC tracks" << endm;    
     
     /**********************************************************************/
     // Load sTGC
@@ -1072,6 +1087,13 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << ">>StFwdTrackMaker::loadFcsHits" << endm;
     if ( IAttr("useFcs") ) {
         loadFcs();
+    }
+
+    /**********************************************************************/
+    // Print out the MC tracks and their hit counts
+    for ( auto kv : mcTrackMap ){
+        if ( kv.second == nullptr ) continue;
+        LOG_DEBUG << "MC Track: id=" << kv.first << ", nFTT=" << kv.second->mFttHits.size() << ", nFST=" << kv.second->mFstHits.size() << endm;
     }
 
     /**********************************************************************/
