@@ -22,6 +22,7 @@
 
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuDst.h"
+#include "StMuDSTMaker/COMMON/StMuEvent.h"
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
@@ -37,8 +38,8 @@
 
 // ClassImp(FcsClusterWithStarXYZ);
 
-/** Clear the FwdTreeData from one event to next */
-void FwdTreeData::clear(){
+/** Clear the FwdQATreeData from one event to next */
+void FwdQATreeData::clear(){
     header.clear();
     mcTracks.reset();
     fttPoints.reset();
@@ -157,10 +158,9 @@ int StFwdQAMaker::Make() {
         LOG_WARN << "No StFwdTrackMaker found, skipping StFwdQAMaker" << endm;
         // return kStOk;
     }
+
+    mTreeData.header.run = mMuDst->event()->runNumber();
     LOG_DEBUG << "SETUP COMPLETE" << endm;
-    // Get the primary vertex used by the FWD Tracker
-    auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
-    LOG_DEBUG << "HEADER COMPLETE" << endm;
 
     auto muFstCollection = mMuDst->muFstCollection();
     if ( muFstCollection ){

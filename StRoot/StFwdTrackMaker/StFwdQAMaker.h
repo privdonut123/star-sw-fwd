@@ -146,7 +146,7 @@ class FcsHitWithStarXYZ: public TObject {
 /** @brief
 * This class is a container for the data that will be written to the output tree.
 */
-struct FwdTreeData {
+struct FwdQATreeData {
 
     /** @brief Primary event vertex*/
     FwdTreeHeader header;
@@ -201,7 +201,7 @@ class StFwdQAMaker : public StMaker {
   protected:
     TFile *mTreeFile = nullptr;
     TTree *mTree     = nullptr;
-    FwdTreeData mTreeData;
+    FwdQATreeData mTreeData;
 
     StEvent *mStEvent = nullptr;
     StMuDstMaker *mMuDstMaker = nullptr;
