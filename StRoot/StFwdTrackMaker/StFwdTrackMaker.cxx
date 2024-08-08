@@ -7,7 +7,6 @@
 
 #include "KiTrack/IHit.h"
 #include "GenFit/Track.h"
-#include "GenFit/GFRaveVertexFactory.h"
 
 #include "TMath.h"
 
@@ -1180,9 +1179,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
             fh->getTrackId(), 
             cov 
         );
-        if ( fh->isPV() )
-            fwdTrack->setVertex( p );
-        else if ( fh->isFst() )
+        if ( fh->isFst() )
             fwdTrack->mFSTPoints.push_back( p );
         else if ( fh->isFtt() )
             fwdTrack->mFTTPoints.push_back( p );
@@ -1312,9 +1309,6 @@ void StFwdTrackMaker::FitVertex(){
     vector<genfit::Track *> genfitTracks;
 
     const auto &trackResults = mForwardTracker -> getTrackResults();
-    // for ( auto gtr : trackResults ){
-    //     // genfitTracks.push_back( gtr.mTrack );
-    // }
     if ( genfitTracks.size() >= 2 ){
         genfit::GFRaveVertexFactory gfrvf;
 
