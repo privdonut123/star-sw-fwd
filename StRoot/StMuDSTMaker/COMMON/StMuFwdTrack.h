@@ -186,7 +186,7 @@ protected:
     UShort_t mQATruth;
 
     float mDCA[3]; // DCA to the primary vertex
-    StMuFwdTrackSeedPoint mVertexSeedPoint;
+    UChar_t mVtxIndex; // Index of the vertex in the event
 
     ClassDef(StMuFwdTrack,3)
 };

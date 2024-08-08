@@ -34,9 +34,8 @@ void StMuFwdTrack::set( StFwdTrack * evTrack) {
     mDCA[1] = dca.y();
     mDCA[2] = dca.z();
     
-    // copy the vertex over
-    auto vertex = evTrack->vertex();
-    mVertexSeedPoint.set( &vertex );
+    // copy the vertex index over 
+    mVtxIndex = evTrack->vertexIndex();
 
     //copy the projections
     for ( auto proj : evTrack->mProjections ){
