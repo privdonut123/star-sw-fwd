@@ -199,7 +199,7 @@ public:
     size_t numPV() const {
         size_t n = 0;
         for ( auto hit : mSeed ){
-            if ( dynamic_cast<FwdHit*>(hit)->_detid == kTpcId ){
+            if ( dynamic_cast<FwdHit*>(hit)->isPV() ){
                 n++;
             }
         }
@@ -216,7 +216,7 @@ public:
     }
 
     Seed_t                          mSeed;
-    TVector3                        mPV;
+    TVector3                        mPV; // as a TVector3
     TVector3                        mMomentum;
     float                           mCharge = 0;
     float                           mChi2 = -1;
@@ -602,6 +602,50 @@ class ForwardTrackMaker {
         mEventStats.mSeedFindingDuration.push_back( duration2 );        
     } // FindTrackSeeds
     
+    
+    std::vector< genfit::GFRaveVertex * > findFwdVertices( const vector<GenfitTrackResult> &globalTracks ){
+        // we will return a vector of vertices
+        std::vector< genfit::GFRaveVertex * > raveVertices;
+
+
+        // The RAVE factory needs the (bare) track pointers for vertex finding
+        vector<genfit::Track*> tracks;
+        for ( auto gtr : globalTracks ){
+            if ( gtr.mTrack ){
+                tracks.push_back( gtr.mTrack.get() );
+            }
+        }
+
+
+        genfit::GFRaveVertexFactory gfrvf;
+        
+        bool useBeamConstraint = true;
+        if ( useBeamConstraint ){
+            // TODO: load "official" beamline constraint parameters
+            TMatrixDSym bscm(3);
+            const double bssXY = 2.0;
+            bscm(0, 0) = bssXY*bssXY;
+            bscm(1, 1) = bssXY*bssXY;
+            bscm(2, 2) = 50.5 * 50.5;
+            gfrvf.setBeamspot( TVector3( 0, 0, 0 ), bscm );
+        }
+
+
+        
+        gfrvf.findVertices( &raveVertices, tracks, useBeamConstraint );
+        LOG_DEBUG << "raveVertices.size() = " << raveVertices.size() << endm;
+        for ( auto vert : raveVertices ){
+            LOG_DEBUG << TString::Format( "RAVE vertex @(%f, %f, %f)\n\n", vert->getPos().X(), vert->getPos().Y(), vert->getPos().Z() ) << endm;
+        }
+        // if there is no Event Vertex, then we will use the first vertex found
+        if ( raveVertices.size() > 0 ){
+            mEventVertex = raveVertices[0]->getPos();
+            // mEventVertexHit.setPos( mEventVertex );
+        }
+
+        return raveVertices;
+    }
+
     /**
      * @brief Perform a single fit from seed points
      *
@@ -610,16 +654,21 @@ class ForwardTrackMaker {
      * @return GenfitTrackResult : result of the fit
      */
     GenfitTrackResult fitTrack(Seed_t &seed, TVector3 *momentumSeedState = nullptr) {
+        LOG_DEBUG << "FwdTracker::fitTrack->" << endm;
+        mEventStats.mAttemptedFits++;
         // We will build this up as we go
         GenfitTrackResult gtr;
 
+        LOG_DEBUG << "--Setting seed on GenfitTrackResult, seed has " << seed.size() << " hits" << endm;
         // First, set the seed information
         gtr.setSeed( seed );
 
-        mEventStats.mAttemptedFits++;
+        // If we are using a provided momentum state
         if ( momentumSeedState ){
+            LOG_DEBUG << "--FitTrack with provided momentum seed state" << endm;
             mTrackFitter->fitTrack( seed, momentumSeedState );
         } else {
+            LOG_DEBUG << "--FitTrack without provided momentum seed state" << endm;
             mTrackFitter->fitTrack( seed );
         }
 
@@ -627,6 +676,7 @@ class ForwardTrackMaker {
         // Get the track from the fitter
         // and set the track in the GenfitTrackResult
         if (mTrackFitter->getTrack() != nullptr ){    
+            LOG_DEBUG << "--FitTrack found, setting seed and track only" << endm;
             gtr.set( seed, mTrackFitter->getTrack() );
 
             if (gtr.mStatus && gtr.mStatus->isFitConvergedFully()) {
@@ -635,10 +685,10 @@ class ForwardTrackMaker {
                 mEventStats.mFailedFits++;
             }
         } else { // set the track as a failed fit, but keep the seed info
-            gtr.setSeed(seed);
+            LOG_DEBUG << "--FitTrack failed, setting seed only" << endm;
             mEventStats.mFailedFits++;
         }
-        LOG_DEBUG << "FwdTracker::fitTrack complete" << endm;
+        LOG_DEBUG << "<-FwdTracker::fitTrack complete" << endm;
         return gtr;
     } // fitTrack
 
@@ -659,6 +709,9 @@ class ForwardTrackMaker {
             return;
         long long itStart = FwdTrackerUtils::nowNanoSecond();
 
+        std::vector<GenfitTrackResult> globalTracks;
+        std::vector<GenfitTrackResult> primaryTracks;
+
         // Should we try to refit the track with aadditional points from other detectors?
         bool doRefit = mConfig.get<bool>("TrackFitter:refit", false);
         // Should we use the MC momentum as a seed for the fit?
@@ -667,9 +720,11 @@ class ForwardTrackMaker {
         LOG_DEBUG << "Starting Track fitting loop on " << trackSeeds.size() << " track seeds" << endm;
         size_t index = 0;
         for (auto t : trackSeeds) {
+
+            GenfitTrackResult gtrGlobalRefit;
             LOG_DEBUG << "Track seed fit #" << index << endm;
-            
-            /** Tracking Step 1 */
+            /***********************************************************************************************************/
+            // Tracking Step 1
             // Fit each accepted track seed
 
             // If we are using MC momentum get it from associated track
@@ -691,18 +746,29 @@ class ForwardTrackMaker {
                     LOG_WARN << "Requested MC momentum for fit seed, but couldnt find MC Track for id: " << idt << ", qual: " << qual << endm;
                 }
                 /*******************************************************/
-            }
+            } // else if pMomSeedState = nullptr, a seed momentum will be computed from seed points by tracker
 
             TVector3 *pMomSeedState = nullptr;
             if (useMcSeedMomentum) {
                 pMomSeedState = &momentumSeedStateMc;
             }
-            // if pMomSeedState = nullptr, a seed momentum will be computed from seed points
+            
             GenfitTrackResult gtrGlobal = fitTrack(t, pMomSeedState);
             LOG_DEBUG << "Fitting Seed with " << gtrGlobal.mSeed.size() << " hits" << endm;
             LOG_DEBUG << "\t McTrack Id = " << gtrGlobal.mIdTruth << ", QA = " << gtrGlobal.mQaTruth << endm;
             
-            /** Tracking Step 2 */
+            
+            // if the first fit fails (and we arent using MC truth info) 
+            // then we cannot proceed with the refit steps
+            if (gtrGlobal.mIsFitConvergedPartially == false && !useMcTrackFinding()){
+                LOG_DEBUG << "Fitting failed for seed " << index << endm;
+                LOG_DEBUG << "Skipping the refit steps but saving the seed and failed fit" << endm;
+                globalTracks.push_back( gtrGlobal );
+                index++;
+                continue;
+            }
+            /***********************************************************************************************************/
+            // Tracking Step 2 
             // Look for additional hits in the other tracking detector
             // and refit the track with the additional hits
 
@@ -710,27 +776,37 @@ class ForwardTrackMaker {
             if (useMcTrackFinding()) {
                 if (mSeedSource != kFttSeed) addFttHitsMc( gtrGlobal );
                 if (mSeedSource != kFstSeed) addFstHitsMc( gtrGlobal );
-                mTrackResults.push_back( gtrGlobal );
+                gtrGlobalRefit = fitTrack( gtrGlobal.mSeed, &gtrGlobal.mMomentum );
+                gtrGlobalRefit.setDCA( mEventVertex );
+
+                globalTracks.push_back( gtrGlobalRefit );
                 index++;
-                // TODO: add DCA info to the track
-                continue; // skip the rest of the loop (non MC track finding)
+            } else {
+                // If we are not using MC track finding, then we will look for additional hits via projections
+                if (mSeedSource != kFttSeed){ // Look for FTT hits if it was not the original seed source
+                    for ( int i = 0; i < FwdSystem::sNFttLayers; i++ ){
+                        addFttHits( gtrGlobal, i );
+                    }
+                }
+                if (mSeedSource != kFstSeed ){ // Look for FST hits if it was not the original seed source
+                    for ( int i = 0; i < FwdSystem::sNFstLayers; i++ ){
+                        addFstHits( gtrGlobal, i );
+                    }
+                }
+                // global refit
             }
 
-            // If we are not using MC track finding, then we will look for additional hits via projections
-            if (mSeedSource != kFttSeed){ // Look for FTT hits if it was not the original seed source
-                for ( int i = 0; i < FwdSystem::sNFttLayers; i++ ){
-                    addFttHits( gtrGlobal, i );
-                }
-            }
-            if (mSeedSource != kFstSeed ){ // Look for FST hits if it was not the original seed source
-                for ( int i = 0; i < FwdSystem::sNFstLayers; i++ ){
-                    addFstHits( gtrGlobal, i );
-                }
+            gtrGlobal.setDCA( mEventVertex );
+            globalTracks.push_back( gtrGlobal ); // save this global track result
+
+            GenfitTrackResult *activeTrack = &gtrGlobal;
+            if ( gtrGlobalRefit.mIsFitConvergedFully ){
+                activeTrack = &gtrGlobalRefit;
             }
 
-            // TODO: add DCA info to the track
-            mTrackResults.push_back( gtrGlobal ); // save this global track result
-            index++;
+            if ( !activeTrack->mIsFitConvergedPartially ){
+               continue;
+            }
         }
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
@@ -749,18 +825,31 @@ class ForwardTrackMaker {
                         mEventStats.mGoodCardinals, 
                         perCardinals ) << endm;
         
+        /***********************************************************************************************************/
+        // Step 3: Find the FWD Vertices
+        LOG_DEBUG << "Starting Track Fitting Step 3 (FWD Vertex Finding)" << endm;
+        auto fwdVertices = findFwdVertices( globalTracks );
+        
 
+
+        /***********************************************************************************************************/
+        // Step 4: Refit the track with the primary vertex
+        index = 0;
         // Now try refitting every track with the primary vertex
-        for (auto &gtr : mTrackResults) {
-
+        for (auto &gtr : globalTracks) {
+            LOG_DEBUG << "Refitting Track " << index << ", McId=" << gtr.mIdTruth << " with Primary Vertex, seed already has: " << gtr.mSeed.size() << " hits" << endm;
             // just use the global track to build the track that will use the PV also
             Seed_t seedWithPV = gtr.mSeed;
-            seedWithPV.insert( seedWithPV.begin(), &mEventVertexHit );
-
-            // Fit the track with the primary vertex, and use the global track momentum as the seed momentum
+            seedWithPV.push_back( &mEventVertexHit );
             GenfitTrackResult gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
-            // TODO: set the attributes in the GenfitTrackResult
+            gtrPV.setDCA( mEventVertex );
+            primaryTracks.push_back( gtrPV );
+            index++;
         }
+
+        // Add the global and primary tracks to the results
+        mTrackResults.insert( mTrackResults.end(), globalTracks.begin(), globalTracks.end() );
+        mTrackResults.insert( mTrackResults.end(), primaryTracks.begin(), primaryTracks.end() );
 
         long long duration2 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         LOG_DEBUG << "Track fitting took " << duration2 << "ms" << endm;
@@ -1331,6 +1420,9 @@ class ForwardTrackMaker {
         mEventVertex = v;
         // this is the FwdHit we will use in seeds
         mEventVertexHit.setXYZDetId( v.X(), v.Y(), v.Z(), kTpcId );
+        mEventVertexHit._covmat(0,0) = 0.1;
+        mEventVertexHit._covmat(1,1) = 0.1;
+        mEventVertexHit._covmat(2,2) = 0.1;
     }
     TVector3 getEventVertex() { return mEventVertex; }
 
