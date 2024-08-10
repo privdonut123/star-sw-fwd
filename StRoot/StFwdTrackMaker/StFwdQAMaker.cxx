@@ -36,8 +36,6 @@
 #include "StMuDSTMaker/COMMON/StMuMcTrack.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 
-// ClassImp(FcsClusterWithStarXYZ);
-
 /** Clear the FwdQATreeData from one event to next */
 void FwdQATreeData::clear(){
     header.clear();

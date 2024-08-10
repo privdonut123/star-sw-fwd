@@ -12,6 +12,10 @@ void qa(){
 	gROOT->LoadMacro("$STAR/StRoot/StMuDSTMaker/COMMON/macros/loadSharedLibraries.C");
 	loadSharedLibraries();
 
+	gSystem->Load("libgenfit2.so");
+	gSystem->Load("libKiTrack.so");
+	gSystem->Load( "libStFwdTrackMaker.so" );
+
     // now open our data file
     TFile *f = new TFile("fwdtree.root");
     TTree *t = (TTree*)f->Get("fwd");
