@@ -30,9 +30,7 @@ void StMuFwdTrack::set( StFwdTrack * evTrack) {
     mQATruth = evTrack->qaTruth();
 
     auto dca = evTrack->dca();
-    mDCA[0] = dca.x();
-    mDCA[1] = dca.y();
-    mDCA[2] = dca.z();
+    setDCA( TVector3( dca.x(), dca.y(), dca.z() ) );
     
     // copy the vertex index over 
     mVtxIndex = evTrack->vertexIndex();
