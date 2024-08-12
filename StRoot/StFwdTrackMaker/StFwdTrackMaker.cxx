@@ -10,7 +10,7 @@
 
 #include "TMath.h"
 
-#include <limits>
+#include <climits>
 #include <map>
 #include <string>
 #include <string>
@@ -1218,6 +1218,12 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     TVector3 p = gtr.mMomentum;//cr->getMom( gtr.mTrack->getFittedState( 0, cr ));
     fwdTrack->setPrimaryMomentum( StThreeVectorD( gtr.mMomentum.X(), gtr.mMomentum.Y(), gtr.mMomentum.Z() ) );
+
+    if ( gtr.isPrimary ){
+        fwdTrack->setVtxIndex( 0 );
+    } else {
+        fwdTrack->setVtxIndex( UCHAR_MAX );
+    }
 
     /*******************************************************************************/
     // if the track is not (at least partially) converged, do not try to project it

@@ -215,6 +215,7 @@ public:
         }
     }
 
+    bool                            isPrimary = false;
     Seed_t                          mSeed;
     TVector3                        mPV; // as a TVector3
     TVector3                        mMomentum;
@@ -729,6 +730,7 @@ class ForwardTrackMaker {
 
             // If we are using MC momentum get it from associated track
             TVector3 momentumSeedStateMc;
+            TVector3 *pMomSeedState = nullptr;
             if (true == useMcSeedMomentum) {
                 /*******************************************************/
                 // Only for Simulation
@@ -742,21 +744,21 @@ class ForwardTrackMaker {
                 if (mctm.count(idt)) {
                     auto mct = mctm[idt];
                     momentumSeedStateMc.SetPtEtaPhi(mct->mPt, mct->mEta, mct->mPhi);
+                    pMomSeedState = &momentumSeedStateMc;
                 } else {
                     LOG_WARN << "Requested MC momentum for fit seed, but couldnt find MC Track for id: " << idt << ", qual: " << qual << endm;
                 }
                 /*******************************************************/
             } // else if pMomSeedState = nullptr, a seed momentum will be computed from seed points by tracker
-
-            TVector3 *pMomSeedState = nullptr;
-            if (useMcSeedMomentum) {
-                pMomSeedState = &momentumSeedStateMc;
-            }
             
+            // Fit the track seed and get the GenfitTrackResult
             GenfitTrackResult gtrGlobal = fitTrack(t, pMomSeedState);
-            LOG_DEBUG << "Fitting Seed with " << gtrGlobal.mSeed.size() << " hits" << endm;
+            gtrGlobal.setDCA( mEventVertex );
+            LOG_DEBUG << "Fit track seed with " << gtrGlobal.mSeed.size() << " hits" << endm;
             LOG_DEBUG << "\t McTrack Id = " << gtrGlobal.mIdTruth << ", QA = " << gtrGlobal.mQaTruth << endm;
-            
+            // End Step 1
+            /*******************************************************/
+
             
             // if the first fit fails (and we arent using MC truth info) 
             // then we cannot proceed with the refit steps
@@ -767,22 +769,23 @@ class ForwardTrackMaker {
                 index++;
                 continue;
             }
+
             /***********************************************************************************************************/
             // Tracking Step 2 
             // Look for additional hits in the other tracking detector
-            // and refit the track with the additional hits
+            // and add the new hits to the track
 
-            // Use the MC track finding to add hits to the track
+            // If requested, use the MC track finding to add hits to the track
             if (useMcTrackFinding()) {
                 if (mSeedSource != kFttSeed) addFttHitsMc( gtrGlobal );
                 if (mSeedSource != kFstSeed) addFstHitsMc( gtrGlobal );
-                gtrGlobalRefit = fitTrack( gtrGlobal.mSeed, &gtrGlobal.mMomentum );
-                gtrGlobalRefit.setDCA( mEventVertex );
+                
 
                 globalTracks.push_back( gtrGlobalRefit );
                 index++;
-            } else {
-                // If we are not using MC track finding, then we will look for additional hits via projections
+            } else { 
+                // If we are not using MC track finding, 
+                // then we will look for additional hits via projections
                 if (mSeedSource != kFttSeed){ // Look for FTT hits if it was not the original seed source
                     for ( int i = 0; i < FwdSystem::sNFttLayers; i++ ){
                         addFttHits( gtrGlobal, i );
@@ -795,18 +798,33 @@ class ForwardTrackMaker {
                 }
                 // global refit
             }
+            // End Step 2
+            /***********************************************************************************************************/
 
-            gtrGlobal.setDCA( mEventVertex );
-            globalTracks.push_back( gtrGlobal ); // save this global track result
+            /***********************************************************************************************************/
+            // Tracking Step 3: Fit the new global track with additional hits
+            gtrGlobalRefit = fitTrack( gtrGlobal.mSeed, &gtrGlobal.mMomentum );
+            gtrGlobalRefit.setDCA( mEventVertex );
+            // End Step 3
+            /***********************************************************************************************************/
 
+            /***********************************************************************************************************/
+            // Tracking Step 4: Save the best global track result
             GenfitTrackResult *activeTrack = &gtrGlobal;
-            if ( gtrGlobalRefit.mIsFitConvergedFully ){
+            if ( gtrGlobalRefit.mIsFitConvergedPartially ){
                 activeTrack = &gtrGlobalRefit;
             }
 
             if ( !activeTrack->mIsFitConvergedPartially ){
                continue;
             }
+
+            // if the refit is successful, 
+            // then we will add the track to the globalTracks
+            // if not keep the original global track 
+            globalTracks.push_back( *activeTrack ); // save this global track result
+            // End Step 4
+            /***********************************************************************************************************/
         }
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
@@ -826,14 +844,15 @@ class ForwardTrackMaker {
                         perCardinals ) << endm;
         
         /***********************************************************************************************************/
-        // Step 3: Find the FWD Vertices
+        // Step 5: Find the FWD Vertices
         LOG_DEBUG << "Starting Track Fitting Step 3 (FWD Vertex Finding)" << endm;
         auto fwdVertices = findFwdVertices( globalTracks );
-        
+        // End Step 5
+        /***********************************************************************************************************/
 
 
         /***********************************************************************************************************/
-        // Step 4: Refit the track with the primary vertex
+        // Step 6: Refit the track with the primary vertex
         index = 0;
         // Now try refitting every track with the primary vertex
         for (auto &gtr : globalTracks) {
@@ -843,9 +862,13 @@ class ForwardTrackMaker {
             seedWithPV.push_back( &mEventVertexHit );
             GenfitTrackResult gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
             gtrPV.setDCA( mEventVertex );
+            gtrPV.isPrimary = true;
             primaryTracks.push_back( gtrPV );
             index++;
         }
+        // End Step 6
+        /***********************************************************************************************************/
+
 
         // Add the global and primary tracks to the results
         mTrackResults.insert( mTrackResults.end(), globalTracks.begin(), globalTracks.end() );
@@ -1420,9 +1443,9 @@ class ForwardTrackMaker {
         mEventVertex = v;
         // this is the FwdHit we will use in seeds
         mEventVertexHit.setXYZDetId( v.X(), v.Y(), v.Z(), kTpcId );
-        mEventVertexHit._covmat(0,0) = 0.1;
-        mEventVertexHit._covmat(1,1) = 0.1;
-        mEventVertexHit._covmat(2,2) = 0.1;
+        mEventVertexHit._covmat(0,0) = 0.001;
+        mEventVertexHit._covmat(1,1) = 0.001;
+        mEventVertexHit._covmat(2,2) = 0.001;
     }
     TVector3 getEventVertex() { return mEventVertex; }
 
