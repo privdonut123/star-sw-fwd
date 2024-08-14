@@ -26,11 +26,3 @@ class StFttFastSimMaker : public StMaker {
 
 
 #endif
-
-
-class TESTCLS {
-    public:
-    int j;
-    TESTCLS() : j(0) {}
-    void setJ(int i) { j = i; }
-};
