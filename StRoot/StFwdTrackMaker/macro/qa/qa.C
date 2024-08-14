@@ -73,11 +73,16 @@ void qa(){
 			track->getProjectionFor(kFcsWcalId, projWCAL);
 			printf("Projection @ WCAL: det=%d, x=%f, y=%f, z=%f\n", projWCAL.mDetId, projWCAL.mXYZ.X(), projWCAL.mXYZ.Y(), projWCAL.mXYZ.Z());
 
+
 			StMuFwdTrackProjection projHCAL;
 			track->getProjectionFor(kFcsHcalId, projHCAL);
 			printf("Projection @ HCAL: det=%d, x=%f, y=%f, z=%f\n", projHCAL.mDetId, projHCAL.mXYZ.X(), projHCAL.mXYZ.Y(), projHCAL.mXYZ.Z());
+
+			//FcsClusterWithStarXYZ * wcalCluster =  wcal->At(j);
+			//FcsClusterWithStarXYZ * hcalCluster =  hcal->At(j);
+			//printf("Event %d: clusterratio = %f\n", j, wcalCluster.Energy/hcalCluster.Energy);
+
         }
     }
-
 	cout << "Processed: " << t->GetEntries() << " entries" << endl;
 }
