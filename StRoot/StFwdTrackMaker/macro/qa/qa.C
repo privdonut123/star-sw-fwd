@@ -12,6 +12,10 @@ void qa(){
 	gROOT->LoadMacro("$STAR/StRoot/StMuDSTMaker/COMMON/macros/loadSharedLibraries.C");
 	loadSharedLibraries();
 
+	gSystem->Load("libgenfit2.so");
+	gSystem->Load("libKiTrack.so");
+	gSystem->Load( "libStFwdTrackMaker.so" );
+
     // now open our data file
     TFile *f = new TFile("fwdtree.root");
     TTree *t = (TTree*)f->Get("fwd");
@@ -77,12 +81,25 @@ void qa(){
 			StMuFwdTrackProjection projHCAL;
 			track->getProjectionFor(kFcsHcalId, projHCAL);
 			printf("Projection @ HCAL: det=%d, x=%f, y=%f, z=%f\n", projHCAL.mDetId, projHCAL.mXYZ.X(), projHCAL.mXYZ.Y(), projHCAL.mXYZ.Z());
+<<<<<<< HEAD
 
 			//FcsClusterWithStarXYZ * wcalCluster =  wcal->At(j);
 			//FcsClusterWithStarXYZ * hcalCluster =  hcal->At(j);
 			//printf("Event %d: clusterratio = %f\n", j, wcalCluster.Energy/hcalCluster.Energy);
 
         }
+=======
+        
+			// loop over WCAL clusters
+			for ( int k = 0; k < wcal->GetEntries(); k++ ){
+				FcsClusterWithStarXYZ *cluster = (FcsClusterWithStarXYZ*)wcal->At(k);
+				
+				printf("WCAL Cluster %d: x=%f, y=%f, z=%f\n", k, cluster->mXYZ.X(), cluster->mXYZ.Y(), cluster->mXYZ.Z());
+
+			}
+		
+		}
+>>>>>>> bd9dfe087925375e8c95c8f3186cbc88377430c8
     }
 	cout << "Processed: " << t->GetEntries() << " entries" << endl;
 }

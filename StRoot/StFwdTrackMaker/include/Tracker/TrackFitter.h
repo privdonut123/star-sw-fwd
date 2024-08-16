@@ -362,6 +362,11 @@ class TrackFitter {
         double pt = mcurv * K * 5; // pT from average measured curv
         double dx = (p1.X() - p0.X());
         double dy = (p1.Y() - p0.Y());
+        // help prevent seed from having zero pT - exception on TVector3 when calling Eta()
+        if ( abs(dx) < 1e-6 || abs(dy) < 1e-6){
+            dx = 1e-1;
+            dy = 1e-1;
+        }
         double dz = (p1.Z() - p0.Z());
         double phi = TMath::ATan2(dy, dx);
         double Rxy = sqrt(dx * dx + dy * dy);
@@ -371,9 +376,9 @@ class TrackFitter {
         }
         Rxy = sqrt( p0.X()*p0.X() + p0.Y()*p0.Y() );
         theta = TMath::ATan2(Rxy, p0.Z());
-
-        LOG_DEBUG << TString::Format( "pt=%f, dx=%f, dy=%f, dz=%f, phi=%f, theta=%f", pt, dx, dy, dz, phi, theta ) << endm;
-        // double eta = -log( tantheta / 2.0 );
+        double eta = -log( TMath::Tan(theta) / 2.0 );
+        LOG_DEBUG << TString::Format( "pt=%f, dx=%f, dy=%f, dz=%f, phi=%f, theta=%f, eta=%f", pt, dx, dy, dz, phi, theta, eta ) << endm;
+        
         // these starting conditions can probably be improvd, good study for students
 
         seedMom.SetPtThetaPhi(pt, theta, phi);
@@ -707,16 +712,7 @@ class TrackFitter {
      * @param seedPos : seed position
      * @param Vertex : primary vertex
      */
-    void setupTrack(Seed_t trackSeed, TVector3 seedMom, TVector3 seedPos, double *Vertex = 0) {
-        // If we use the PV, use that as the start pos for the track
-        TVectorD pv(3);
-        if (Vertex != 0) {
-            seedPos.SetXYZ(Vertex[0], Vertex[1], Vertex[2]);
-            pv[0] = Vertex[0];
-            pv[1] = Vertex[1];
-            pv[2] = Vertex[2];
-        }
-
+    void setupTrack(Seed_t trackSeed, TVector3 seedMom, TVector3 seedPos) {
         // create the track representations
         // Note that multiple track reps differing only by charge results in a silent failure of GenFit
         auto theTrackRep = new genfit::RKTrackRep(mPdgMuon);
@@ -726,20 +722,6 @@ class TrackFitter {
         // now add the points to the track
 
         int hitId(0);       // hit ID
-        /******************************************************************************************************************
-        * Include the Primary vertex if desired
-        ******************************************************************************************************************/
-        if (mIncludeVertexInFit) {
-            LOG_DEBUG << "Including vertex in fit" << endm;
-            TMatrixDSym hitCov3(3);
-            hitCov3(0, 0) = mVertexSigmaXY * mVertexSigmaXY;
-            hitCov3(1, 1) = mVertexSigmaXY * mVertexSigmaXY;
-            hitCov3(2, 2) = mVertexSigmaZ * mVertexSigmaZ;
-
-            genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, hitCov3, 0, ++hitId, nullptr);
-            mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
-        }
-
         size_t planeId(0);     // detector plane ID
 
         // initialize the hit coords on plane
@@ -755,7 +737,20 @@ class TrackFitter {
             hitCoords[0] = h->getX();
             hitCoords[1] = h->getY();
 
-            genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), h->getSector(), ++hitId, nullptr);
+            /******************************************************************************************************************
+            * If the Primary vertex is included
+            ******************************************************************************************************************/
+            if (fh->isPV()) {
+                LOG_DEBUG << "Including primary vertex in fit" << endm;
+                TVectorD pv(3);
+                pv[0] = h->getX();
+                pv[1] = h->getY();
+                pv[2] = h->getZ();
+                genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, nullptr);
+                mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
+            }
+
+            genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), fh->_detid, ++hitId, nullptr);
 
             planeId = h->getSector();
             genfit::SharedPlanePtr plane;
@@ -811,22 +806,23 @@ class TrackFitter {
      * @param seedMomentum : seed momentum (can be from MC)
      * @return void : the results can be accessed via the getTrack() method
      */
-    long long fitTrack(Seed_t trackSeed, double *Vertex = 0, TVector3 *seedMomentum = 0) {
+    long long fitTrack(Seed_t trackSeed, TVector3 *seedMomentum = 0) {
         long long itStart = FwdTrackerUtils::nowNanoSecond();
         LOG_DEBUG << "Fitting track with " << trackSeed.size() << " seed points" << endm;
         
         // get the seed info from our hits
         static TVector3 seedMom, seedPos;
         LOG_DEBUG << "Getting seed state" << endm;
-        // returns track curvature if needed
         seedState(trackSeed, seedPos, seedMom);
-
-        if (seedMomentum != nullptr) {
+        // Note: the check on pT/Mag is bc TVector3 throws an exception when trying to get Eta() when pT=0 and pZ!=0
+        if (seedMomentum != nullptr && seedMomentum->Pt() / seedMomentum->Mag() > 1e-3) {
             seedMom = *seedMomentum;
-            LOG_DEBUG << "Using provided seedMomentum: " << TString::Format( "(pt=%f, eta=%f, phi=%f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;
+            LOG_DEBUG << "Using provided seedMomentum: pT=" << seedMomentum->Pt() << endm;
+            LOG_DEBUG << TString::Format( "(px=%f, py=%f, pz=%f)", seedMom.Px(), seedMom.Py(), seedMom.Pz() ) << endm;
+            LOG_DEBUG << TString::Format( "(pt=%f, eta=%f, phi=%f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;
         }
 
-        setupTrack(trackSeed, seedMom, seedPos, Vertex);
+        setupTrack(trackSeed, seedMom, seedPos);
         LOG_DEBUG << "Ready to fit with " << mFitTrack->getNumPoints() << " track points" << endm;
 
         /******************************************************************************************************************

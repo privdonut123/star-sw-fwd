@@ -147,13 +147,12 @@ void sim( int n = 100, // nEvents to run
 
             fwdTrack->setTrackRefit( false );
             fwdTrack->setOutputFilename( outputName );
-            // fwdTrack->SetGenerateTree( false );
-            fwdTrack->SetGenerateHistograms( false );
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
-            // fwdTrack->setTrackFittingOff();
             fwdTrack->setIncludePrimaryVertexInFit( false );
-            fwdTrack->setUseMcSeedForFit(true);
+            
+            // fwdTrack->setTrackFittingOff();
+            // fwdTrack->setUseMcSeedForFit(true);
             // fwdTrack->setConfigKeyValue("")
             // fwdTrack->setZeroB( true );
             bool doFitQA = true;

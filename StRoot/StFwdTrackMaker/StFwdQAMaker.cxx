@@ -22,6 +22,7 @@
 
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuDst.h"
+#include "StMuDSTMaker/COMMON/StMuEvent.h"
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
@@ -35,10 +36,8 @@
 #include "StMuDSTMaker/COMMON/StMuMcTrack.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 
-// ClassImp(FcsClusterWithStarXYZ);
-
-/** Clear the FwdTreeData from one event to next */
-void FwdTreeData::clear(){
+/** Clear the FwdQATreeData from one event to next */
+void FwdQATreeData::clear(){
     header.clear();
     mcTracks.reset();
     fttPoints.reset();
@@ -106,7 +105,6 @@ int StFwdQAMaker::Init() {
     mTreeData.fstPoints.createBranch(mTree, "fstHits");
     mTreeData.fttPoints.createBranch(mTree, "fttPoints");
     mTreeData.fttClusters.createBranch(mTree, "fttClusters");
-    mTreeData.fstPoints.createBranch(mTree, "fstPoints");
     mTreeData.wcal.createBranch(mTree, "wcalClusters");
     mTreeData.hcal.createBranch(mTree, "hcalClusters");
 
@@ -233,19 +231,10 @@ int StFwdQAMaker::Make() {
         LOG_WARN << "No StFwdTrackMaker found, skipping StFwdQAMaker" << endm;
         // return kStOk;
     }
-    LOG_DEBUG << "SETUP COMPLETE" << endm;
-    // Get the primary vertex used by the FWD Tracker
-    auto eventPV = mFwdTrackMaker->GetEventPrimaryVertex();
-    LOG_DEBUG << "HEADER COMPLETE" << endm;
 
-    auto muFstCollection = mMuDst->muFstCollection();
-    if ( muFstCollection ){
-        LOG_DEBUG << "MuDst has #fst hits: " << muFstCollection->numberOfHits() << endm;
-        for ( size_t i = 0; i < muFstCollection->numberOfHits(); i++ ){
-            StMuFstHit * h = muFstCollection->getHit(i);
-            mTreeData.fstPoints.add( h );
-        }
-    }
+    mTreeData.header.run = mMuDst->event()->runNumber();
+    LOG_DEBUG << "SETUP COMPLETE" << endm;
+
     FillMcTracks();
     FillTracks();
     FillFstPoints();
@@ -267,36 +256,10 @@ void StFwdQAMaker::FillFstPoints(){
         return;
     }
 
-    // size_t numFwdHitsPrior = mFwdHitsFst.size();
     LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
-    // TMatrixDSym hitCov3(3);
     for ( unsigned int index = 0; index < fst->numberOfHits(); index++){
         StMuFstHit * muFstHit = fst->getHit( index );
         mTreeData.fstPoints.add( muFstHit );
-
-
-        // float vR = muFstHit->localPosition(0);
-        // float vPhi = muFstHit->localPosition(1);
-        // float vZ = muFstHit->localPosition(2);
-
-        // const float dz0 = fabs( vZ - mFstZFromGeom[0] );
-        // const float dz1 = fabs( vZ - mFstZFromGeom[1] );
-        // const float dz2 = fabs( vZ - mFstZFromGeom[2] );
-        // static const float fstThickness = 2.0; // thickness in cm between inner and outer on sigle plane
-
-        // // assign disk according to which z value the hit has, within the z-plane thickness
-        // int d = 0 * ( dz0 < fstThickness ) + 1 * ( dz1 < fstThickness ) + 2 * ( dz2 < fstThickness );
-
-        // float x0 = vR * cos( vPhi );
-        // float y0 = vR * sin( vPhi );
-        // hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
-
-        // LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;
-        // mFstHits.push_back( TVector3( x0, y0, vZ)  );
-
-        // // we use d+4 so that both FTT and FST start at 4
-        // mFwdHitsFst.push_back(FwdHit(count++, x0, y0, vZ, d+4, 0, hitCov3, nullptr));
-        // count++;
     } // index
 }
 
