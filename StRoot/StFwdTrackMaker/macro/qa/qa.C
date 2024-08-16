@@ -89,9 +89,7 @@ void qa(){
 				printf("WCAL Cluster %d: x=%f, y=%f, z=%f\n", k, cluster->mXYZ.X(), cluster->mXYZ.Y(), cluster->mXYZ.Z());
 
 			}
-		
-		}
-    }
+
         
 			// loop over WCAL clusters
 			for ( int k = 0; k < wcal->GetEntries(); k++ ){
