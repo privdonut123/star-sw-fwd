@@ -62,6 +62,7 @@ Int_t StFttFastSimMaker::Make() {
         float x = git->x[0] + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
         float y = git->x[1] + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
         float z = git->x[2];
+        LOG_DEBUG << "FttFastSim making FTT Hit at x=" << x << " y=" << y << " z=" << z << endm;
         
         StFttPoint *point = new StFttPoint();
         point->setPlane(plane_id);

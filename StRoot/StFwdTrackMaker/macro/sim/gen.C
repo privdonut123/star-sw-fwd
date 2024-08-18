@@ -18,8 +18,8 @@ StarKinematics *kinematics = 0;
 
 
 TH1F* hNumHits = 0;
-TString nameParticle = "pi+";
-float numParticles = 10;
+TString nameParticle = "mu+";
+float numParticles = 1;
 
 // ----------------------------------------------------------------------------
 void geometry( TString tag, Bool_t agml=true )
@@ -46,17 +46,17 @@ void trig( Int_t n=1 )
     chain->Clear();
 
     kinematics->Kine( numParticles, nameParticle.Data(), 0.05, 15.0, 1.0, 6.00  );
-	  // kinematics->Kine( numParticles, "pi-", 0.05, 15.0, 2.0, 5.00  );
+	  kinematics->Kine( numParticles, "mu-", 0.05, 15.0, 1.0, 6.00  );
 
     // Generate the event
     chain->Make();
 
-    TTable* hits = chain->GetDataSet("bfc/.make/geant/.data/g2t_stg_hit");
-    if ( hits ) {
-      double nhits = hits->GetNRows();
-      hNumHits->Fill( double(i), nhits / 4.0 / numParticles );
-      std::cout << "N hits  = " << nhits << std::endl;
-    }
+    // TTable* hits = chain->GetDataSet("bfc/.make/geant/.data/g2t_stg_hit");
+    // if ( hits ) {
+    //   double nhits = hits->GetNRows();
+    //   hNumHits->Fill( double(i), nhits / 4.0 / numParticles );
+    //   std::cout << "N hits  = " << nhits << std::endl;
+    // }
 
     // Print the event
     // command("gprint hits stgh");
