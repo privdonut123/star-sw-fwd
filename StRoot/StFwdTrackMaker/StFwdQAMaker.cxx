@@ -213,7 +213,10 @@ int StFwdQAMaker::Make() {
     }
     LOG_INFO << "SETUP START" << endm;
     // setup the datasets / makers
-    mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
+
+    ProcessFwdMuTracks();
+
+    /*mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
         mMuDst = mMuDstMaker->muDst();
         mMuForwardTrackCollection = mMuDst->muFwdTrackCollection();
@@ -221,9 +224,13 @@ int StFwdQAMaker::Make() {
         if (mMuForwardTrackCollection){
             LOG_DEBUG << "Number of StMuFwdTracks: " << mMuForwardTrackCollection->numberOfFwdTracks() << endm;
         }
+        else{
+            LOG_DEBUG << "No muFwdTrackCollection " << endm;
+        }
     } else {
         LOG_DEBUG << "No StMuDstMaker found: " << mMuDstMaker << endm;
     }
+
     mFcsDb = static_cast<StFcsDb *>(GetDataSet("fcsDb"));
 
     mFwdTrackMaker = (StFwdTrackMaker*) GetMaker( "fwdTrack" );
@@ -232,16 +239,22 @@ int StFwdQAMaker::Make() {
         // return kStOk;
     }
 
-    mTreeData.header.run = mMuDst->event()->runNumber();
+    mTreeData.header.run = mMuDst->event()->runNumber();*/
+
     LOG_DEBUG << "SETUP COMPLETE" << endm;
+    ProcessFwdTracks();
+    ProcessFwdMuTracks();
 
     FillMcTracks();
-    FillTracks();
-    FillFstPoints();
+    FillTracks(); //maybe not running
+    FillFstPoints(); //no fst
     FillFttClusters();
     FillFcsStMuDst();
     mTree->Fill();
-    ProcessFwdTracks();
+
+    LOG_INFO << "GOT TO HERE ";
+
+
     return kStOk;
 }
 void StFwdQAMaker::Clear(const Option_t *opts) {
@@ -369,6 +382,9 @@ void StFwdQAMaker::FillFttClusters(){
             StMuFttPoint * c = muFttCollection->getPoint(i);
             mTreeData.fttPoints.add( c );
         }
+    }
+    else{
+        LOG_INFO << "no muFttCollection " << endm;
     }
 }
 

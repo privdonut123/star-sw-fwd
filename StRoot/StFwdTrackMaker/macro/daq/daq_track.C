@@ -42,10 +42,7 @@ void daq_track(    int n = 50,
             fwdTrack->setGeoCache( "fGeom.root" );
             // fwdTrack->setDebug();
 
-            // Generate FWD QA
-            StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
-            fwdQAMk->SetDebug(2);
-            chain->AddAfter("fwdTrack", fwdQAMk);
+            
         }
     }
 
@@ -56,6 +53,13 @@ void daq_track(    int n = 50,
     cout << "picoMk = " << picoMk << endl;
     picoMk->setVtxMode(StPicoDstMaker::Default);
 
+        // Generate FWD QA
+    StFwdQAMaker *fwdQAMk = new StFwdQAMaker();
+    fwdQAMk->SetDebug(2);
+    chain->AddAfter("fwdTrack", fwdQAMk);
+
+
+    
     chain->Print();
     // Initialize the chain
     chain->Init();

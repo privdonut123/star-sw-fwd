@@ -204,7 +204,7 @@ class StFwdQAMaker : public StMaker {
     void ProcessFwdTracks();
     void ProcessFwdMuTracks();
 
-
+    void setMuDstInput() { mAnalyzeMuDst = true; }
     void setLocalOutputFile( TString f ) { mLocalOutputFile = f; }
 
 
