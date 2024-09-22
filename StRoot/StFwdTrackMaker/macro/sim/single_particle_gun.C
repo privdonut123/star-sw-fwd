@@ -1,5 +1,6 @@
 //usr/bin/env root4star -l -b -q $0'('$1', '$2')'; exit $?
 #include "gen.C"
+#include "TString.h"
 
 void single_particle_gun( Int_t nevents=100, Int_t rngSeed=54152342,
                           TString particle="mu+", Int_t nParticles=1,
@@ -17,8 +18,10 @@ void single_particle_gun( Int_t nevents=100, Int_t rngSeed=54152342,
   minPhi = _minPhi;
   maxPhi = _maxPhi;
 
-  fzdFilename = TString::Format("single_particle_gun_%s_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.fzd", particle.Data(), nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
-  fzdFilename = "sim.fzd";
+  TString safeName = particle;
+  safeName.ReplaceAll("+", "plus");
+  safeName.ReplaceAll("-", "minus");
+  fzdFilename = TString::Format("single_particle_gun_%s_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.fzd", safeName.Data(), nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
   cout << "Writing output to: " << fzdFilename << endl;
   gen( nevents, rngSeed );
 }

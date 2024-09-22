@@ -108,6 +108,7 @@ void sim(       char *inFile =  "sim.fzd",
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
 
         if ( fwdTrack ){
+            fwdTrack->SetDebug(1);
             // config file set here for ideal simulation
             if (!realisticSim){
                 cout << "Configured for ideal simulation (MC finding + MC mom seed)" << endl;
