@@ -222,7 +222,7 @@
         <Volume name="STGM" comment="STGC Mother volume" assembly="true" >
             <Material name="Air" />
             <!-- STGM placement and params taken from old geometry -->
-            <Shape type="tube" rmin="0" rmax="95.0" dz="27.0" />
+            <Shape type="tube" rmin="0" rmax="95.0" dz="30.0" />
 
 
             <Create block="STFM"  />

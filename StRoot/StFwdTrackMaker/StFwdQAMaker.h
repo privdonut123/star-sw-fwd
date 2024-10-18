@@ -193,7 +193,6 @@ class StFwdQAMaker : public StMaker {
     int Make();
     void Clear(const Option_t *opts = "");
 
-
     void FillFttClusters();
     void FillFstPoints();
     void FillFcsStEvent();
