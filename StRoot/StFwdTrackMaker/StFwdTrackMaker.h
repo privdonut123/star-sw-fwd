@@ -10,6 +10,7 @@
 
 #include "FwdTrackerConfig.h"
 #include "TVector3.h"
+#include "TMatrix.h"
 
 namespace KiTrack {
 class IHit;
@@ -118,6 +119,7 @@ class StFwdTrackMaker : public StMaker {
     // I could not get the library generation to succeed with these.
     // so I have removed them
     #ifndef __CINT__
+        TMatrixDSym mEventVertexCov; // covariance matrix for the primary vertex
         enum FwdVertexSource { kFwdVertexSourceUnknown, kFwdVertexSourceNone, kFwdVertexSourceTpc, kFwdVertexSourceMc, kFwdVertexSourceVpd }; // unknown means we havent looked yet
         FwdVertexSource mFwdVertexSource = StFwdTrackMaker::kFwdVertexSourceUnknown;
         vector<FwdHit> mFwdHitsFtt;
