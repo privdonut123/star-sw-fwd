@@ -259,13 +259,14 @@ class TrackFitter {
             KiTrack::SimpleCircle sc(trackSeed[i0]->getX(), trackSeed[i0]->getY(), trackSeed[i1]->getX(), trackSeed[i1]->getY(), trackSeed[i2]->getX(), trackSeed[i2]->getY());
             curv = sc.getRadius();
         } catch (KiTrack::InvalidParameter &e) {
-            // if we got here we failed to get  a valid seed. We will still try to move forward but the fit will probably fail
-            LOG_WARN << "Circle fit failed, FWD track fit will likely fail also" << endm;
+            // the only time this exception is thrown is for 3 colinear points, so set small curvature
+            LOG_DEBUG << "Circle fit failed, FWD track fit may fail also: " << e.what() << endm;
+            curv = 0.001;
         }
 
         //  make sure the curv is valid
         if (isinf(curv)){
-            curv = 0.0;
+            curv = 100.0;
         }
 
         return curv;
@@ -439,7 +440,7 @@ class TrackFitter {
 
         size_t planeId = h->getSector();
 
-        static const TVector3 hitXYZ( h->getX(), h->getY(), h->getZ() );
+        const TVector3 hitXYZ( h->getX(), h->getY(), h->getZ() );
 
         double phi = hitXYZ.Phi();
         if ( phi < 0 ) phi = TMath::Pi() * 2 + phi;
@@ -470,7 +471,7 @@ class TrackFitter {
      * @return TVector3 : momentum
      */
     TVector3 refitTrackWithFstHits(genfit::Track *originalTrack, Seed_t fstHits) {
-        static const TVector3 pOrig = originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
+        const TVector3 pOrig = originalTrack->getCardinalRep()->getMom(originalTrack->getFittedState(1, originalTrack->getCardinalRep()));
 
         if (originalTrack->getFitStatus(originalTrack->getCardinalRep())->isFitConverged() == false) {
             // in this case the original track did not converge so we should not refit.
@@ -538,7 +539,7 @@ class TrackFitter {
             mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack));
 
 
-            static const TVector3 hitXYZ( h->getX(), h->getY(), h->getZ() );
+            const TVector3 hitXYZ( h->getX(), h->getY(), h->getZ() );
             float phi = hitXYZ.Phi();
             if ( phi < 0 ) phi = TMath::Pi() * 2 + phi;
             double phi_slice = phi / (TMath::Pi() / 6.0); // 2pi/12
@@ -591,7 +592,7 @@ class TrackFitter {
             } catch (genfit::Exception &e) {
             }
 
-            static const TVector3 p = mFitTrack->getCardinalRep()->getMom(mFitTrack->getFittedState(1, mFitTrack->getCardinalRep()));
+            const TVector3 p = mFitTrack->getCardinalRep()->getMom(mFitTrack->getFittedState(1, mFitTrack->getCardinalRep()));
             return p;
         }
         return pOrig;
@@ -695,7 +696,7 @@ class TrackFitter {
 
             mFitTrack->determineCardinalRep();
             auto cardinalRep = mFitTrack->getCardinalRep();
-            static const TVector3 p = cardinalRep->getMom(mFitTrack->getFittedState(1, cardinalRep));
+            const TVector3 p = cardinalRep->getMom(mFitTrack->getFittedState(1, cardinalRep));
             // sucess, return momentum
             return p;
         } catch (genfit::Exception &e) {
@@ -740,14 +741,17 @@ class TrackFitter {
             /******************************************************************************************************************
             * If the Primary vertex is included
             ******************************************************************************************************************/
-            if (fh->isPV()) {
+            if (true || fh->isPV()) {
+                LOG_INFO << "Treating hit as a spacepoint" << endm;
                 LOG_DEBUG << "Including primary vertex in fit" << endm;
                 TVectorD pv(3);
                 pv[0] = h->getX();
                 pv[1] = h->getY();
                 pv[2] = h->getZ();
+                LOG_INFO << "sigma_x" << fh->_covmat(0,0) << ", sigma_y = " << fh->_covmat(1,1) << ", sigma_z = " << fh->_covmat(2,2) << endm;
                 genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, nullptr);
                 mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
+                continue;
             }
 
             genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), fh->_detid, ++hitId, nullptr);
@@ -766,7 +770,7 @@ class TrackFitter {
 
             if (fh->isFtt())
                 plane = mFTTPlanes[planeId];
-            else
+            else if (fh->isFst())
                 plane = getFstPlane( fh );
 
             measurement->setPlane(plane, planeId);
