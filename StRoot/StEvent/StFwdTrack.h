@@ -22,6 +22,7 @@
 #include <vector>
 #include "StThreeVectorD.hh"
 #include "StContainers.h"
+#include <climits>
 
 class StFcsCluster;
 
@@ -137,6 +138,7 @@ public:
     UShort_t qaTruth() const { return mQATruth; }
     StThreeVectorD dca() const { return StThreeVectorD( mDCA[0], mDCA[1], mDCA[2] ); }
     UChar_t vertexIndex() const { return mVtxIndex; }
+    bool isPrimary() const { return mVtxIndex != UCHAR_MAX; }
 
     void setPrimaryMomentum( StThreeVectorD mom ) { mPrimaryMomentum = mom; }
     void setDidFitConverge( bool lDidFitConverge ) { mDidFitConverge = lDidFitConverge; }
