@@ -214,9 +214,8 @@ int StFwdQAMaker::Make() {
     LOG_INFO << "SETUP START" << endm;
     // setup the datasets / makers
 
-    ProcessFwdMuTracks();
 
-    /*mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
+    mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     if(mMuDstMaker) {
         mMuDst = mMuDstMaker->muDst();
         mMuForwardTrackCollection = mMuDst->muFwdTrackCollection();
@@ -239,7 +238,7 @@ int StFwdQAMaker::Make() {
         // return kStOk;
     }
 
-    mTreeData.header.run = mMuDst->event()->runNumber();*/
+    mTreeData.header.run = mMuDst->event()->runNumber();
 
     LOG_DEBUG << "SETUP COMPLETE" << endm;
     ProcessFwdTracks();
@@ -251,9 +250,6 @@ int StFwdQAMaker::Make() {
     FillFttClusters();
     FillFcsStMuDst();
     mTree->Fill();
-
-    LOG_INFO << "GOT TO HERE ";
-
 
     return kStOk;
 }
@@ -297,6 +293,8 @@ void StFwdQAMaker::FillTracks() {
                 break;
             }
         }
+    } else {
+        LOG_WARN << "No StMuFwdTrackCollection found" << endm;
     }
     LOG_DEBUG << "TRACKS COMPLETE" << endm;
 }
@@ -326,7 +324,7 @@ void StFwdQAMaker::FillFcsStMuDst( ) {
         } else if ( clu->detectorId() == kFcsHcalNorthDetId || clu->detectorId() == kFcsHcalSouthDetId ){
             LOG_INFO << "Adding HCAL Cluster to FwdTree" << endm;
             mTreeData.hcal.add( cluSTAR );
-        } 
+        }
 
         delete cluSTAR;
     }
@@ -463,7 +461,7 @@ void StFwdQAMaker::ProcessFwdTracks(  ){
         getHist( "nHitsFit" )->Fill( fwdTrack->numberOfFitPoints() );
 
         if (fwdTrack->mFSTPoints.size() > 0){
-            fwdMultFST ++; 
+            fwdMultFST ++;
         }
 
         getHist("eta")->Fill( fwdTrack->momentum().pseudoRapidity() );
