@@ -1,4 +1,4 @@
-//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-200}')'; exit $?
+//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-1000}')'; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
 
@@ -8,10 +8,10 @@
 TFile *output = 0;
 
 void sim(       char *inFile =  "sim.fzd",
-                int n = 100, // nEvents to run
-                bool useFstForSeedFinding = false, // use FTT (default) or FST for track finding
+                int n = 100000, // nEvents to run
+                bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
-                bool realisticSim = false, // enables data-like mode, real track finding and fitting without MC seed
+                bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
                 bool useZeroB = false
             ) {
     // report all of the parameters passed in
@@ -36,7 +36,7 @@ void sim(       char *inFile =  "sim.fzd",
     // Setup the chain for reading an FZD
     TString _chain;
     if ( useFCS )
-        _chain = Form("fzin %s sdt20211016 fstFastSim fcsSim fcsWFF fcsCluster fwdTrack MakeEvent StEvent ReverseField bigbig evout cmudst tree", _geom.Data() );
+        _chain = Form("fzin %s sdt20211016 fstFastSim fcsSim fcsWFF fcsCluster fwdTrack MakeEvent StEvent McEvent ReverseField bigbig evout cmudst tree", _geom.Data() );
     else
         _chain = Form("fzin %s sdt20211016 MakeEvent StEvent ReverseField bigbig fstFastSim fcsSim fwdTrack evout cmudst tree", _geom.Data());
 
@@ -124,7 +124,7 @@ void sim(       char *inFile =  "sim.fzd",
                 fwdTrack->setGeoCache( "fGeom.root" );
             }
 
-            // choose 
+            // choose
                 if (useFstForSeedFinding)
                     fwdTrack->setSeedFindingWithFst();
                 else { // default for this true/false option
@@ -140,7 +140,7 @@ void sim(       char *inFile =  "sim.fzd",
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
             fwdTrack->setIncludePrimaryVertexInFit( false );
-            
+
             // fwdTrack->setTrackFittingOff();
             // fwdTrack->setUseMcSeedForFit(true);
             // fwdTrack->setConfigKeyValue("")
