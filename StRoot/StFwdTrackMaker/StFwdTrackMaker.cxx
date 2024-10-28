@@ -357,17 +357,17 @@ void StFwdTrackMaker::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdD
         return;
     }
 
-    // Load GEANT hits directly if requested
-    if ( "GEANT" == fttFromSource  ) {
-        LOG_DEBUG << "Loading sTGC hits directly from GEANT hits" << endm;
-        loadFttHitsFromGEANT( mcTrackMap, hitMap, count );
-        return;
-    }
-
     StFttCollection *col = event->fttCollection();
     // From Data
     if ( col || "DATA" == fttFromSource ) {
         loadFttHitsFromStEvent( mcTrackMap, hitMap, count );
+        return;
+    }
+
+    // Load GEANT hits directly if requested
+    if ( true ) {
+        LOG_DEBUG << "Try loading sTGC hits directly from GEANT hits" << endm;
+        loadFttHitsFromGEANT( mcTrackMap, hitMap, count );
         return;
     }
 } // loadFttHits
@@ -445,10 +445,10 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
 
     // make the Covariance Matrix once and then reuse
     TMatrixDSym hitCov3(3);
-    const double sigXY = 0.01;
+    const double sigXY = 0.02;
     hitCov3(0, 0) = sigXY * sigXY;
     hitCov3(1, 1) = sigXY * sigXY;
-    hitCov3(2, 2) = 1.0; // unused since they are loaded as points on plane
+    hitCov3(2, 2) = 0.1; // unused since they are loaded as points on plane
 
     int nstg = g2t_stg_hits->GetNRows();
 
@@ -468,8 +468,8 @@ void StFwdTrackMaker::loadFttHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
         if ( volume_id % 2 ==0 )
             continue;
 
-        float x = git->x[0] + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
-        float y = git->x[1] + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float x = git->x[0];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float y = git->x[1];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
         float z = git->x[2];
 
         if (plane_id < 0 || plane_id >= 4) {
@@ -855,7 +855,19 @@ int StFwdTrackMaker::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackM
  */
 size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
 
+    LOG_DEBUG << "Looking for GEANT sim vertex info" << endm;
+    St_g2t_vertex *g2t_vertex = (St_g2t_vertex *)GetDataSet("geant/g2t_vertex");
 
+    if ( g2t_vertex != nullptr ) {
+        // Set the MC Vertex for track fitting
+        g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(0);
+        TMatrixDSym cov;
+        cov.ResizeTo(3, 3);
+        cov(0, 0) = 0.001;
+        cov(1, 1) = 0.001;
+        cov(2, 2) = 0.001;
+        mForwardTracker->setEventVertex( TVector3( vert->ge_x[0], vert->ge_x[1], vert->ge_x[2] ), cov );
+    }
 
 
     // Get geant tracks
@@ -960,7 +972,7 @@ void StFwdTrackMaker::loadFcs( ) {
 
 TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
     if ( mFwdVertexSource == kFwdVertexSourceNone ){
-        // Note - maybe we will add beamline or assume that when None
+        // Note - maybe we will add beamline or assume some default
         return TVector3(0, 0, 0); // the default vertex, but in general it should not be used
     }
 
@@ -970,13 +982,38 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
 
     mEventVertexCov.ResizeTo(3, 3);
     mEventVertexCov.Zero();
-    mEventVertexCov(0, 0) = 0.1 * 0.1; // default resolution
-    mEventVertexCov(1, 1) = 0.1 * 0.1;
-    mEventVertexCov(2, 2) = 0.1 * 0.1;
+    double sig2 = 1;
+    mEventVertexCov(0, 0) = sig2; // default resolution
+    mEventVertexCov(1, 1) = sig2;
+    mEventVertexCov(2, 2) = sig2;
     // if something is found it will overwrite this, if not
     // it will indicate that we have searched and found nothing
     mFwdVertexSource = kFwdVertexSourceNone;
 
+    /*****************************************************
+     * Add Primary Vertex to the track
+     */
+    St_g2t_vertex *g2t_vertex = (St_g2t_vertex *)GetDataSet("geant/g2t_vertex");
+    if ( g2t_vertex != nullptr ) {
+        // Set the MC Vertex for track fitting
+        g2t_vertex_st *vert = (g2t_vertex_st*)g2t_vertex->At(0);
+        
+        mEventVertexCov.ResizeTo(3, 3);
+        const double sigXY = 0.1;
+        const double sigZ = 10.0;
+        mEventVertexCov(0, 0) = pow(sigXY,2);
+        mEventVertexCov(1, 1) = pow(sigXY,2);
+        mEventVertexCov(2, 2) = pow(sigZ, 2);
+        auto rhc = TVectorD( 3 );
+        rhc[0] = vert->ge_x[0];
+        rhc[1] = vert->ge_x[1];
+        rhc[2] = vert->ge_x[2];
+        mEventVertex.SetXYZ( vert->ge_x[0], vert->ge_x[1], vert->ge_x[2] );
+        mFwdVertexSource = kFwdVertexSourceMc;
+        return mEventVertex;
+    }
+
+    // or try the McEvent
     StMcEvent *stMcEvent = static_cast<StMcEvent *>(GetInputDS("StMcEvent"));
     if (stMcEvent) {
         LOG_INFO << "Setting Event Vertex from StMcEvent: " << stMcEvent << endm;
@@ -985,10 +1022,12 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
         mFwdVertexSource = kFwdVertexSourceMc;
         LOG_INFO << "FWD Tracking on event with MC Primary Vertex: " << mEventVertex.X() << ", " << mEventVertex.Y() << ", " << mEventVertex.Z() << endm;
 
-        mEventVertexCov(0, 0) = 0.0001 * 0.0001;
-        mEventVertexCov(1, 1) = 0.0001 * 0.0001;
-        mEventVertexCov(2, 2) = 0.0001 * 0.0001;
+        mEventVertexCov(0, 0) = 0.1 * 0.1; // default resolution
+        mEventVertexCov(1, 1) = 0.1 * 0.1; // default resolution
+        mEventVertexCov(2, 2) = 0.1 * 0.1; // default resolution
         return mEventVertex;
+    } else {
+        LOG_DEBUG << "No available Mc Primary Vertex" << endm;
     }
 
     // MuDst only for now
@@ -1041,7 +1080,7 @@ int StFwdTrackMaker::Make() {
     if (!stEvent) return kStOk;
 
     /**********************************************************************/
-    // Access forward Tracker maps
+    // Access forward track and hit maps
     FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
     FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
     FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
@@ -1050,6 +1089,7 @@ int StFwdTrackMaker::Make() {
     // get the primary vertex for use with FWD tracking
     mFwdVertexSource = StFwdTrackMaker::kFwdVertexSourceUnknown;
     GetEventPrimaryVertex();
+    LOG_DEBUG << "FWD Vertex Source: " << mFwdVertexSource << endm;
     if ( mFwdVertexSource == kFwdVertexSourceNone ){
         // TODO: add clean support for beamline constraints
         setIncludePrimaryVertexInFit( false );
@@ -1058,7 +1098,7 @@ int StFwdTrackMaker::Make() {
         // this should not be possible
         setIncludePrimaryVertexInFit( false );
     } else {
-        LOG_DEBUG << "Setting FWD event vertex to: " << TString::Format("mEventVertex=(%f, %f, %f)", mEventVertex.X(), mEventVertex.Y(), mEventVertex.Z() ) << endm;
+        LOG_DEBUG << "Setting FWD event vertex to: " << TString::Format("mEventVertex=(%0.3f+/-%0.3f, %0.3f+/-%0.3f, %0.3f+/-%0.3f)", mEventVertex.X(), sqrt(mEventVertexCov(0, 0)), mEventVertex.Y(), sqrt(mEventVertexCov(1, 1)), mEventVertex.Z(), sqrt(mEventVertexCov(2, 2)) ) << endm;
         mForwardTracker->setEventVertex( mEventVertex, mEventVertexCov );
     }
 
@@ -1198,7 +1238,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     int idt = 0;
     double qual = 0;
     idt = MCTruthUtils::dominantContribution(gtr.mSeed, qual);
-    fwdTrack->setMc( idt, qual );
+    fwdTrack->setMc( idt, qual*100 ); // QAtruth stored as UChar_t
     LOG_DEBUG << "Dominant contribution: " << idt << " with quality " << qual << endm;
 
     // Fit failed beyond use

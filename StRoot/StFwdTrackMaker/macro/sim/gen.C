@@ -20,10 +20,10 @@ StarKinematics *kinematics = 0;
 TH1F* hNumHits = 0;
 TString nameParticle = "mu+";
 int numParticles = 1;
-float minPt = 30.05;
-float maxPt = 50.0;
-float minEta = 1.0;
-float maxEta = 6.00;
+float minPt = 0.0;
+float maxPt = 1.0;
+float minEta = 2.5;
+float maxEta = 4.00;
 float minPhi = 0.0;
 float maxPhi = 2.0 * TMath::Pi();
 
@@ -31,9 +31,9 @@ float vtxX = 0.0;
 float vtxY = 0.0;
 float vtxZ = 0.0;
 
-float vtxSigmaX = 0.1;
-float vtxSigmaY = 0.1;
-float vtxSigmaZ = 0.1;
+float vtxSigmaX = 0.0001;
+float vtxSigmaY = 0.0001;
+float vtxSigmaZ = 0.0001;
 
 TString fzdFilename = "sim.fzd";
 TString primaryName = "sim.root";
@@ -55,6 +55,11 @@ void command( TString cmd )
 // ----------------------------------------------------------------------------
 void trig_event( Int_t i )
 {
+  if ( gRandom->Rndm() > 0.5 ) {
+    nameParticle = "mu+";
+  } else {
+    nameParticle = "mu-";
+  }
   kinematics->Kine( numParticles, nameParticle.Data(), minPt, maxPt, minEta, maxEta, minPhi, maxPhi );
 }
 // ----------------------------------------------------------------------------
@@ -78,7 +83,7 @@ void Kinematics()
   _primary->AddGenerator(kinematics);
 }
 // ----------------------------------------------------------------------------
-void gen( Int_t nevents=100, Int_t rngSeed=12352342 )
+void gen( Int_t nevents=1000, Int_t rngSeed=12352342 )
 {
 
   cout << "Generating: " << nevents << " events with seed: " << rngSeed << endl;
@@ -87,7 +92,7 @@ void gen( Int_t nevents=100, Int_t rngSeed=12352342 )
 
   gROOT->ProcessLine(".L bfc.C");
   {
-    TString simple = "sdt20211016 y2023 geant gstar usexgeom agml ";
+    TString simple = "sdt20211016 y2024 geant gstar usexgeom agml ";
     bfc(0, simple );
   }
 
@@ -151,6 +156,7 @@ void gen( Int_t nevents=100, Int_t rngSeed=12352342 )
   //
   // Trigger on nevents
   //
+  // StarMagField::setConstBz(true);
   trig( nevents );
 
   command("call agexit");  // Make sure that STARSIM exits properly

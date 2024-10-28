@@ -96,7 +96,7 @@ StFwdQAMaker::StFwdQAMaker() : StMaker("fwdQAMaker"), mTreeFile(nullptr), mTree(
 
 int StFwdQAMaker::Init() {
 
-    mTreeFile = new TFile("fwdtree.root", "RECREATE");
+    mTreeFile = new TFile( mTreeFilename.Data(), "RECREATE");
     mTree = new TTree("fwd", "fwd tracking tree");
 
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
@@ -209,7 +209,9 @@ int StFwdQAMaker::Make() {
         // report number of fwd tracks
         auto fwdTracks = mStEvent->fwdTrackCollection();
         LOG_INFO << "Number of FwdTracks (StFwdTrackCollection): " << fwdTracks->tracks().size() << endm;
-        LOG_INFO << "Number of Ftt Points (StEvent)" << mStEvent->fttCollection()->points().size() << endm;
+        if ( mStEvent->fttCollection() ){
+            LOG_INFO << "Number of Ftt Points (StEvent)" << mStEvent->fttCollection()->points().size() << endm;
+        }
     }
     LOG_INFO << "SETUP START" << endm;
     // setup the datasets / makers

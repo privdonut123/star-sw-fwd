@@ -22,7 +22,7 @@ class FwdSystem : public KiTrack::ISectorSystem {
     static const int sNFstLayers = 3;
     FwdSystem(const int ndisks = FwdSystem::sNFwdLayers) : KiTrack::ISectorSystem(), mNDisks(ndisks){};
     ~FwdSystem(){/* */};
-    virtual unsigned int getLayer(int diskid) const throw(KiTrack::OutOfRange) {
+    virtual unsigned int getLayer(int diskid) const {
         return diskid;
     }
 

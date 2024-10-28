@@ -184,7 +184,7 @@ public:
 
 
             return TVector3( x, y, _z );
-        } catch ( genfit::Exception e ){
+        } catch ( genfit::Exception &e ){
             LOG_INFO << "Track projection Failed from trackPoint " << iPoint  << " E: " << e.what() << endm;
             return TVector3( -990, -990, -990 );
         }
@@ -308,7 +308,7 @@ public:
             ofile << "usemtl fst_hits\n" << endl;
             for ( auto p : fstHits ){
 
-                float fstphi = TMath::ATan2( p.Y(), p.X() );
+                // float fstphi = TMath::ATan2( p.Y(), p.X() );
                 // printf( "FST PHI: %f \n", fstphi );
                 // tri( ofile, TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.1f, 0.1f, 3.0f, fstphi );
                 sphere( TVector3( p.X() * SCALE, p.Y() * SCALE, -p.Z() * SCALE ), 0.3, 10, 10, ofile );

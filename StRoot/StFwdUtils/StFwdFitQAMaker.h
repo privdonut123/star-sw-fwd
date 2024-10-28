@@ -32,6 +32,7 @@ class StFwdFitQAMaker : public StMaker
     void Clear(const Option_t *opts = "");
     void ProcessFwdTracks();
     void ProcessFwdMuTracks();
+    void setOutputFilename(TString f) {mOutputFilename = f;}
 
     // StEvent analyzed by default
     // call this to analyze the MuDst instead
@@ -76,6 +77,7 @@ class StFwdFitQAMaker : public StMaker
      */
     bool mAnalyzeMuDst = false;
     vector<McFwdTrack> mcTracks;
+    TString mOutputFilename;
 
   ClassDef(StFwdFitQAMaker, 0);
 };

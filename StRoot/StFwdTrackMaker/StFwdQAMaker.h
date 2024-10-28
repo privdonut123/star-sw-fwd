@@ -205,7 +205,7 @@ class StFwdQAMaker : public StMaker {
 
     void setMuDstInput() { mAnalyzeMuDst = true; }
     void setLocalOutputFile( TString f ) { mLocalOutputFile = f; }
-
+    void setTreeFilename( TString f ) {mTreeFilename = f;}
 
   protected:
     TFile *mTreeFile = nullptr;
@@ -243,6 +243,7 @@ class StFwdQAMaker : public StMaker {
      */
     bool mAnalyzeMuDst = false;
     TString mLocalOutputFile;
+    TString mTreeFilename;
 //====================================================== end new stuff
 
 };

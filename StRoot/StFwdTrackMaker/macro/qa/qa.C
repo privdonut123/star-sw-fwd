@@ -108,18 +108,23 @@ void qaMomentumResolution(){
         addH2( "ptRcVsMc", "Track Pt; MC; RC", 200, 0, 10, 200, 0, 10 );
         addH1( "curveRes", "Curvature Resolution; (C^{MC}-C^{RC})/C^{MC}", 200, -2, 2 );
         addH1( "transMomRes", "Pt Resolution; (Pt^{MC} - Pt^{RC}) / Pt^{MC}", 200, -2, 2 );
+        addH1( "deltaCharge", "deltaCharge; |q_{MC}-q_{RC}|;counts;", 5, 0, 5 );
     }
 
     for ( int j = 0; j < fwdTracks->GetEntries(); j++ ){
+        
         StMuFwdTrack *fwt = fwdTracks->At(j);
-        UShort_t indexToMatchedMC = fwt->idTruth();
+        UShort_t indexToMatchedMC = fwt->idTruth() - 1;
+        cout << "Processing track " << j << ", mcid = " << indexToMatchedMC << endl;
         if (indexToMatchedMC >= mcTracks->GetEntries()) continue;
         // get corresponding MC track
         StMuMcTrack *mct = mcTracks->At(indexToMatchedMC);
 
-        float curveMc = mct->Charge() / mct->pT();
-        float curveRc = fwt->charge() / fwt->momentum().Pt();
-        if ( mct->pT() > 0.01 ){
+        float curveMc = fabs(mct->Charge() / mct->pT());
+        float curveRc = fabs(fwt->charge() / fwt->momentum().Pt());
+        cout << "mct->pT() = " << mct->pT() << endl;
+        if ( mct->pT() > 0.1 && fwt->pval() < 0.1){
+            getH1( "deltaCharge" )->Fill( abs( mct->Charge() - fwt->charge() ) );
             getH2( "curveRcVsMc" )->Fill( curveMc, curveRc );
             getH2( "curveMcVsPtMc")->Fill( curveMc, mct->pT() );
             getH2( "ptRcVsMc" )->Fill( mct->pT(), fwt->momentum().Pt() );

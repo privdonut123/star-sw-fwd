@@ -61,14 +61,14 @@
 #include "StFcsDbMaker/StFcsDb.h"
 
 //________________________________________________________________________
-StFwdFitQAMaker::StFwdFitQAMaker() : StMaker("fwdFitQA"){};
+StFwdFitQAMaker::StFwdFitQAMaker() : StMaker("fwdFitQA"), mOutputFilename("StFwdFitQAMaker.root"){};
 int StFwdFitQAMaker::Finish() {
 
     auto prevDir = gDirectory;
 
     // output file name
     string name = "StFwdFitQAMaker.root";
-    TFile *fOutput = new TFile(name.c_str(), "RECREATE");
+    TFile *fOutput = new TFile(mOutputFilename.Data(), "RECREATE");
     fOutput->cd();
 
 
@@ -84,14 +84,23 @@ int StFwdFitQAMaker::Finish() {
 
 
         // 3 FST hits on MC Track
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcEta" )->Clone( "Eff3FSTEta" )) );
-    getHist("Eff3FSTEta")->Divide( (TH1*)getHist( "McEta3FST" ) );
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaPrimary" )->Clone( "Eff3FSTEtaPrimary" )) );
+    getHist("Eff3FSTEtaPrimary")->Divide( (TH1*)getHist( "McEta3FST" ) );
 
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPt" )->Clone( "Eff3FSTPt" )) );
-    getHist("Eff3FSTPt")->Divide( (TH1*)getHist( "McPt3FST" ) );
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtPrimary" )->Clone( "Eff3FSTPtPrimary" )) );
+    getHist("Eff3FSTPtPrimary")->Divide( (TH1*)getHist( "McPt3FST" ) );
 
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhi" )->Clone( "Eff3FSTPhi" )) );
-    getHist("Eff3FSTPhi")->Divide( (TH1*)getHist( "McPhi3FST" ) );
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiPrimary" )->Clone( "Eff3FSTPhiPrimary" )) );
+    getHist("Eff3FSTPhiPrimary")->Divide( (TH1*)getHist( "McPhi3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaGlobal" )->Clone( "Eff3FSTEtaGlobal" )) );
+    getHist("Eff3FSTEtaGlobal")->Divide( (TH1*)getHist( "McEta3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtGlobal" )->Clone( "Eff3FSTPtGlobal" )) );
+    getHist("Eff3FSTPtGlobal")->Divide( (TH1*)getHist( "McPt3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiGlobal" )->Clone( "Eff3FSTPhiGlobal" )) );
+    getHist("Eff3FSTPhiGlobal")->Divide( (TH1*)getHist( "McPhi3FST" ) );
 
     getHist( "TrackStats")->GetXaxis()->SetBinLabel( 1, "MC" );
     getHist( "TrackStats")->GetXaxis()->SetBinLabel( 2, "MCFWD" );
@@ -145,9 +154,13 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH1F("RcMatchedMcEta", ";RcMatchedMcEta; counts", 50, 0, 5) );
     addHist( new TH1F("RcMatchedMcPhi", ";RcMatchedMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
 
-    addHist( new TH1F("RcMatched3FSTMcPt", ";RcMatched3FSTMcPt; counts", 100, 0, 5) );
-    addHist( new TH1F("RcMatched3FSTMcEta", ";RcMatched3FSTMcEta; counts", 50, 0, 5) );
-    addHist( new TH1F("RcMatched3FSTMcPhi", ";RcMatched3FSTMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
+    addHist( new TH1F("RcMatched3FSTMcPtPrimary", ";RcMatched3FSTMcPt; counts", 100, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcEtaPrimary", ";RcMatched3FSTMcEta; counts", 50, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcPhiPrimary", ";RcMatched3FSTMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
+
+    addHist( new TH1F("RcMatched3FSTMcPtGlobal", ";RcMatched3FSTMcPt; counts", 100, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcEtaGlobal", ";RcMatched3FSTMcEta; counts", 50, 0, 5) );
+    addHist( new TH1F("RcMatched3FSTMcPhiGlobal", ";RcMatched3FSTMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
 
     addHist( new TH1F("RcQOverP", ";RcQ/RcP; counts", 2000, -1, 1) );
 
@@ -162,8 +175,16 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F("RcPtMcPt", ";McPt; RcPt", 100, 0.0, 1.0, 100, 0.0, 1.0) );
     addHist( new TH2F("RcPtMcPtPrim", "Primary;McPt; RcPt", 100, 0.0, 1.0, 100, 0.0, 1.0) );
     addHist( new TH2F("RcPtMcPtGlobal", "Global;McPt; RcPt", 100, 0.0, 1.0, 100, 0.0, 1.0) );
+    addHist( new TH2F( "curveResolutionVsPtPrim", ";Pt_{MC};(C_{RC} - C_{MC})/C_{MC}; ", 100, 0, 5.0, 400, -2, 2 ) );
+    addHist( new TH2F( "curveResolutionVsPtGlobal", ";Pt_{MC};(C_{RC} - C_{MC})/C_{MC}; ", 100, 0, 5.0, 400, -2, 2 ) );
 
     addHist( new TH1F( "TrackStats", "Track Stats; Cat;Counts", 10, 0, 10 )  );
+    
+    addHist( new TH2F("QidVsPt", "QMatrix; Pt; Qid;", 100, 0, 2.0, 2, -0.5, 1.5 ) );
+    addHist( new TH2F("QidVsPtPrim", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
+    addHist( new TH2F("QidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
+    addHist( new TH2F("QMisidVsPtPrim", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
+    addHist( new TH2F("QMisidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     return kStOK;
 }
 //________________________________________________________________________
@@ -318,14 +339,20 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
             getHist( "RcPtMcPtGlobal" )->Fill( mct.p.Pt(), fwdTrack->momentum().perp() );
         }
 
-        if ( mct.numFST < 3 && mct.numFTT < 4 ) continue;
+        if ( mct.numFST < 1 || mct.numFTT < 1 ) continue;
         // if ( mct.numFTT < 4 ) continue;
         getHist( "TrackStats" )->Fill( 8 );
 
 
-        getHist( "RcMatched3FSTMcEta" ) ->Fill( mct.p.Eta() );
-        getHist( "RcMatched3FSTMcPt" )  ->Fill( mct.p.Pt() );
-        getHist( "RcMatched3FSTMcPhi" ) ->Fill( mct.p.Phi() );
+        if ( fwdTrack->isPrimary() ){
+            getHist( "RcMatched3FSTMcEtaPrimary" ) ->Fill( mct.p.Eta() );
+            getHist( "RcMatched3FSTMcPtPrimary" )  ->Fill( mct.p.Pt() );
+            getHist( "RcMatched3FSTMcPhiPrimary" ) ->Fill( mct.p.Phi() );
+        } else {
+            getHist( "RcMatched3FSTMcEtaGlobal" ) ->Fill( mct.p.Eta() );
+            getHist( "RcMatched3FSTMcPtGlobal" )  ->Fill( mct.p.Pt() );
+            getHist( "RcMatched3FSTMcPhiGlobal" ) ->Fill( mct.p.Phi() );
+        }
         getHist( "RcPID" )              ->Fill( mct.pid );
         ((TH2*)getHist( "RcQMcQ" ))     ->Fill( mct.q, fwdTrack->charge() );
         double qop = fwdTrack->charge() / fwdTrack->momentum().mag();
@@ -352,8 +379,14 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         
         if ( fwdTrack->isPrimary() ){
             getHist( "curveResolutionPrim" )->Fill( dCurve );
+            getHist( "curveResolutionVsPtPrim" )->Fill( mct.p.Pt(), dCurve );
+            getHist("QidVsPtPrim")->Fill( mct.p.Pt(), mct.q == fwdTrack->charge() ? 1 : 0 );
+            getHist("QMisidVsPtPrim")->Fill( mct.p.Pt(), mct.q == fwdTrack->charge() ? 0 : 1 );
         } else {
             getHist( "curveResolutionGlobal" )->Fill( dCurve );
+            getHist( "curveResolutionVsPtGlobal" )->Fill( mct.p.Pt(), dCurve );
+            getHist("QidVsPtGlobal")->Fill( mct.p.Pt(), mct.q == fwdTrack->charge() ? 1 : 0 );
+            getHist("QMisidVsPtGlobal")->Fill( mct.p.Pt(), mct.q == fwdTrack->charge() ? 0 : 1 );
         }
     }
 
