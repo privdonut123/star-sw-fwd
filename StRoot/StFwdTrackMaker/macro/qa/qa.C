@@ -1,4 +1,4 @@
-//usr/bin/env root4star -l -b -q  $0; exit $?
+//usr/bin/env root4star -l -b -q  $0'("'"$1"'")'; exit $?
 
 #include "TTree.h"
 #include "TClonesArray.h"
@@ -28,13 +28,13 @@ TH2* addH2( string name, string title, int nx, float x1, float x2, int ny, float
     histograms[name] = new TH2F( name.c_str(), title.c_str(), nx, x1, x2, ny, y1, y2 );
     return (TH2*)histograms[name];
 }
-TH1 *getH1( string name ){
+inline TH1 *getH1( string name ){
     // printf( "Looking for histogram name=[%s]", name.c_str() );
     assert( histograms.count( name ) && "Histogram cannot be found" && name.c_str() );
     assert( histograms[name] && TString::Format( "Histogram %s is NULL", name.c_str() ) );
     return histograms[name];
 }
-TH2 *getH2( string name ){
+inline TH2 *getH2( string name ){
     return (TH2*) getH1( name );
 }
 
@@ -103,6 +103,7 @@ void setupRead( TString filename = "fwdtree.root" ){
 void qaMomentumResolution(){
 
     if ( histograms.count( "curveRcVsMc" ) == 0 ) {
+        printf( "Creating Momentum Resolution Histograms\n" );
         addH2( "curveRcVsMc", "Track curvature; MC; RC", 200, -10, 10, 200, -10, 10 );
         addH2( "curveMcVsPtMc", ";MC Pt; MC Curve ", 200, 0, 10, 100, 0, 10 );
         addH2( "ptRcVsMc", "Track Pt; MC; RC", 200, 0, 10, 200, 0, 10 );
@@ -111,29 +112,109 @@ void qaMomentumResolution(){
         addH1( "deltaCharge", "deltaCharge; |q_{MC}-q_{RC}|;counts;", 5, 0, 5 );
     }
 
+    const TH2 * hCurveRcVsMc = getH2( "curveRcVsMc" );
+    const TH2 * hCurveMcVsPtMc = getH2( "curveMcVsPtMc" );
+    const TH2 * hPtRcVsMc = getH2( "ptRcVsMc" );
+
+    const TH1 * hCurveRes = getH1( "curveRes" );
+    const TH1 * hTransMomRes = getH1( "transMomRes" );
+    const TH1 * hDeltaCharge = getH1( "deltaCharge" );
+
     for ( int j = 0; j < fwdTracks->GetEntries(); j++ ){
         
         StMuFwdTrack *fwt = fwdTracks->At(j);
         UShort_t indexToMatchedMC = fwt->idTruth() - 1;
-        cout << "Processing track " << j << ", mcid = " << indexToMatchedMC << endl;
+    //     // cout << "Processing track " << j << ", mcid = " << indexToMatchedMC << endl;
         if (indexToMatchedMC >= mcTracks->GetEntries()) continue;
-        // get corresponding MC track
+    //     // get corresponding MC track
         StMuMcTrack *mct = mcTracks->At(indexToMatchedMC);
 
         float curveMc = fabs(mct->Charge() / mct->pT());
         float curveRc = fabs(fwt->charge() / fwt->momentum().Pt());
-        cout << "mct->pT() = " << mct->pT() << endl;
-        if ( mct->pT() > 0.1 && fwt->pval() < 0.1){
-            getH1( "deltaCharge" )->Fill( abs( mct->Charge() - fwt->charge() ) );
-            getH2( "curveRcVsMc" )->Fill( curveMc, curveRc );
-            getH2( "curveMcVsPtMc")->Fill( curveMc, mct->pT() );
-            getH2( "ptRcVsMc" )->Fill( mct->pT(), fwt->momentum().Pt() );
+    //     // cout << "mct->pT() = " << mct->pT() << endl;
+        if ( mct->pT() > 0.1 && fwt->pval() > 0.01){
+            hDeltaCharge->Fill( abs( mct->Charge() - fwt->charge() ) );
+            hCurveRes->Fill( (curveMc - curveRc) / curveMc );
+            hTransMomRes->Fill( (mct->pT() - fwt->momentum().Pt()) / mct->pT() );
 
-            getH1( "curveRes" )->Fill( (curveMc - curveRc) / curveMc );
-            getH1( "transMomRes" )->Fill( (mct->pT() - fwt->momentum().Pt()) / mct->pT() );
+            hCurveRcVsMc->Fill( curveMc, curveRc );
+            hCurveMcVsPtMc->Fill( curveMc, mct->pT() );
+            hPtRcVsMc->Fill( mct->pT(), fwt->momentum().Pt() );
         }
     }
 }
+
+void qaFCSTrackMatch(){
+
+    if (histograms.count("dxWCAL") == 0){
+        addH1( "dxWCAL", "WCAL; dx", 500, -100, 100 );
+        addH1( "dxWCAL2", "WCAL; dx", 500, -100, 100 );
+        addH1( "dyWCAL", "WCAL; dy", 500, -100, 100 );
+        addH1( "dxHCAL", "HCAL; dx", 500, -100, 100 );
+        addH1( "drWCAL", "WCAL; dr", 500, 0, 100 );
+        addH1( "drHCAL", "HCAL; dr", 500, 0, 100 );
+        addH2( "wcalTrackX", "; WCAL x; Track x", 500, -50, 50, 500, -50, 50 );
+        addH2( "wcalTrackY", "; WCAL y; Track y", 500, -50, 50, 500, -50, 50 );
+    }
+
+    const TH1 * hdxWCAL = getH1("dxWCAL");
+    const TH1 * hdxWCAL2 = getH1("dxWCAL2");
+    const TH1 * hdyWCAL = getH1("dyWCAL");
+    const TH1 * hdxHCAL = getH1("dxHCAL");
+
+    const TH1 * hdrWCAL = getH1("drWCAL");
+    const TH1 * hdrHCAL = getH1("drHCAL");
+
+    const TH2 * hWCALX = getH1("wcalTrackX");
+    const TH2 * hWCALY = getH1("wcalTrackY");
+
+    for ( int j = 0; j < fwdTracks->GetEntries(); j++ ){
+            StMuFwdTrack *track = (StMuFwdTrack *)fwdTracks->At(j);
+            
+            // printf("Track %d: pt=%f, eta=%f, phi=%f\n", j, track->momentum().Pt(), track->momentum().Eta(), track->momentum().Phi());
+            if ( track->pval() < 0.01 ) continue;
+			StMuFwdTrackProjection projWCAL;
+			track->getProjectionFor(kFcsWcalId, projWCAL);
+			// printf("Projection @ WCAL: det=%d, x=%f, y=%f, z=%f\n", projWCAL.mDetId, projWCAL.mXYZ.X(), projWCAL.mXYZ.Y(), projWCAL.mXYZ.Z());
+
+			StMuFwdTrackProjection projHCAL;
+			track->getProjectionFor(kFcsHcalId, projHCAL);
+			// printf("Projection @ HCAL: det=%d, x=%f, y=%f, z=%f\n", projHCAL.mDetId, projHCAL.mXYZ.X(), projHCAL.mXYZ.Y(), projHCAL.mXYZ.Z());
+
+			// loop over WCAL clusters
+			for ( int k = 0; k < wcal->GetEntries(); k++ ){
+				FcsClusterWithStarXYZ *cluster = (FcsClusterWithStarXYZ*)wcal->At(k);
+                double dx = projWCAL.mXYZ.X() - cluster->mXYZ.X();
+                double dy = projWCAL.mXYZ.Y() - cluster->mXYZ.Y();
+                double dr = sqrt( dx*dx + dy*dy );
+
+                hdxWCAL2->Fill( dx );
+                if ( projWCAL.mXYZ.X() < 0 && cluster->mClu->detectorId() == 1 ) continue;
+                if ( projWCAL.mXYZ.X() > 0 && cluster->mClu->detectorId() == 0 ) continue;
+
+                hdxWCAL->Fill( dx );
+                hdyWCAL->Fill( dy );
+				// printf("WCAL Cluster %d: x=%f, y=%f, z=%f\n", k, cluster->mXYZ.X(), cluster->mXYZ.Y(), cluster->mXYZ.Z());
+                hdrWCAL->Fill( dr );
+
+                hWCALX->Fill( cluster->mXYZ.X(), projWCAL.mXYZ.X() );
+                hWCALY->Fill( cluster->mXYZ.Y(), projWCAL.mXYZ.Y() );
+			}
+
+			// loop over WCAL clusters
+			for ( int k = 0; k < hcal->GetEntries(); k++ ){
+				FcsClusterWithStarXYZ *cluster = (FcsClusterWithStarXYZ*)hcal->At(k);
+                double dx = projHCAL.mXYZ.X() - cluster->mXYZ.X();
+                double dy = projHCAL.mXYZ.Y() - cluster->mXYZ.Y();
+                double dr = sqrt( dx*dx + dy*dy );
+                
+                hdxHCAL->Fill( dx );
+                hdrHCAL->Fill( dr );
+			}
+
+		}
+}
+
 
 // Loop on events
 void eventLoop( int numEventsLimit = -1, int reportEveryNthEvent = -1 ){
@@ -144,22 +225,25 @@ void eventLoop( int numEventsLimit = -1, int reportEveryNthEvent = -1 ){
             printf( "Processing Event %d...\n", i );
         }
         // run qa subroutines here
-        qaMomentumResolution();
+        // qaMomentumResolution();
+        qaFCSTrackMatch();
     }
 }
 
 
 
-void qa(){
-    setupRead();
+void qa( TString filename = "fwdtree.root" ){
+    setupRead( filename );
     TFile * fOut = new TFile( "QuickQA.root", "RECREATE" );
     fOut->cd();
-    eventLoop(-1, 10);
+    eventLoop(5000, 100);
     fOut->Write();
     // writeHistograms();
     return;
     //loop over the events
-    for ( int i = 0; i < t->GetEntries(); i++ ){
+    int nEvents = t->GetEntries();
+    if (nEvents > 1000) nEvents = 1000;
+    for ( int i = 0; i < nEvents; i++ ){
         t->GetEntry(i);
         for ( int j = 0; j < fwdTracks->GetEntries(); j++ ){
             StMuFwdTrack *track = fwdTracks->At(j);

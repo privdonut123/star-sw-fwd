@@ -162,7 +162,7 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH1F("RcMatched3FSTMcEtaGlobal", ";RcMatched3FSTMcEta; counts", 50, 0, 5) );
     addHist( new TH1F("RcMatched3FSTMcPhiGlobal", ";RcMatched3FSTMcPhi; counts", 32, -2*3.1415926, 2*3.1415926) );
 
-    addHist( new TH1F("RcQOverP", ";RcQ/RcP; counts", 2000, -1, 1) );
+    addHist( new TH1F("RcQOverPt", ";RcQ/RcPt; counts", 2000, -1, 1) );
 
     addHist( new TH1F("RcIdTruth", ";RcIdTruth; counts", 102, -2, 100) );
     addHist( new TH1F( "deltaRelPt", ";(pT_{RC} - pT_{MC})/pT_{MC}; count", 400, -2, 2 ) );
@@ -355,8 +355,8 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         }
         getHist( "RcPID" )              ->Fill( mct.pid );
         ((TH2*)getHist( "RcQMcQ" ))     ->Fill( mct.q, fwdTrack->charge() );
-        double qop = fwdTrack->charge() / fwdTrack->momentum().mag();
-        getHist( "RcQOverP" )           ->Fill( qop );
+        double qop = fwdTrack->charge() / fwdTrack->momentum().perp();
+        getHist( "RcQOverPt" )           ->Fill( qop );
         getHist( "RcQ" )                ->Fill( fwdTrack->charge() );
 
         double dEta  = fwdTrack->momentum().pseudoRapidity() - mct.p.Eta();
