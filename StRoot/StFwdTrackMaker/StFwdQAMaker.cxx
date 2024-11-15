@@ -222,6 +222,8 @@ int StFwdQAMaker::Make() {
         mMuDst = mMuDstMaker->muDst();
         mMuForwardTrackCollection = mMuDst->muFwdTrackCollection();
         mMuFcsCollection = mMuDst->muFcsCollection();
+        if (mMuDst->event())
+            mTreeData.header.run = mMuDst->event()->runNumber();
         if (mMuForwardTrackCollection){
             LOG_DEBUG << "Number of StMuFwdTracks: " << mMuForwardTrackCollection->numberOfFwdTracks() << endm;
         }
@@ -233,14 +235,12 @@ int StFwdQAMaker::Make() {
     }
 
     mFcsDb = static_cast<StFcsDb *>(GetDataSet("fcsDb"));
-
     mFwdTrackMaker = (StFwdTrackMaker*) GetMaker( "fwdTrack" );
     if (!mFwdTrackMaker) {
         LOG_WARN << "No StFwdTrackMaker found, skipping StFwdQAMaker" << endm;
         // return kStOk;
     }
 
-    mTreeData.header.run = mMuDst->event()->runNumber();
 
     LOG_DEBUG << "SETUP COMPLETE" << endm;
     ProcessFwdTracks();
