@@ -1304,41 +1304,43 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     float cov[9];
     TVector3 tv3(0, 0, 0);
     for ( auto zp : mapDetectorToZPlane ){
-        int detIndex = zp.first;
+		int detIndex = zp.first;
         float z = zp.second;
         tv3.SetXYZ(0, 0, 0);
-        if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId detIndex ){
-	  float detpos[3] = {0,0,z};
-	  float detnorm[3] = {0,0,1};
-	  if( detIndex==kPresId ){
-	    StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
-	    detpos = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
-	  }
-	  tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
+        if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
+			float detpos[3] = {0,0,z};
+			float detnorm[3] = {0,0,1};
+			if( detIndex==kFcsPresId ){
+				StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
+				detpos[0] = (float)xyzoff.x();
+				detpos[1] = (float)xyzoff.y();
+				detpos[2] = (float)xyzoff.z();
+			}
+			tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
         } else {
-	  // use a straight line projection to HCAL since GenFit cannot handle long projections
-	  int det=0;
-	  if( detIndex==kFcsWcalId ){
-	    det = 0;   // North side for negative px
-	    // South side for positive px, since px==0 does not hit detector choose south side for that case
-	    if( p[2]>=0 && p[0]>=0 ){ det=1; }
-	    if( p[2]<0  && p[0]<0  ){ det=1; }
-	  }
-	  //Since detIndex cannot be both don't need "else if"
-	  if( detIndex==kFcsHcalId ){
-	    det = 2;  // North side for negative px
-	    // South side for positive px, since px==0 does not hit detector choose south side for that case
-	    if( p[2]>=0 && p[0]>=0 ){ det=3; }
-	    if( p[2]<0  && p[0]<0  ){ det=3; }
-	  }
-	  StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
-	  StThreeVectorD planenormal = mFcsDb->getNormal(det);
-	  float xyz0[3] = { 0, 0, 575.0 };
-	  float xyz1[3] = { 0, 0, 625.0 };
-	  float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
-	  float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
-	  tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
-        }
+	  		// use a straight line projection to HCAL since GenFit cannot handle long projections
+	  		int det=0;
+	  		if( detIndex==kFcsWcalId ){
+				det = 0;   // North side for negative px
+				// South side for positive px, since px==0 does not hit detector choose south side for that case
+				if( p[2]>=0 && p[0]>=0 ){ det=1; }
+				if( p[2]<0  && p[0]<0  ){ det=1; }
+			}
+	  		//Since detIndex cannot be both don't need "else if"
+			if( detIndex==kFcsHcalId ){
+				det = 2;  // North side for negative px
+				// South side for positive px, since px==0 does not hit detector choose south side for that case
+				if( p[2]>=0 && p[0]>=0 ){ det=3; }
+				if( p[2]<0  && p[0]<0  ){ det=3; }
+			}
+			StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
+			StThreeVectorD planenormal = mFcsDb->getNormal(det);
+			float xyz0[3] = { 0, 0, 575.0 };
+			float xyz1[3] = { 0, 0, 625.0 };
+			float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
+			float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
+			tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
+		}
         fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
         zIndex++;
     }
