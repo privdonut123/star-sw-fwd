@@ -33,7 +33,7 @@ public:
 
     void setIndex(int index) { mIndex = (UShort_t)index; }
     void setDetectorId(unsigned short detector) { mDetectorId=(UShort_t)detector; }
-    void setId(int id) { mIndex = (UShort_t)id; }
+    void setId(int id) { mId = (UShort_t)id; }
     void setFourMomentum(float px, float py, float pz, float e) { mFourMomentumX = px; mFourMomentumY = py; mFourMomentumZ = pz; mFourMomentumT = e; }
     void setFourMomentum(TLorentzVector p4) { mFourMomentumX = p4.X(); mFourMomentumY = p4.Y(); mFourMomentumZ = p4.Z(); mFourMomentumT = p4.T(); }
     
