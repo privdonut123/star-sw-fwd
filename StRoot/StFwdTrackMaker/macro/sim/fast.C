@@ -36,7 +36,7 @@ void fast(       char *inFile =  "sim.fzd",
     // Setup the chain for reading an FZD
     TString _chain;
     
-    _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
+    _chain = Form("fzin %s sdt20211016 fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
     
 
     gSystem->Load( "libStarRoot.so" );
