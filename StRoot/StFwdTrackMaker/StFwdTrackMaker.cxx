@@ -226,6 +226,15 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
     SetAttr("useFcs",1);                 // Default Fcs on
     SetAttr("config", "config.xml");     // Default configuration file (user may override before Init())
     SetAttr("fillEvent",1); // fill StEvent
+
+    // Load the default configuration
+    configLoaded = false;
+    LoadConfiguration();
+
+    // set additional default configuration values
+    setOutputFilename( "stfwdtrackmaker_data.root" );
+
+    
 };
 
 int StFwdTrackMaker::Finish() {
@@ -247,15 +256,7 @@ void StFwdTrackMaker::LoadConfiguration() {
 
 //________________________________________________________________________
 int StFwdTrackMaker::Init() {
-    // user may have loaded config manually before Init()
-    if ( !configLoaded ){
-        LoadConfiguration();
-
-        // set additional default configuration values
-        setOutputFilename( "stfwdtrackmaker_data.root" );
-
-    }
-
+    
     if ( mGeoCache == "" ){
         /// Instantiate and cache the geometry
         GetDataBase("VmcGeometry");
