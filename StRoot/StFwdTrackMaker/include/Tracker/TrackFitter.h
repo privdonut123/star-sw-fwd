@@ -308,7 +308,7 @@ class TrackFitter {
      * @param seedPos : seed position
      * @param Vertex : primary vertex
      */
-    void setupTrack(Seed_t trackSeed ) {
+    bool setupTrack(Seed_t trackSeed ) {
         
         // setup the track fit seed parameters
         GenericFitSeeder gfs;
@@ -321,6 +321,8 @@ class TrackFitter {
         if ( seedMom.Perp() > 0.001 ){
             // because ROOT has an assert in there :/
             LOG_DEBUG << "Setting track fit seed momentum = (Pt,eta,phi)=" << TString::Format( "(%f, %f, %f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;    
+        } else {
+            return false;
         }
         
         LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
@@ -415,6 +417,7 @@ class TrackFitter {
                 LOG_WARN << "Z Mismatch h->z = " << h->getZ() << ", plane->z = "<< plane->getO().Z() <<", diff = " << abs(h->getZ() - plane->getO().Z()) << endm;
             }
         } // loop on trackSeed
+        return true;
     } // setupTrack
 
     /** @brief performs the fit on a track
@@ -490,7 +493,11 @@ class TrackFitter {
         /******************************************************************************************************************
 		 * Setup the track fit seed parameters and objects
 		 ******************************************************************************************************************/
-        setupTrack(trackSeed);
+        bool valid = setupTrack(trackSeed);
+        if ( !valid ){
+            LOG_ERROR << "Failed to setup track for fit" << endm;
+            return -1;
+        }
         LOG_DEBUG << "Ready to fit with " << mFitTrack->getNumPoints() << " track points" << endm;
 
         /******************************************************************************************************************
