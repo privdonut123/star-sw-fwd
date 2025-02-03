@@ -1028,8 +1028,8 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
         mFwdVertexSource = kFwdVertexSourceMc;
         LOG_INFO << "FWD Tracking on event with MC Primary Vertex: " << mEventVertex.X() << ", " << mEventVertex.Y() << ", " << mEventVertex.Z() << endm;
 
-        const double sigXY = 0.1; // TODO: read from MC vertex info?
-        const double sigZ = 0.1;
+        const double sigXY = 10.1; // TODO: read from MC vertex info?
+        const double sigZ = 10.1;
         mEventVertexCov(0, 0) = pow(sigXY,2);
         mEventVertexCov(1, 1) = pow(sigXY,2);
         mEventVertexCov(2, 2) = pow(sigZ, 2);
@@ -1038,11 +1038,13 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
 
     StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
     LOG_INFO << "Searching for Event Vertex from MuDstMaker: " << mMuDstMaker << endm;
+    LOG_INFO << "Searching for Event Vertex from MuDst: " << mMuDstMaker->muDst() << endm;
+    LOG_INFO << "Searching for Event Vertex from MuDst Primary Vertex: " << mMuDstMaker->muDst()->primaryVertex() << endm;
+    LOG_INFO << "Searching for Event Vertex from MuDst Primary Vertex Position: " << mMuDstMaker->muDst()->primaryVertex()->position() << endm;
     if(mMuDstMaker && mMuDstMaker->muDst() && mMuDstMaker->muDst()->primaryVertex() ) {
-        auto muPV = mMuDstMaker->muDst()->primaryVertex();
-        mEventVertex.SetX(muPV->position().x());
-        mEventVertex.SetY(muPV->position().y());
-        mEventVertex.SetZ(muPV->position().z());
+        mEventVertex.SetX(mMuDstMaker->muDst()->primaryVertex()->position().x());
+        mEventVertex.SetY(mMuDstMaker->muDst()->primaryVertex()->position().y());
+        mEventVertex.SetZ(mMuDstMaker->muDst()->primaryVertex()->position().z());
         mFwdVertexSource = kFwdVertexSourceTpc;
         return mEventVertex;
     } 
@@ -1300,50 +1302,53 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         { kFcsHcalId, 807.0 }
     };
 
-    size_t zIndex = 0;
-    TVector3 mom(0, 0, 0);
-    float cov[9];
-    TVector3 tv3(0, 0, 0);
-    for ( auto zp : mapDetectorToZPlane ){
-		int detIndex = zp.first;
-        float z = zp.second;
-        tv3.SetXYZ(0, 0, 0);
-        if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
-			float detpos[3] = {0,0,z};
-			float detnorm[3] = {0,0,1};
-			if( detIndex==kFcsPresId ){
-				StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
-				detpos[0] = (float)xyzoff.x();
-				detpos[1] = (float)xyzoff.y();
-				detpos[2] = (float)xyzoff.z();
-			}
-			tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
-        } else {
-	  		// use a straight line projection to HCAL since GenFit cannot handle long projections
-	  		int det=0;
-	  		if( detIndex==kFcsWcalId ){
-				det = 0;   // North side for negative px
-				// South side for positive px, since px==0 does not hit detector choose south side for that case
-				if( p[2]>=0 && p[0]>=0 ){ det=1; }
-				if( p[2]<0  && p[0]<0  ){ det=1; }
-			}
-	  		//Since detIndex cannot be both don't need "else if"
-			if( detIndex==kFcsHcalId ){
-				det = 2;  // North side for negative px
-				// South side for positive px, since px==0 does not hit detector choose south side for that case
-				if( p[2]>=0 && p[0]>=0 ){ det=3; }
-				if( p[2]<0  && p[0]<0  ){ det=3; }
-			}
-			StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
-			StThreeVectorD planenormal = mFcsDb->getNormal(det);
-			float xyz0[3] = { 0, 0, 575.0 };
-			float xyz1[3] = { 0, 0, 625.0 };
-			float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
-			float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
-			tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
-		}
-        fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
-        zIndex++;
+    if ( gtr.mStatus->isFitConverged() ){ // dont project if the fit did not converge
+        size_t zIndex = 0;
+        TVector3 mom(0, 0, 0);
+        float cov[9];
+        TVector3 tv3(0, 0, 0);
+        for ( auto zp : mapDetectorToZPlane ){
+            int detIndex = zp.first;
+            float z = zp.second;
+            tv3.SetXYZ(0, 0, 0);
+            if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
+                float detpos[3] = {0,0,z};
+                float detnorm[3] = {0,0,1};
+                if( detIndex==kFcsPresId ){
+                    StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
+                    detpos[0] = (float)xyzoff.x();
+                    detpos[1] = (float)xyzoff.y();
+                    detpos[2] = (float)xyzoff.z();
+                }
+                tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
+            } else {
+                // use a straight line projection to HCAL since GenFit cannot handle long projections
+                int det=0;
+                if( detIndex==kFcsWcalId ){
+                    det = 0;   // North side for negative px
+                    // South side for positive px, since px==0 does not hit detector choose south side for that case
+                    if( p[2]>=0 && p[0]>=0 ){ det=1; }
+                    if( p[2]<0  && p[0]<0  ){ det=1; }
+                }
+                //Since detIndex cannot be both don't need "else if"
+                if( detIndex==kFcsHcalId ){
+                    det = 2;  // North side for negative px
+                    // South side for positive px, since px==0 does not hit detector choose south side for that case
+                    if( p[2]>=0 && p[0]>=0 ){ det=3; }
+                    if( p[2]<0  && p[0]<0  ){ det=3; }
+                }
+                StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
+                StThreeVectorD planenormal = mFcsDb->getNormal(det);
+                float xyz0[3] = { 0, 0, 575.0 };
+                float xyz1[3] = { 0, 0, 625.0 };
+                float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
+                float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
+                LOG_DEBUG << "Projecting to: " << detIndex << endm;
+                tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
+            }
+            fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
+            zIndex++;
+        }
     }
     /*******************************************************************************/
 
