@@ -318,14 +318,20 @@ class TrackFitter {
         gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
         LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(%f, %f, %f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << endm; 
         LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", seedMom.X(), seedMom.Y(), seedMom.Z() ) << endm;
-        if ( seedMom.Perp() > 0.001 ){
-            // because ROOT has an assert in there :/
-            LOG_DEBUG << "Setting track fit seed momentum = (Pt,eta,phi)=" << TString::Format( "(%f, %f, %f)", seedMom.Pt(), seedMom.Eta(), seedMom.Phi() ) << endm;    
-        } else {
+
+        if ( Debug() ){
+            for (auto h : trackSeed) {
+                auto fh = dynamic_cast<FwdHit*>(h);
+                LOG_DEBUG << fh->Print() << endm;
+            }
+        }
+
+        LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
+
+        if ( seedQ == 0 ) {
+            LOG_ERROR << "Seed charge is zero, skipping track -> usually means collinear points" << endm;
             return false;
         }
-        
-        LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
 
         // create the track representations
         // Note that multiple track reps differing only by charge results in a silent failure of GenFit
@@ -358,7 +364,7 @@ class TrackFitter {
             * If the Primary vertex is included
             ******************************************************************************************************************/
             if ( true ) {
-                LOG_INFO << "Treating hit as a spacepoint" << endm;
+                LOG_DEBUG << "Treating hit as a spacepoint" << endm;
                 if ( fh->isPV() ){
                     LOG_DEBUG << "Including primary vertex in fit" << endm;
                 }
@@ -386,8 +392,6 @@ class TrackFitter {
                 mFitTrack->insertPoint( tp );
                 continue;
             }
-
-            // if ( fh->isPV() ) continue;
 
             genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), fh->_detid, ++hitId, nullptr);
 
