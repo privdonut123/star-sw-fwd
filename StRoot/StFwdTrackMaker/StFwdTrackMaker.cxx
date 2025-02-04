@@ -1211,6 +1211,7 @@ int StFwdTrackMaker::Make() {
 StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t indexTrack ){
     LOG_DEBUG << "StFwdTrackMaker::makeStFwdTrack()" << endm;
     StFwdTrack *fwdTrack = new StFwdTrack( );
+    TVector3 p = gtr.mMomentum;
 
     /*******************************************************************************/
     // store the seed points for the track
@@ -1246,9 +1247,13 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     LOG_DEBUG << "Dominant contribution: " << idt << " with quality " << qual << endm;
 
     // Fit failed beyond use
-    if ( gtr.mTrack == nullptr ){
+    if ( gtr.mTrack == nullptr || gtr.mStatus == nullptr || gtr.mTrack->getNumPoints() == 0 ){
+        // if num points == 0 then calling PVal seg faults :/
         gtr.Clear();
-        LOG_DEBUG << "GenfitTrack is nullptr, making StFwdTrack with seed info only" << endm;
+        fwdTrack->setDidFitConverge( false );
+        fwdTrack->setDidFitConvergeFully( false );
+        fwdTrack->setNumberOfFailedPoints( 0 );
+        fwdTrack->setNumberOfFitPoints( 0 );
         return fwdTrack;
     }
     // Fill charge and quality info
@@ -1264,8 +1269,6 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     // charge at first point
     fwdTrack->setCharge( gtr.mCharge );
     fwdTrack->setDCA( gtr.mDCA.X(), gtr.mDCA.Y(), gtr.mDCA.Z() );
-
-    TVector3 p = gtr.mMomentum;//cr->getMom( gtr.mTrack->getFittedState( 0, cr ));
     fwdTrack->setPrimaryMomentum( StThreeVectorD( gtr.mMomentum.X(), gtr.mMomentum.Y(), gtr.mMomentum.Z() ) );
 
     if ( gtr.isPrimary ){
@@ -1275,8 +1278,8 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     }
 
     /*******************************************************************************/
-    // if the track is not (at least partially) converged, do not try to project it
-    if ( !gtr.mStatus->isFitConvergedPartially() ){
+    // if the track did not converged, do not try to project it
+    if ( !gtr.mStatus->isFitConvergedFully() ){
         gtr.Clear();
         return fwdTrack;
     }
@@ -1298,53 +1301,51 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         { kFcsHcalId, 807.0 }
     };
 
-    if ( gtr.mStatus->isFitConverged() ){ // dont project if the fit did not converge
-        size_t zIndex = 0;
-        TVector3 mom(0, 0, 0);
-        float cov[9];
-        TVector3 tv3(0, 0, 0);
-        for ( auto zp : mapDetectorToZPlane ){
-            int detIndex = zp.first;
-            float z = zp.second;
-            tv3.SetXYZ(0, 0, 0);
-            if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
-                float detpos[3] = {0,0,z};
-                float detnorm[3] = {0,0,1};
-                if( detIndex==kFcsPresId ){
-                    StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
-                    detpos[0] = (float)xyzoff.x();
-                    detpos[1] = (float)xyzoff.y();
-                    detpos[2] = (float)xyzoff.z();
-                }
-                tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
-            } else {
-                // use a straight line projection to HCAL since GenFit cannot handle long projections
-                int det=0;
-                if( detIndex==kFcsWcalId ){
-                    det = 0;   // North side for negative px
-                    // South side for positive px, since px==0 does not hit detector choose south side for that case
-                    if( p[2]>=0 && p[0]>=0 ){ det=1; }
-                    if( p[2]<0  && p[0]<0  ){ det=1; }
-                }
-                //Since detIndex cannot be both don't need "else if"
-                if( detIndex==kFcsHcalId ){
-                    det = 2;  // North side for negative px
-                    // South side for positive px, since px==0 does not hit detector choose south side for that case
-                    if( p[2]>=0 && p[0]>=0 ){ det=3; }
-                    if( p[2]<0  && p[0]<0  ){ det=3; }
-                }
-                StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
-                StThreeVectorD planenormal = mFcsDb->getNormal(det);
-                float xyz0[3] = { 0, 0, 575.0 };
-                float xyz1[3] = { 0, 0, 625.0 };
-                float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
-                float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
-                LOG_DEBUG << "Projecting to: " << detIndex << endm;
-                tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
+    size_t zIndex = 0;
+    TVector3 mom(0, 0, 0);
+    float cov[9];
+    TVector3 tv3(0, 0, 0);
+    for ( auto zp : mapDetectorToZPlane ){
+        int detIndex = zp.first;
+        float z = zp.second;
+        tv3.SetXYZ(0, 0, 0);
+        if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
+            float detpos[3] = {0,0,z};
+            float detnorm[3] = {0,0,1};
+            if( detIndex==kFcsPresId ){
+                StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
+                detpos[0] = (float)xyzoff.x();
+                detpos[1] = (float)xyzoff.y();
+                detpos[2] = (float)xyzoff.z();
             }
-            fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
-            zIndex++;
+            tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
+        } else {
+            // use a straight line projection to HCAL since GenFit cannot handle long projections
+            int det=0;
+            if( detIndex==kFcsWcalId ){
+                det = 0;   // North side for negative px
+                // South side for positive px, since px==0 does not hit detector choose south side for that case
+                if( p[2]>=0 && p[0]>=0 ){ det=1; }
+                if( p[2]<0  && p[0]<0  ){ det=1; }
+            }
+            //Since detIndex cannot be both don't need "else if"
+            if( detIndex==kFcsHcalId ){
+                det = 2;  // North side for negative px
+                // South side for positive px, since px==0 does not hit detector choose south side for that case
+                if( p[2]>=0 && p[0]>=0 ){ det=3; }
+                if( p[2]<0  && p[0]<0  ){ det=3; }
+            }
+            StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
+            StThreeVectorD planenormal = mFcsDb->getNormal(det);
+            float xyz0[3] = { 0, 0, 575.0 };
+            float xyz1[3] = { 0, 0, 625.0 };
+            float xyzdet[3] = { (float)xyzoff.x(), (float)xyzoff.y(), (float)xyzoff.z() };
+            float detnorm[3] = { (float)planenormal.x(), (float)planenormal.y(), (float)planenormal.z() };
+            LOG_DEBUG << "Projecting to: " << detIndex << endm;
+            tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
         }
+        fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
+        zIndex++;
     }
     /*******************************************************************************/
 
