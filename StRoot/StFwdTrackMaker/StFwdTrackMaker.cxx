@@ -1037,7 +1037,7 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
     }
 
     StMuDstMaker *mMuDstMaker = (StMuDstMaker *)GetMaker("MuDst");
-    if(mMuDstMaker && mMuDstMaker->muDst() && mMuDstMaker->muDst()->primaryVertex() ) {
+    if(mMuDstMaker && mMuDstMaker->muDst() && mMuDstMaker->muDst()->numberOfPrimaryVertices() > 0 && mMuDstMaker->muDst()->primaryVertex() ) {
         mEventVertex.SetX(mMuDstMaker->muDst()->primaryVertex()->position().x());
         mEventVertex.SetY(mMuDstMaker->muDst()->primaryVertex()->position().y());
         mEventVertex.SetZ(mMuDstMaker->muDst()->primaryVertex()->position().z());
@@ -1312,12 +1312,6 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
             float detpos[3] = {0,0,z};
             float detnorm[3] = {0,0,1};
-            if( detIndex==kFcsPresId ){
-                StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(kFcsPresId);
-                detpos[0] = (float)xyzoff.x();
-                detpos[1] = (float)xyzoff.y();
-                detpos[2] = (float)xyzoff.z();
-            }
             tv3 = ObjExporter::trackPosition( gtr.mTrack.get(), detpos, detnorm, cov, mom );
         } else {
             // use a straight line projection to HCAL since GenFit cannot handle long projections

@@ -307,7 +307,7 @@ class ForwardTrackMaker {
      * @return vector of ICriterion pointers
     */
     std::vector<KiTrack::ICriterion *> loadCriteria(string path) {
-
+        LOG_DEBUG << "Loading Criteria from path: " << path << endm;
         std::vector<KiTrack::ICriterion *> crits;
         auto paths = mConfig.childrenOf(path);
 
@@ -327,6 +327,7 @@ class ForwardTrackMaker {
                 // crit = new BDTCrit2( vmin, vmax );
                 LOG_WARN << "BDT Criteria not implemented/out of date" << endm;
             } else {
+                LOG_DEBUG << "Creating Criterion: " << name << ", min: " << vmin << ", max: " << vmax << endm;
                 crit = KiTrack::Criteria::createCriterion(name, vmin, vmax);
             }
 
@@ -565,7 +566,7 @@ class ForwardTrackMaker {
         /*************************************************************/
         // Determine seed finding mode
         /*************************************************************/
-        string hitmapSource = mConfig.get<string>("TrackFinder:source", "ftt");
+        string hitmapSource = mConfig.get<string>("TrackFinder:source", "fst");
         LOG_INFO << "Hitmap Source: " << hitmapSource << endm;
         mSeedSource = kSeqSeed; // default to FST
         if (hitmapSource == "fst")
@@ -576,7 +577,7 @@ class ForwardTrackMaker {
             mSeedSource = kSeqSeed;
         else if (hitmapSource == "sim")
             mSeedSource = kSimSeed;
-        LOG_INFO << "Performing Fwd Seed finding with mode: " << mConfig.get<string>("TrackFinder:source", "ftt") << " = " << mSeedSource << endm;
+        LOG_INFO << "Performing Fwd Seed finding with mode: " << hitmapSource << " = " << endm;
         FwdDataSource::McTrackMap_t &mcTrackMap = mDataSource->getMcTracks();
 
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
@@ -592,7 +593,7 @@ class ForwardTrackMaker {
             mEventStats.mSeedFindingDuration.push_back( duration2 );
             return;
         } else {
-            LOG_DEBUG << "Performing Standard Track Finding" << endm;
+            LOG_DEBUG << "Performing Standard Track Finding (No MC truth assisted)" << endm;
         }
         /*************************************************************/
 
