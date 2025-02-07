@@ -216,8 +216,7 @@ class ForwardTracker : public ForwardTrackMaker {
 
 //________________________________________________________________________
 StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), mForwardTracker(nullptr), mForwardData(nullptr), mGeoCache(""){
-    
-    
+    LOG_DEBUG << "StFwdTrackMaker::StFwdTrackMaker()" << endm;
     mEventVertexCov.ResizeTo(3, 3);
     mEventVertexCov.Zero();
     
@@ -234,7 +233,7 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
     // set additional default configuration values
     setOutputFilename( "stfwdtrackmaker_data.root" );
 
-    
+    LOG_DEBUG << "Done with StFwdTrackMaker::StFwdTrackMaker()" << endm;  
 };
 
 int StFwdTrackMaker::Finish() {
@@ -247,8 +246,9 @@ void StFwdTrackMaker::LoadConfiguration() {
         // no config file specified, use default
         // 5 characters is the minimum length for a valid filename since we must have at least .xml
         mFwdConfig.load( defaultConfig, true );
+        LOG_DEBUG << "Forward Tracker is using the default config" <<  mConfigFile << endm;
     } else {
-        LOG_INFO << "Forward Tracker is using config from file : " <<  mConfigFile << endm;
+        LOG_DEBUG << "Forward Tracker is using config from file : " <<  mConfigFile << endm;
         mFwdConfig.load( mConfigFile );
     }
     configLoaded = true;
@@ -1447,7 +1447,7 @@ std::string StFwdTrackMaker::defaultConfig = R"(
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <TrackFinder nIterations="1">
-        <Iteration nPhiSlices="1" > <!-- Options for first iteration -->
+        <Iteration nPhiSlices="8" > <!-- Options for first iteration -->
             <SegmentBuilder>
                 <!-- <Criteria name="Crit2_RZRatio" min="0" max="1.20" /> -->
                 <!-- <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/> -->
@@ -1456,10 +1456,10 @@ std::string StFwdTrackMaker::defaultConfig = R"(
             </SegmentBuilder>
 
             <ThreeHitSegments>
-				<!-- <Criteria name="Crit3_3DAngle" min="0" max="60" />
-                <Criteria name="Crit3_PT" min="0" max="100" />
-				<Criteria name="Crit3_ChangeRZRatio" min="0.8" max="1.21" />
-				<Criteria name="Crit3_2DAngle" min="0" max="30" /> -->
+				<Criteria name="Crit3_3DAngle" min="0" max="60" />
+                <!-- <Criteria name="Crit3_PT" min="0" max="100" /> -->
+				<!-- <Criteria name="Crit3_ChangeRZRatio" min="0.8" max="1.21" /> -->
+				<Criteria name="Crit3_2DAngle" min="0" max="30" />
             </ThreeHitSegments>
 
         </Iteration>
