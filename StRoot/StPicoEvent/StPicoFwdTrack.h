@@ -106,7 +106,7 @@ protected:
     /// MC track quality (percentage of hits coming from corresponding MC track)
     UShort_t mQATruth;
     
-    ClassDef(StPicoFwdTrack,2)
+    ClassDef(StPicoFwdTrack,3)
 
 };
 

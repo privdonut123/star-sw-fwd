@@ -112,16 +112,7 @@ void sim(       char *inFile =  "sim.fzd",
 
         if ( fwdTrack ){
             fwdTrack->SetDebug(1);
-            // config file set here for ideal simulation
-            if (!realisticSim){
-                cout << "Configured for ideal simulation (MC finding + MC mom seed)" << endl;
-                fwdTrack->setConfigForIdealSim( );
-            } else {
-                cout << "Configured for realistic simulation" << endl;
-                fwdTrack->setConfigForRealisticSim( );
-                cout << "Configured for realistic simulation DONE" << endl;
-            }
-
+            
             if ( _geom == "" ){
                 cout << "Using the Geometry cache: fGeom.root" << endl;
                 fwdTrack->setGeoCache( "fGeom.root" );
@@ -139,11 +130,10 @@ void sim(       char *inFile =  "sim.fzd",
                 // fwdTrack->setSeedFindingWithFstFttSimultaneous();
 
             fwdTrack->setTrackRefit( enableTrackRefit );
-            fwdTrack->setConstB( useConstBz );
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
-            fwdTrack->setIncludePrimaryVertexInFit( false );
+            // fwdTrack->setIncludePrimaryVertexInFit( false );
 
             // fwdTrack->setTrackFittingOff();
             // fwdTrack->setUseMcSeedForFit(true);
@@ -152,6 +142,9 @@ void sim(       char *inFile =  "sim.fzd",
                 cout << "Setting B = 0" << endl;
                 fwdTrack->setZeroB( true );
             }
+            if ( useConstBz )
+                fwdTrack->setConstBz( true );
+
             bool doFitQA = true;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
@@ -198,7 +191,7 @@ void sim(       char *inFile =  "sim.fzd",
 
     if (muDstMaker){
         StFwdQAMaker *fwdQA = new StFwdQAMaker();
-        fwdQA->SetDebug(2);
+        fwdQA->SetDebug(true);
         TString fwdqaname(gSystem->BaseName(inFile));
         fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
         fwdQA->setTreeFilename(fwdqaname);

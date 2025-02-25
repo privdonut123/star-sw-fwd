@@ -31,6 +31,11 @@ StPicoFwdTrack::StPicoFwdTrack(const StPicoFwdTrack &fwdTrack){
     for ( size_t i = 0 ; i < fwdTrack.mHcalMatchIndex.size(); i++ ){
       addHcalCluster( fwdTrack.mHcalMatchIndex[i] );
     }
+
+    mDCAXY = fwdTrack.mDCAXY;
+    mDCAZ = fwdTrack.mDCAZ;
+    mVtxIndex = fwdTrack.mVtxIndex;
+    mGlobalTrackIndex = fwdTrack.mGlobalTrackIndex;
 }
 
 StPicoFwdTrack::~StPicoFwdTrack(){

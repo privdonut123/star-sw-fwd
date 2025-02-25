@@ -2556,6 +2556,7 @@ void StPicoDstMaker::fillFwdTracks() {
 
       picoFwdTrack.setMcTruth( evTrack->idTruth(), evTrack->qaTruth() );
       picoFwdTrack.setVtxIndex( evTrack->vertexIndex() );
+      // picoFwdTrack.setGlobalTrackIndex( evTrack->index() );
 
       // fill matched ecal and hcal clusters for the track
       // ecal
