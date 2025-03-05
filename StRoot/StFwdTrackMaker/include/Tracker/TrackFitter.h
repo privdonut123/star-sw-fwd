@@ -317,6 +317,8 @@ class TrackFitter {
         TVector3 seedMom(0, 0, 10); // this default seed actually works better than a half-bad guess
         gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
         LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(%f, %f, %f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << endm; 
+        LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", seedMom.X(), seedMom.Y(), seedMom.Z() ) << endm;
+
         LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
 
         if ( seedQ == 0 ) {

@@ -1028,8 +1028,8 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
         mFwdVertexSource = kFwdVertexSourceMc;
         LOG_INFO << "FWD Tracking on event with MC Primary Vertex: " << mEventVertex.X() << ", " << mEventVertex.Y() << ", " << mEventVertex.Z() << endm;
 
-        const double sigXY = 10.1; // TODO: read from MC vertex info?
-        const double sigZ = 10.1;
+        const double sigXY = 0.1; // TODO: read from MC vertex info?
+        const double sigZ = 0.1;
         mEventVertexCov(0, 0) = pow(sigXY,2);
         mEventVertexCov(1, 1) = pow(sigXY,2);
         mEventVertexCov(2, 2) = pow(sigZ, 2);
@@ -1385,6 +1385,20 @@ void StFwdTrackMaker::FillEvent() {
 
     // ProcessFwdTracks();
 }
+    LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
+
+    // Pico Dst requires a primary vertex,
+    // if we have a PicoDst maker in the chain, we need to add a primary vertex
+    // when one does not exist to get a "FWD" picoDst
+    auto mk = GetMaker("PicoDst");
+    if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
+        LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
+        stEvent->addPrimaryVertex( new StPrimaryVertex() );
+        LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
+    }
+
+    // ProcessFwdTracks();
+}
 
 void StFwdTrackMaker::FitVertex(){
     vector<genfit::Track *> genfitTracks;
@@ -1447,7 +1461,7 @@ std::string StFwdTrackMaker::defaultConfig = R"(
 <?xml version="1.0" encoding="UTF-8"?>
 <config>
     <TrackFinder nIterations="1">
-        <Iteration nPhiSlices="8" > <!-- Options for first iteration -->
+        <Iteration nPhiSlices="1" > <!-- Options for first iteration -->
             <SegmentBuilder>
                 <!-- <Criteria name="Crit2_RZRatio" min="0" max="1.20" /> -->
                 <!-- <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/> -->

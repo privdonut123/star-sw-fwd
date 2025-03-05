@@ -593,7 +593,7 @@ class ForwardTrackMaker {
             mEventStats.mSeedFindingDuration.push_back( duration2 );
             return;
         } else {
-            LOG_DEBUG << "Performing Standard Track Finding (No MC truth assisted)" << endm;
+            LOG_DEBUG << "Performing Standard Track Finding" << endm;
         }
         /*************************************************************/
 

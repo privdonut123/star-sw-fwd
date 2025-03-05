@@ -191,7 +191,7 @@ void sim(       char *inFile =  "sim.fzd",
 
     if (muDstMaker){
         StFwdQAMaker *fwdQA = new StFwdQAMaker();
-        fwdQA->SetDebug(true);
+        fwdQA->SetDebug(2);
         TString fwdqaname(gSystem->BaseName(inFile));
         fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
         fwdQA->setTreeFilename(fwdqaname);
