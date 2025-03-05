@@ -1384,21 +1384,10 @@ void StFwdTrackMaker::FillEvent() {
     }
 
     // ProcessFwdTracks();
-}
     LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
-
-    // Pico Dst requires a primary vertex,
-    // if we have a PicoDst maker in the chain, we need to add a primary vertex
-    // when one does not exist to get a "FWD" picoDst
-    auto mk = GetMaker("PicoDst");
-    if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
-        LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
-        stEvent->addPrimaryVertex( new StPrimaryVertex() );
-        LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
-    }
-
-    // ProcessFwdTracks();
 }
+
+
 
 void StFwdTrackMaker::FitVertex(){
     vector<genfit::Track *> genfitTracks;
