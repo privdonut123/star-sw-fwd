@@ -2556,8 +2556,14 @@ void StPicoDstMaker::fillFwdTracks() {
       // Now set the projections for ECal and HCal
       StFwdTrackProjection ecalProj = evTrack->getProjectionFor(kFcsWcalId);
       StFwdTrackProjection hcalProj = evTrack->getProjectionFor(kFcsHcalId);
-      picoFwdTrack.setECalProjection( ecalProj.mXYZ.x(), ecalProj.mXYZ.y(), ecalProj.mXYZ.z() );
-      picoFwdTrack.setHCalProjection( hcalProj.mXYZ.x(), hcalProj.mXYZ.y(), hcalProj.mXYZ.z() );
+      if ( !std::isnan( ecalProj.mXYZ.x() ) && !std::isnan( ecalProj.mXYZ.y() ) && !std::isnan( ecalProj.mXYZ.z() ) )
+        picoFwdTrack.setECalProjection( ecalProj.mXYZ.x(), ecalProj.mXYZ.y(), ecalProj.mXYZ.z() );
+      else 
+        picoFwdTrack.setECalProjection( -999., -999., -999. );
+      if ( !std::isnan( hcalProj.mXYZ.x() ) && !std::isnan( hcalProj.mXYZ.y() ) && !std::isnan( hcalProj.mXYZ.z() ) )
+        picoFwdTrack.setHCalProjection( hcalProj.mXYZ.x(), hcalProj.mXYZ.y(), hcalProj.mXYZ.z() );
+      else
+        picoFwdTrack.setHCalProjection( -999., -999., -999. );
 
       int counter = mPicoArrays[StPicoArrays::FwdTrack]->GetEntries();
       picoFwdTrack.setId( counter );
