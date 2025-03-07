@@ -16,6 +16,7 @@ StPicoFwdTrack::StPicoFwdTrack(const StPicoFwdTrack &fwdTrack){
     mNumberOfSeedPoints = fwdTrack.mNumberOfSeedPoints;
     mNumberOfFitPoints = fwdTrack.mNumberOfFitPoints;
     mChi2 = fwdTrack.mChi2;
+    mPVal = fwdTrack.mPVal;
 
     mMomentumX = fwdTrack.mMomentumX;
     mMomentumY = fwdTrack.mMomentumY;
@@ -36,6 +37,11 @@ StPicoFwdTrack::StPicoFwdTrack(const StPicoFwdTrack &fwdTrack){
     mDCAZ = fwdTrack.mDCAZ;
     mVtxIndex = fwdTrack.mVtxIndex;
     mGlobalTrackIndex = fwdTrack.mGlobalTrackIndex;
+
+    mECalX = fwdTrack.mECalX;
+    mECalY = fwdTrack.mECalY;
+    mHCalX = fwdTrack.mHCalX;
+    mHCalY = fwdTrack.mHCalY;
 }
 
 StPicoFwdTrack::~StPicoFwdTrack(){
@@ -45,10 +51,11 @@ StPicoFwdTrack::~StPicoFwdTrack(){
 //_________________
 void StPicoFwdTrack::Print(const Char_t* option __attribute__((unused))) const {
   LOG_INFO << " chi2: " << chi2() << "\n"
+           << "pVal: " << pVal() << "\n"
            << "pMom: " << momentum().X() << " " << momentum().Y() << " " << momentum().Z() << "\n"
            << "nHitsFit: " << numberOfFitPoints()
            << " numberOfSeedPoints: " << numberOfSeedPoints() << "\n"
-        //    << "idTruth: " << idTruth() << " qaTruth: " << qaTruth() << "\n"
+           << "idTruth: " << idTruth() << " qaTruth: " << qaTruth() << "\n"
            << endm;
 }
 
@@ -57,4 +64,9 @@ void StPicoFwdTrack::setChi2(Float_t chi2) {
   mChi2 = ( (chi2 * 1000.) > std::numeric_limits<unsigned short>::max() ?
 	    std::numeric_limits<unsigned short>::max() :
 	    (UShort_t)( TMath::Nint( chi2 * 1000. ) ) );
+}
+void StPicoFwdTrack::setPVal(Float_t pval) {
+  mPVal = ( (pval * 10000.f) > std::numeric_limits<unsigned short>::max() ?
+	    std::numeric_limits<unsigned short>::max() :
+	    (UShort_t)( TMath::Nint( pval * 10000.f ) ) );
 }
