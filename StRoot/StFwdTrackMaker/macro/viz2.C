@@ -313,7 +313,7 @@ void viz_proj( int eventIndex, ProjectionType projType = kRZSigned, bool markers
     for ( int i = 0; i < nTrks; i++ ){
 
         //get hits in i'th track
-        fwd->Draw( TString::Format("reco[%d].mProjections.mXYZ.fX:reco[%d].mProjections.mXYZ.fY:reco[%d].mProjections.mXYZ.fZ", i, i, i), "", "goff", 1, eventIndex );
+        fwd->Draw( TString::Format("reco[%d].mProjections.mXYZ.fX:reco[%d].mProjections.mXYZ.fY:reco[%d].mProjections.mXYZ.fZ", i, i, i), TString::Format("reco[%d].mVtxIndex < 10", i), "goff", 1, eventIndex );
         auto nHits = fwd->GetSelectedRows();
         auto projX = fwd->GetV1();
         auto projY = fwd->GetV2();
@@ -586,7 +586,7 @@ void viz2( TString fn = "fwdtree.root", int view = kXY) {
             viz_stats( iEvent );  //changed to provide number of tracks as well-AGE
             padStat->Update();
             gCan->Update();
-            gCan->Print( TString::Format( "out_event%d.pdf", iEvent ) );
+            gCan->Print( TString::Format( "out_prim_event%d.pdf", iEvent ) );
         }
 
 
