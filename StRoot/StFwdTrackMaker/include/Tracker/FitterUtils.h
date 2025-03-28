@@ -12,7 +12,6 @@
 #include "GenFit/TGeoMaterialInterface.h"
 #include "GenFit/Track.h"
 #include "GenFit/TrackPoint.h"
-
 #include "TVector3.h"
 
 

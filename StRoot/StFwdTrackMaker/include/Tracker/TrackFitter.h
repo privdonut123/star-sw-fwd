@@ -467,6 +467,27 @@ class TrackFitter {
         LOG_INFO << "Track fit update complete!" << endm;
     }
 
+    /*
+     * @brief Get all FST planes
+     *
+     * @return std::vector<genfit::SharedPlanePtr>
+     */
+    std::vector<genfit::SharedPlanePtr> getAllFstPlanes()
+    {
+        std::vecttor<genfit::SharedPlanePtr> fstSensorPlanes;
+        // create FWD GeomUtils to get the plane locations
+        FwdGeomUtils fwdGeoUtils(gGeoManager);
+        for (int globalSensorIndex = 1; globalSensorIndex <= 108; globalSensorIndex++)
+        {
+            TVector3 o = fwdGeoUtils.getFstSensorOrigin(globalSensorIndex);
+            TVector3 u = (1, 0, 0);
+            TVector3 v = (0, 1, 0);
+            fstSensorPlanes.push_back(
+                genfit::SharedPlanePtr(
+                    new genfit::DetPlane(o, u, v)));
+        }
+    }
+
     /**
      * @brief Primary track fitting routine
      *
@@ -535,5 +556,6 @@ class TrackFitter {
     // GenFit state - resused
     std::shared_ptr<genfit::Track> mFitTrack;
 };
+
 
 #endif
