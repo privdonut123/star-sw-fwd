@@ -573,19 +573,16 @@ int StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackM
         float vPhi = muFstHit->localPosition(1);
         float vZ = muFstHit->localPosition(2);
 
-        const float dz0 = fabs( vZ - mFstZFromGeom[0] );
-        const float dz1 = fabs( vZ - mFstZFromGeom[1] );
-        const float dz2 = fabs( vZ - mFstZFromGeom[2] );
-        static const float fstThickness = 2.0; // thickness in cm between inner and outer on sigle plane
-
-        // assign disk according to which z value the hit has, within the z-plane thickness
-        int d = 0 * ( dz0 < fstThickness ) + 1 * ( dz1 < fstThickness ) + 2 * ( dz2 < fstThickness );
+        int wedgeIndex  = muFstHit->getWedge();
+        int sensorIndex = muFstHit->getSensor();
+        int diskIndex   = muFstHit->getDisk();
+        int globalIndex = FwdHit::fstGlobalSensorIndex( diskIndex, wedgeIndex, sensorIndex );
 
         float x0 = vR * cos( vPhi );
         float y0 = vR * sin( vPhi );
         hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
 
-        LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;
+        
         mFstHits.push_back( TVector3( x0, y0, vZ)  );
 
         // we use d+4 so that both FTT and FST start at 4
@@ -593,13 +590,14 @@ int StFwdTrackMaker::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackM
             FwdHit(
                 count++, // id
                 x0, y0, vZ, // position
-                d+4, // volume id
+                diskIndex+4, // volume id
                 kFstId, // detid
                 0, // track id
                 hitCov3, // covariance matrix
                 nullptr // mcTrack
             )
         );
+        mFwdHitsFst.back()._genfit_plane_index = globalIndex;
     } // index
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
@@ -642,38 +640,37 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
                 if ( !sc ) continue;
                 StSPtrVecFstHit fsthits = sc->hits();
                 for ( unsigned int ih = 0; ih < fsthits.size(); ih++ ){
-                    float vR = fsthits[ih]->localPosition(0);
+                    float vR   = fsthits[ih]->localPosition(0);
                     float vPhi = fsthits[ih]->localPosition(1);
-                    float vZ = fsthits[ih]->localPosition(2);
+                    float vZ   = fsthits[ih]->localPosition(2);
+                    LOG_INFO << TString::Format("FST local position: %f %f %f", vR, vPhi, vZ) << endm;
+                    
+                    int wedgeIndex  = iw % kFstNumWedgePerDisk;
+                    int sensorIndex = is % kFstNumSensorsPerWedge;
+                    int diskIndex   = iw / kFstNumWedgePerDisk;
+                    int globalIndex = FwdHit::fstGlobalSensorIndex( diskIndex, wedgeIndex, sensorIndex );
 
-                    const float dz0 = fabs( vZ - mFstZFromGeom[0] );
-                    const float dz1 = fabs( vZ - mFstZFromGeom[1] );
-                    const float dz2 = fabs( vZ - mFstZFromGeom[2] );
-                    static const float fstThickness = 3.0; // thickness in cm between inner and outer on sigle plane
-
-                    // assign disk according to which z value the hit has, within the z-plane thickness
-                    int d = 0 * ( dz0 < fstThickness ) + 1 * ( dz1 < fstThickness ) + 2 * ( dz2 < fstThickness );
-
+                    LOG_DEBUG << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
                     hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ), mFwdConfig );
 
-                    LOG_DEBUG << "FST HIT: d = " << d << ", x=" << x0 << ", y=" << y0 << ", z=" << vZ << endm;
+                       
                     mFstHits.push_back( TVector3( x0, y0, vZ)  );
                     int track_id = fsthits[ih]->idTruth();
-                    LOG_DEBUG << "FST Hit: idTruth = " << track_id << endm;
                     shared_ptr<McTrack> mcTrack = nullptr;
                     if ( mcTrackMap.count(track_id) ) {
                         mcTrack = mcTrackMap[track_id];
+                        LOG_DEBUG << "FST Hit: idTruth = " << track_id << endm;
                         LOG_DEBUG << "Adding McTrack to FST hit" << endm;
                     }
 
-                    // we use d+4 so that both FTT and FST start at 4
+                    // we use d+4 so that both FTT and FST start at 4 for historical reasons
                     mFwdHitsFst.push_back(
                         FwdHit(
                             count++, // id
                             x0, y0, vZ, // position
-                            d+4, // volume id
+                            diskIndex+4, // volume id
                             kFstId, // detid
                             track_id, // mc track id
                             hitCov3, // covariance matrix
@@ -682,6 +679,7 @@ int StFwdTrackMaker::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrac
                     );
                     // store a pointer to the original StFstHit
                     mFwdHitsFst.back()._hit = fsthits[ih];
+                    mFwdHitsFst.back()._genfit_plane_index = globalIndex;
                 }
             } // loop is
         } // loop iw

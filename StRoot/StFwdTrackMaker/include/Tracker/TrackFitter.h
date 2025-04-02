@@ -32,7 +32,6 @@
  *
  */
 class TrackFitter {
-
 // Accessors and options
   public:
     std::shared_ptr<genfit::Track> getTrack() { return mFitTrack; }
@@ -118,6 +117,9 @@ class TrackFitter {
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
         FwdGeomUtils fwdGeoUtils( gMan );
 
+        // Create the genfit Planes for the FST sensors
+        CreateAllFstPlanes( fwdGeoUtils );
+
         // these default values are the default if the detector is
         // a) not found in the geometry
         // b) not provided in config
@@ -130,56 +132,8 @@ class TrackFitter {
             )
         );
 
-        if ( fwdGeoUtils.fstZ( 0 ) < 1.0 ) { // returns 0.0 on failure
-            LOG_WARN << "Using FST z-locations from config or defautl, may not match hits" << endm;
-        }
+        
 
-        const double dzInnerFst = 1.715 + 0.04; // cm relative to "center" of disk + residual...
-        const double dzOuterFst = 0.240 + 0.04; // cm relative to "center" of disk
-
-        // Now add the Si detector planes at the desired location
-        std::stringstream sstr;
-        sstr << "Adding FST Planes at: ";
-        string delim = "";
-        for (auto z : mFSTZLocations) {
-            mFSTPlanes.push_back(
-                genfit::SharedPlanePtr(
-                    // these normals make the planes face along z-axis
-                    new genfit::DetPlane(TVector3(0, 0, z), TVector3(1, 0, 0), TVector3(0, 1, 0) )
-                )
-            );
-
-            // Inner Module FST planes
-            mFSTPlanesInner.push_back(
-                genfit::SharedPlanePtr(
-                    // these normals make the planes face along z-axis
-                    new genfit::DetPlane(TVector3(0, 0, z - dzInnerFst), TVector3(1, 0, 0), TVector3(0, 1, 0) )
-                )
-            );
-            mFSTPlanesInner.push_back(
-                genfit::SharedPlanePtr(
-                    // these normals make the planes face along z-axis
-                    new genfit::DetPlane(TVector3(0, 0, z + dzInnerFst), TVector3(1, 0, 0), TVector3(0, 1, 0) )
-                )
-            );
-            // Outer Module FST planes
-            mFSTPlanesOuter.push_back(
-                genfit::SharedPlanePtr(
-                    // these normals make the planes face along z-axis
-                    new genfit::DetPlane(TVector3(0, 0, z - dzOuterFst), TVector3(1, 0, 0), TVector3(0, 1, 0) )
-                )
-            );
-            mFSTPlanesOuter.push_back(
-                genfit::SharedPlanePtr(
-                    // these normals make the planes face along z-axis
-                    new genfit::DetPlane(TVector3(0, 0, z + dzOuterFst), TVector3(1, 0, 0), TVector3(0, 1, 0) )
-                )
-            );
-
-            sstr << delim << z << " (-dzInner=" << z - dzInnerFst << ", +dzInner=" << z+dzInnerFst << ", -dzOuter=" << z - dzOuterFst << ", +dzOuter=" << z + dzOuterFst << ")";
-            delim = ", ";
-        }
-        LOG_DEBUG  << sstr.str() << endm;
 
         // Now load FTT
         // mConfig.getVector<>(...) requires a default, hence the
@@ -195,10 +149,11 @@ class TrackFitter {
             LOG_ERROR << "Wrong number of FTT layers, got " << mFTTZLocations.size() << " but expected 4" << endm;
         }
 
+        stringstream sstr;
         sstr.str("");
         sstr.clear();
         sstr << "Adding FTT Planes at: ";
-        delim = "";
+        string delim = "";
         for (auto z : mFTTZLocations) {
             mFTTPlanes.push_back(
                 genfit::SharedPlanePtr(
@@ -211,38 +166,6 @@ class TrackFitter {
         }
         LOG_DEBUG << sstr.str() << endm;
     }
-
-    /**
-     * @brief Get the Fst Plane object for a given hit
-     *
-     * @param h : hit
-     * @return genfit::SharedPlanePtr
-     */
-    genfit::SharedPlanePtr getFstPlane( FwdHit * h ){
-
-        size_t planeId = h->getSector();
-
-        const TVector3 hitXYZ( h->getX(), h->getY(), h->getZ() );
-
-        double phi = hitXYZ.Phi();
-        if ( phi < 0 ) phi = TMath::Pi() * 2 + phi;
-        const double phi_slice = phi / (TMath::Pi() / 6.0); // 2pi/12
-        const int phi_index = ((int)phi_slice);
-        const double r  =sqrt( pow(hitXYZ.x(), 2) + pow(hitXYZ.y(), 2) );
-
-        const size_t idx = phi_index % 2;
-        auto planeCorr = mFSTPlanesInner[planeId*2 + idx];
-        if ( r > 16 ){
-            planeCorr = mFSTPlanesOuter[planeId*2 + idx];
-        }
-        double cdz = (h->getZ() - planeCorr->getO().Z());
-
-        if ( cdz > 0.010 ) {
-            LOG_WARN << "FST Z =" << h->getZ() << " vs CORR Plane Z = " << planeCorr->getO().Z() << " DIFF: " << cdz << " phi_slice = " << phi_slice << ", phi_index = " << phi_index << " R=" << hitXYZ.Pt() << " idx=" << idx << endm;
-        }
-
-        return planeCorr;
-    } // GetFST PLANE
 
     /**
      * @brief Convert the 3x3 covmat to 2x2 by dropping z
@@ -266,16 +189,14 @@ class TrackFitter {
      * @param fitTrack : track to project
      * @return genfit::MeasuredStateOnPlane
      */
-    genfit::MeasuredStateOnPlane projectToFst(size_t fstPlane, std::shared_ptr<genfit::Track> fitTrack) {
-        if (fstPlane > 2) {
+    genfit::MeasuredStateOnPlane projectToFst(size_t fstSensorPlaneIndex, std::shared_ptr<genfit::Track> fitTrack) {
+        if (fstSensorPlaneIndex > mFstSensorPlanes.size()) {
             genfit::MeasuredStateOnPlane nil;
             return nil;
         }
 
-        auto detFst = mFSTPlanes[fstPlane];
-        // TODO: Why use 1 here?
-        genfit::MeasuredStateOnPlane tst = fitTrack->getFittedState(1);
-        // NOTE: this returns the track length if needed
+        auto detFst = mFstSensorPlanes[fstSensorPlaneIndex];
+        genfit::MeasuredStateOnPlane tst = fitTrack->getFittedState(0);
         fitTrack->getCardinalRep()->extrapolateToPlane(tst, detFst);
 
         return tst;
@@ -388,23 +309,11 @@ class TrackFitter {
 
             genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitCoords, CovMatPlane(h), fh->_detid, ++hitId, nullptr);
 
-            planeId = h->getSector();
-            genfit::SharedPlanePtr plane;
-            if ( fh->isFtt() ){
-                planeId = fh->_vid - 9;
+            planeId = fh->_genfit_plane_index;
+            if (fh->isFtt()) {
+                planeId = kFstNumSensors + fh->_genfit_plane_index;
             }
-            LOG_INFO << "planeId = " << planeId << ", sector " << h->getSector() << ", vid = " << fh->_vid << endm;
-            if (fh->isFtt() && mFTTPlanes.size() <= planeId) {
-                LOG_ERROR << "invalid VolumId -> out of bounds DetPlane, vid = " << dynamic_cast<FwdHit*>(h)->_vid << " vs. planeId = " << planeId << endm;
-                delete measurement;
-                continue;
-            }
-
-            if (fh->isFtt())
-                plane = mFTTPlanes[planeId];
-            else if (fh->isFst())
-                plane = getFstPlane( fh );
-
+            genfit::SharedPlanePtr plane = getPlaneFor( fh );
             measurement->setPlane(plane, planeId);
             
             mFitTrack->insertPoint(new genfit::TrackPoint(measurement, mFitTrack.get()));
@@ -472,17 +381,18 @@ class TrackFitter {
      *
      * @return std::vector<genfit::SharedPlanePtr>
      */
-    std::vector<genfit::SharedPlanePtr> getAllFstPlanes()
+    void CreateAllFstPlanes( FwdGeomUtils &fwdGeoUtils )
     {
-        std::vector<genfit::SharedPlanePtr> fstSensorPlanes;
         // create FWD GeomUtils to get the plane locations
-        FwdGeomUtils fwdGeoUtils(gGeoManager);
-        for (int globalSensorIndex = 1; globalSensorIndex <= 108; globalSensorIndex++)
+        for (int globalSensorIndex = 0; globalSensorIndex < 108; globalSensorIndex++)
         {
-            TVector3 o = fwdGeoUtils.getFstSensorOrigin(globalSensorIndex);
-            TVector3 u(1.0, 0.0, 0.0);
-            TVector3 v(0.0, 1.0, 0.0);
-            fstSensorPlanes.push_back(
+            TVector3 u(1, 0, 0); 
+            TVector3 v(0, 1, 0);
+            TVector3 o = fwdGeoUtils.getFstSensorOrigin(globalSensorIndex, u, v);
+            LOG_INFO << "Adding FST Sensor " << globalSensorIndex << " at " << o.X() << ", " << o.Y() << ", " << o.Z() << endm;
+            LOG_INFO << "\tSensor " << globalSensorIndex << " U = " << u.X() << ", " << u.Y() << ", " << u.Z() << endm;
+            LOG_INFO << "\tSensor " << globalSensorIndex << " V = " << v.X() << ", " << v.Y() << ", " << v.Z() << endm;
+            mFstSensorPlanes.push_back(
                 genfit::SharedPlanePtr(
                     new genfit::DetPlane(o, u, v)));
         }
@@ -541,11 +451,28 @@ class TrackFitter {
         return duration;
     } // fitTrack
 
+    genfit::SharedPlanePtr getPlaneFor( FwdHit * fh ){
+        
+        // sTGC
+        if ( fh->isFtt() ){
+            return mFTTPlanes[fh->_vid - 9];
+        }
+
+        // FST
+        if ( fh->isFst() ){
+            if ( fh->_genfit_plane_index > mFstSensorPlanes.size() ) {
+                LOG_ERROR << "Invalid FST sensor genfit plane index: " << fh->_genfit_plane_index << endm;
+                return nullptr;
+            }
+            return mFstSensorPlanes[ fh->_genfit_plane_index ];
+        }
+        LOG_ERROR << "Unknown FwdHit type, cannot get plane - if this is a PV then use an abs measurement" << endm;
+        return nullptr;
+    }
+
     // Store the planes for FTT and FST
     vector<genfit::SharedPlanePtr> mFTTPlanes;
-    vector<genfit::SharedPlanePtr> mFSTPlanes;
-    vector<genfit::SharedPlanePtr> mFSTPlanesInner;
-    vector<genfit::SharedPlanePtr> mFSTPlanesOuter;
+    vector<genfit::SharedPlanePtr> mFstSensorPlanes; // 108 planes, one for each sensor
 
   protected:
     std::unique_ptr<genfit::AbsBField> mBField;

@@ -86,22 +86,26 @@ class FwdGeomUtils {
             return 0.0;
         }
 
-        TVector3 getFstSensorOrigin (int index){
+        TVector3 getFstSensorOrigin (int index, TVector3 &u, TVector3 &v) {
             // retrive the sensor index that goes from 1-3 from global sensor index
-            int sensorIndex = (index % 3 == 0) ? 3 : index % 3;
+            int sensorIndex = (index % 3) + 1;
             // retrive the wedge index that goes from 1-12 from global sensor index
-            int wedgeIndex = ((index / 3) % 12 == 0) ? 12 : (index / 3) % 12;
+            int wedgeIndex = (index / 3) % 12 + 1;
             // retrive the plane index that goes from 4-6 from global sensor index
             int planeIndex = (index / 36) + 4;
             // construct the path to the sensor 
             stringstream spath;
-            spath << "/HALL_1/CAVE_1/FSTM_1/FSTD_" << planeIndex << "/FSTW_" << wedgeIndex << "/FSTS_" << sensorIndex;
+            spath << "/HALL_1/CAVE_1/FSTM_1/FSTD_" << planeIndex << "/FSTW_" << wedgeIndex << "/FTUS_" << sensorIndex;
 
             bool can = cd( spath.str().c_str() );
             if ( can && _matrix != nullptr ){
                 double x = _matrix->GetTranslation()[0];
                 double y = _matrix->GetTranslation()[1];
                 double z = _matrix->GetTranslation()[2];
+                // u' = R u, v' = R v
+                // where R is the rotation matrix
+                u.SetXYZ(_matrix->GetRotationMatrix()[0], _matrix->GetRotationMatrix()[1], _matrix->GetRotationMatrix()[2]);
+                v.SetXYZ(_matrix->GetRotationMatrix()[3], _matrix->GetRotationMatrix()[4], _matrix->GetRotationMatrix()[5]);
                 return TVector3(x, y, z);
             }
             std ::cerr << "Failed to get FST sensor origin for index " << index << std::endl;

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "StEvent/StEnumerations.h"
+#include "StEvent/StFstConsts.h"
 
 class StHit;
 
@@ -111,6 +112,16 @@ class FwdHit : public KiTrack::IHit {
         }
     };
 
+    static int fstGlobalSensorIndex( int disk, int wedge, int sensor ) {
+        return (disk * kFstNumWedgePerDisk * kFstNumSensorsPerWedge) + (wedge * kFstNumSensorsPerWedge) + sensor;
+    }
+    static int fstSensorWedgeDiskFromGlobalIndex( int globalIndex, int &disk, int &wedge, int &sensor ) {
+        disk   = globalIndex / (kFstNumWedgePerDisk * kFstNumSensorsPerWedge);
+        wedge  = (globalIndex / kFstNumSensorsPerWedge) % kFstNumWedgePerDisk;
+        sensor = globalIndex % kFstNumSensorsPerWedge;
+        return 0;
+    }
+
     // Set basic props for e.g. Primary Vertex type hits
     void setXYZDetId( float x, float y, float z, int detid ){
         _x = x;
@@ -150,6 +161,7 @@ class FwdHit : public KiTrack::IHit {
     TMatrixDSym _covmat;
 
     StHit *_hit;
+    unsigned int _genfit_plane_index; //NOT used for isPV==True, since that is an abs measurement
 };
 
 // Track Seed typdef
