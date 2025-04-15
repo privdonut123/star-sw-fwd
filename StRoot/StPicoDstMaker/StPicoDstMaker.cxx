@@ -2605,7 +2605,7 @@ void StPicoDstMaker::fillFcsClusters() {
     picoFcsCluster.setChi2Ndf1Photon(muCluster->chi2Ndf1Photon());
     picoFcsCluster.setChi2Ndf2Photon(muCluster->chi2Ndf2Photon());
     double zVertex=picoDst()->event()->primaryVertex().z();
-    StThreeVectorD xyz=fcsDb->getStarXYZ(muCluster->detectorId(), muCluster->x(), muCluster->y());    
+    StThreeVectorD xyz=fcsDb->getStarXYZfromColumnRow(muCluster->detectorId(), muCluster->x(), muCluster->y());    
     StLorentzVectorD lv = fcsDb->getLorentzVector(xyz, muCluster->energy(), zVertex);
     picoFcsCluster.setFourMomentum(lv.px(),lv.py(),lv.pz(),lv.e());
     new((*(mPicoArrays[StPicoArrays::FcsCluster]))[counter]) StPicoFcsCluster(picoFcsCluster);
