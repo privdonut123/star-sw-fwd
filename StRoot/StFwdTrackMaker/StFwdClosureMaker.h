@@ -38,6 +38,9 @@ class StFwdClosureMaker : public StMaker {
     int Init();
     int Finish();
     int Make();
+
+
+    int TestStraightFit();
     void Clear(const Option_t *opts = "");
 
 #ifndef __CINT__
@@ -47,14 +50,21 @@ class StFwdClosureMaker : public StMaker {
 
   // protected:
 
+    bool mLoadGeometry = true;
+    bool mRasterFstPoints = true;
     float mPVal = 1e-3;
     float mBlowUp = 1e3;
     int   mMaxIt = 40;
+    int   mMinIt = 10;
     float mRelChi2 = 0.1;
+    float mIdealSigXY = 0.01; // in cm (e.g. 0.01 = 100 microns)
+    int mMaxFailedHits = 0;
+    float mBlowUpMax = 1e7;
 
     // Primary Vertex resolutions
-    double mPrimaryVertexSigXY = 10.1; // in cm (e.g. 0.01 = 100 microns)
-    double mPrimaryVertexSigZ = 10.1; // in cm (e.g. 0.01 = 100 microns)
+    bool mAddPrimaryVertex = true;
+    double mPrimaryVertexSigXY = 0.01; // in cm (e.g. 0.01 = 100 microns)
+    double mPrimaryVertexSigZ = 0.01; // in cm (e.g. 0.01 = 100 microns)
     
     // FST resolutions
     double mRasterR = 3.0;
