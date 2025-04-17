@@ -1,4 +1,4 @@
-//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-50}','${3:-0.001}','${4:-0.001}','${5:-3.0}','${6:-0.004}','${7:-0}',"'${8:- }'")'; exit $?
+//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-50}','${3:-0.01}','${4:-0.01}','${5:-3.0}','${6:-0.004}','${7:-1}',"'${8:- }'")'; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
 
@@ -13,7 +13,7 @@ void close(     char *inFile =  "sim.fzd",
                 double primaryVertexSigmaZ = 0.001,
                 double fstRasterR = 3.0,
                 double fstRasterPhi = 0.0040906154,
-                int  numFttToUse = 0,
+                int  numFttToUse = 4,
                 TString note = ""
             ) {
     // report all of the parameters passed in
@@ -31,10 +31,14 @@ void close(     char *inFile =  "sim.fzd",
     // replace all "." with "p" in the output file name
     mOutput.ReplaceAll(".", "p");
     mOutput += ".root";
+
+    mOutput = "DEBUG.root";
     cout << "Output file = " << mOutput.Data() << endl;
+
 
     // Setup the chain for reading an FZD
     TString _chain;
+    // _chain = "fzin sdt20211016 MakeEvent bigbig evout cmudst tree";
     _chain = "fzin sdt20211016 MakeEvent bigbig evout cmudst tree";
     
 
@@ -43,8 +47,8 @@ void close(     char *inFile =  "sim.fzd",
     gROOT->LoadMacro("bfc.C");
     bfc(-1, _chain, inFile);
 
-    gSystem->Load( "libStFttSimMaker" );
-    gSystem->Load( "libStFcsTrackMatchMaker" );
+    // gSystem->Load( "libStFttSimMaker" );
+    // gSystem->Load( "libStFcsTrackMatchMaker" );
 
     gSystem->Load( "libMathMore.so" );
     gSystem->Load( "libStarGeneratorUtil" );
@@ -64,20 +68,34 @@ void close(     char *inFile =  "sim.fzd",
     // Configure the Forward Tracker
     StFwdClosureMaker * fwdClosure = new StFwdClosureMaker();
     fwdClosure->SetDebug(1);
-    fwdClosure->mMaxIt = 4;
+    // fwdClosure->mMaxIt = 4;
     
-    fwdClosure->mBlowUp = 1e3;
-    fwdClosure->mPVal = 1e-3;
-    fwdClosure->mRelChi2 = 1e-3;
+    fwdClosure->mBlowUp = 1e9;
+    fwdClosure->mBlowUpMax = 1e9;
+    fwdClosure->mPVal = 1e-2;
+    fwdClosure->mRelChi2 = 1e-2;
+    fwdClosure->mMaxIt = 2e4;
+    fwdClosure->mMinIt = 9;
+    fwdClosure->mIdealSigXY = 0.1; // in cm (e.g. 0.01 = 100 microns)
+    fwdClosure->mLoadGeometry = false;
+    fwdClosure->mMaxFailedHits = 0;
 
-    fwdClosure->mFttMode = StFwdClosureMaker::kStrip;
+    // fwdClosure->mFttMode = StFwdClosureMaker::kStrip;
 
     fwdClosure->mPrimaryVertexSigXY = primaryVertexSigmaXY;
     fwdClosure->mPrimaryVertexSigZ = primaryVertexSigmaZ;
     fwdClosure->mRasterR = fstRasterR;
     fwdClosure->mRasterPhi = fstRasterPhi;
-    fwdClosure->mNumFttToUse = numFttToUse;
+    fwdClosure->mNumFttToUse = 0;//numFttToUse;
     fwdClosure->mOutFile = mOutput;
+
+    // fwdClosure->mBlowUp = 1e5;
+    // fwdClosure->mMaxIt = 4;
+    // fwdClosure->mRelChi2 = 1e-3;
+    // fwdClosure->mPVal = 1e-3;
+    fwdClosure->mRasterFstPoints = true;
+    fwdClosure->mAddPrimaryVertex = true;
+
     fwdClosure->SetDebug(1);
     
     chain->AddBefore("MuDst", fwdClosure);
