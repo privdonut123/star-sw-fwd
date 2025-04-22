@@ -391,8 +391,13 @@ void StFstFastSimMaker::FillSilicon(StEvent *event) {
 			float r = sqrt(hits[i]->position().x() * hits[i]->position().x() + hits[i]->position().y() * hits[i]->position().y());
 			float phi = atan2(hits[i]->position().y(), hits[i]->position().x());
 			fHit->setLocalPosition( r, phi, hits[i]->position().z() );
-			fHit->setDiskWedgeSensor(hits[i]->layer(), hits[i]->ladder(), hits[i]->wafer());
-			event->fstHitCollection()->addHit(fHit);
+			// AHHH the disk is ignored and the wedge is used as 0 - 36
+			// because of the old geometry layout the FST disks are layers 4, 5, 6 in simulation
+			int iDisk = hits[i]->layer() - 4;
+			fHit->setDiskWedgeSensor(iDisk, iDisk * kFstNumWedgePerDisk + hits[i]->ladder(), hits[i]->wafer());
+			LOG_INFO << Form("Adding hit to StFstHitCollection: %d %d %d %f %f %f", fHit->getDisk(), fHit->getWedge(), fHit->getSensor(), hits[i]->position().x(), hits[i]->position().y(), hits[i]->position().z()) << endm;
+			bool added = event->fstHitCollection()->addHit(fHit);
+			LOG_INFO << "ST hit added? " << added << endm;
 		} else {
 		}
 	}
