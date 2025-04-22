@@ -13,9 +13,12 @@
 #include <vector>
 #include "TVector3.h"
 #include "TRefArray.h"
+#include <climits>
+
 
 
 class StPicoFwdTrack : public TObject {
+    
 
 public:
     /// Constructor
@@ -57,6 +60,25 @@ public:
     TVector3 ecalProjection() const { return TVector3( ((float)mECalX)/100.f, ((float)mECalY)/100.f, ((float)mECalZ)/10.f ); }
     // Projected Projection at the HCal
     TVector3 hcalProjection() const { return TVector3( ((float)mHCalX)/100.f, ((float)mHCalY)/100.f, ((float)mHCalZ)/10.f ); }
+
+    // DCA to primary vertex
+    Float_t dcaXY() const { return mDCAXY; }
+    Float_t dcaZ() const { return mDCAZ; }
+    // Index of the primary vertex used in the fit
+    UChar_t vtxIndex() const { return mVtxIndex; }
+    // Index of the corresponding Global Track if BLC tracks
+    // Index of the corresponding BLC Track if primary tracks
+    UShort_t globalTrackIndex() const { return mGlobalTrackIndex; }
+    bool isGlobalTrack() const { return (mGlobalTrackIndex == USHRT_MAX); }
+    bool isBLCTrack() const { return (mGlobalTrackIndex != USHRT_MAX && mVtxIndex == USHRT_MAX-1); }
+    bool isPrimaryTrack() const { return (mGlobalTrackIndex != USHRT_MAX && mVtxIndex < USHRT_MAX-1); }
+
+     // access ecal match indices
+     UChar_t ecalMatchIndex( Int_t i ) const { return (i < (Int_t)mEcalMatchIndex.size()) ? mEcalMatchIndex[i] : 0; }
+     Int_t numberOfEcalMatchIndices() const { return (Int_t)mEcalMatchIndex.size(); }
+     // access hcal match indices
+     UChar_t hcalMatchIndex( Int_t i ) const { return (i < (Int_t)mHcalMatchIndex.size()) ? mHcalMatchIndex[i] : 0; }
+     Int_t numberOfHcalMatchIndices() const { return (Int_t)mHcalMatchIndex.size(); }
 
     void setId( Int_t id) { mId = (UShort_t)id; }
     void setMomentum( TVector3 mom ) { mMomentumX = mom.X(); mMomentumY = mom.Y(); mMomentumZ = mom.Z(); }
@@ -103,7 +125,9 @@ protected:
     Float_t mDCAZ;
     /// Index of primary vertex used in fit (primary tracks only)
     UChar_t mVtxIndex;
-    /// Index of the corresponding Global Track if primary, else USHRT_MAX
+    /// USHRT_MAX if global tracks
+    /// Index of the corresponding Global Track if BLC tracks
+    /// Index of the corresponding BLC Track if primary tracks
     UShort_t mGlobalTrackIndex;
 
     /// ecal match index
@@ -128,7 +152,7 @@ protected:
     Short_t mHCalY;
     Short_t mHCalZ;
 
-    ClassDef(StPicoFwdTrack,3)
+    ClassDef(StPicoFwdTrack,4)
 
 };
 
