@@ -103,20 +103,20 @@ class TrackFitter {
         genfit::FieldManager::getInstance()->init(mBField.get());
 
         // initialize the main mFitter using a KalmanFitter with reference tracks
-        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitterRefTrack());
+        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitter());
 
         // Here we load several options from the config,
         // to customize the mFitter behavior
         mFitter->setMaxFailedHits(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxFailedHits", -1)); // default -1, no limit
         mFitter->setDebugLvl(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:DebugLvl", 0)); // default 0, no output
-        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 40)); // default 4 iterations
-        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 0)); // default 0 iterations
+        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 4000)); // default 4 iterations
+        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 10)); // default 0 iterations
 
         // Set the fit convergence paramters
         mFitter->setRelChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-3) );
         // mFitter->setAbsChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:AbsChi2Change", 1e-3) );
         mFitter->setDeltaPval( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-3) );
-        mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e3) );
+        mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e9) );
 
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
         FwdGeomUtils fwdGeoUtils( gMan );

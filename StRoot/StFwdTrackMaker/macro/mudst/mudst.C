@@ -22,19 +22,21 @@ void mudst( const Char_t * fileList = "mudst.lis", int nEvents = 5000, int nFile
 													nFiles
 												);
 
+	StMuDst2StEventMaker * mu2ev = new StMuDst2StEventMaker();
+
 	// Initialize the database
 	// cout << endl << "============  Data Base =========" << endl;
 	// St_db_Maker *dbMk = new St_db_Maker("db","MySQL:StarDb","$STAR/StarDb","StarDb");
 
 
-	gSystem->Load("StFwdUtils.so");
-    StFwdAnalysisMaker * fwdAna = new StFwdAnalysisMaker();
-	fwdAna->setMuDstInput();
-    chain->AddMaker(fwdAna);
+	// gSystem->Load("StFwdUtils.so");
+    // StFwdAnalysisMaker * fwdAna = new StFwdAnalysisMaker();
+	// fwdAna->setMuDstInput();
+    // chain->AddMaker(fwdAna);
 
-	StFcsDbMaker * fcsDb = new StFcsDbMaker();
-    chain->AddMaker(fcsDb);
-	fcsDb->SetDebug();
+	// StFcsDbMaker * fcsDb = new StFcsDbMaker();
+    // chain->AddMaker(fcsDb);
+	// fcsDb->SetDebug();
 
 	
 	// Initialize chain
