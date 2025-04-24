@@ -577,12 +577,13 @@ class ForwardTrackMaker {
             mSeedSource = kSeqSeed;
         else if (hitmapSource == "sim")
             mSeedSource = kSimSeed;
-        LOG_INFO << "Performing Fwd Seed finding with mode: " << hitmapSource << " = " << endm;
+        LOG_INFO << "Performing Fwd Seed finding with mode: " << hitmapSource << endm;
         FwdDataSource::McTrackMap_t &mcTrackMap = mDataSource->getMcTracks();
 
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
 
         mEventStats.mStep1Duration.push_back( duration );
+        LOG_INFO << "Loading FWD seed hits took " << duration << " ms" << endm;
 
         /*************************************************************/
         // DO MC Track Finding (if set to do so)
@@ -601,6 +602,7 @@ class ForwardTrackMaker {
         // Standard Track Finding
         size_t nIterations = mConfig.get<size_t>("TrackFinder:nIterations", 0);
         for (size_t iIteration = 0; iIteration < nIterations; iIteration++) {
+            LOG_INFO << "\tSeed Finding Iteration " << iIteration << endm;
             if ( mSeedSource == kSimSeed){
                 mergeHitmaps( fstHitmap, fttHitmap );
             } else {
@@ -1115,14 +1117,14 @@ class ForwardTrackMaker {
 
         FwdConnector connector(distance);
         builder.addSectorConnector(&connector);
-        LOG_DEBUG << "Connector added: " << endm;
+        LOG_DEBUG << "Connector added: " << distance << endm;
         // Get the segments and return an automaton object for further work
 
         KiTrack::Automaton automaton = builder.get1SegAutomaton();
-        LOG_DEBUG << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
-        LOG_DEBUG << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
+        LOG_INFO << TString::Format( "nSegments=%lu", automaton.getSegments().size() ).Data() << endm;
+        LOG_INFO << TString::Format( "nConnections=%u", automaton.getNumberOfConnections() ).Data() << endm;
 
-        if (automaton.getNumberOfConnections() > 9000 ){
+        if (automaton.getNumberOfConnections() > 1000 ){
             LOG_ERROR << "Got too many connections, bailing out of tracking" << endm;
             return acceptedTrackSeeds;
         }
@@ -1132,6 +1134,7 @@ class ForwardTrackMaker {
         // we can apply an optional parameter <nHits> to only get tracks with >=nHits in them
 
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
+        LOG_INFO << "Building 2-point connections took " << duration << " ms" << endm;
         mEventStats.mStep2Duration.push_back(duration);
         itStart = FwdTrackerUtils::nowNanoSecond();
 
@@ -1234,6 +1237,7 @@ class ForwardTrackMaker {
 
         // check to see if we have hits!
         size_t nHitsThisIteration = nHitsInHitMap(hitmap);
+        LOG_INFO << "We have " << nHitsThisIteration << " seed hits to consider" << endm;
 
         const int minHitsToConsider = 3;
         if (nHitsThisIteration < minHitsToConsider) {

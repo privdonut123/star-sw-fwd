@@ -1327,6 +1327,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
                 if( p[2]>=0 && p[0]>=0 ){ det=3; }
                 if( p[2]<0  && p[0]<0  ){ det=3; }
             }
+            if (!mFcsDb) continue;
             StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
             StThreeVectorD planenormal = mFcsDb->getNormal(det);
             float xyz0[3] = { 0, 0, 575.0 };

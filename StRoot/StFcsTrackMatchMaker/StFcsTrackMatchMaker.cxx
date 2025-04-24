@@ -163,7 +163,6 @@ int StFcsTrackMatchMaker::Make()
 
     // get the projections
     StFwdTrackProjection projECAL, projHCAL, projEPD;
-    LOG_INFO << "nProjections: "<< trk->mProjections.size() << endm;
     projECAL = trk->getProjectionFor( kFcsWcalId );
     projHCAL = trk->getProjectionFor( kFcsHcalId );
     projEPD  = trk->getProjectionFor( kFcsPresId );

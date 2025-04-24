@@ -1,17 +1,8 @@
 //usr/bin/env root4star -l root -l -q  $0; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
-// For fast fwd tracking run with Db=false, fcs=false, FwdQa=false
-bool runDb = true;
-bool runFttChain = true;
-bool runFcsChain = true;
-bool runFwdChain = true;
-bool refillMuDst = false;
-bool runFwdQa = false;
-
-
 void loadLibs();
-void fwd( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/ReversedFullField/P25ia/2022/055/23055059/st_physics_23055059_raw_2000001.MuDst.root", int firstEvent = 7200, int nEvents = 20 ){
+void mu2pico( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/ReversedFullField/P25ia/2022/055/23055058/st_physics_23055058_raw_3500001.MuDst.root", int firstEvent = 0, int nEvents = 10000 ){
 	cout << "FileList: " << fileList << endl;
 	
 	cout << "firstEvent: " << firstEvent << endl;
@@ -34,17 +25,14 @@ void fwd( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/
 												);
 	TChain& muDstChain = *muDstMaker.chain();
     printf( "MuDst file has %d events available in tree\n", muDstChain.GetEntries());
-	
-	/*******************************************************************************************/
+
+    /*******************************************************************************************/
 	// Initialize the database
-		if (runDb){
-			cout << endl << "============  Data Base =========" << endl;
-			St_db_Maker *dbMk = new St_db_Maker("db","MySQL:StarDb","$STAR/StarDb","StarDb");
-			dbMk->SetDateTime(20220225, 0);
-			// things will run fine without a timestamp set, but FCS DB will give bad values ...
-		}
+        cout << endl << "============  Data Base =========" << endl;
+        St_db_Maker *dbMk = new St_db_Maker("db","MySQL:StarDb","$STAR/StarDb","StarDb");
+        dbMk->SetDateTime(20220225, 0);
+        // things will run fine without a timestamp set, but FCS DB will give bad values ...
 	/*******************************************************************************************/
-	
 
 	/*******************************************************************************************/
 	// Create a TEventList to specify the events to process
@@ -64,78 +52,30 @@ void fwd( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/
     StMuDst2StEventMaker * mu2ev = new StMuDst2StEventMaker();
 	/*******************************************************************************************/
 
-	/*******************************************************************************************/
+    /*******************************************************************************************/
 	// Setup Fcs Database if needed
-	if (runFcsChain && runDb){
 		StFcsDbMaker * fcsDb = new StFcsDbMaker();
 		chain->AddMaker(fcsDb);
 		// fcsDb->SetDebug();
-	}
-	/*******************************************************************************************/
-	
 
-	/*******************************************************************************************/
-	// FTT chain
-	if (runFttChain){
-		StFttDbMaker * fttDbMk = new StFttDbMaker();
-		StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
-		StFttClusterMaker * fttclu = new StFttClusterMaker();
-		fttclu->SetTimeCut(1, -40, 40);
-		StFttPointMaker * fttpoint = new StFttPointMaker();
-	}
-	/*******************************************************************************************/
-
-	/*******************************************************************************************/
-    // FCS Chain
-	if (runFcsChain){
-		gSystem->Load("libStFcsWaveformFitMaker.so");
+        gSystem->Load("libStFcsWaveformFitMaker.so");
 		gSystem->Load("libStFcsClusterMaker.so");
 		
 		StFcsWaveformFitMaker *fcsWFF = new StFcsWaveformFitMaker();
 		fcsWFF->setEnergySelect(0);
 
 		StFcsClusterMaker *fcsclu = new StFcsClusterMaker();
-		// fcsclu->setDebug(1);
-	}
 	/*******************************************************************************************/
 
-	/*******************************************************************************************/
-	// FwdTrackMaker Chain
-	if (runFwdChain){
-		// FwdTrackMaker
-		StFwdTrackMaker *fwdTrack = new StFwdTrackMaker();
-		fwdTrack->SetDebug(1);
-		fwdTrack->setGeoCache( "fGeom.root" );
-		fwdTrack->setSeedFindingWithFst();
+    
 
-		if (runFcsChain){
-			// FwdTrack and FcsCluster assciation
-			gSystem->Load("StFcsTrackMatchMaker");
-			StFcsTrackMatchMaker *match = new StFcsTrackMatchMaker();
-			match->setMaxDistance(6,10);
-			match->setFileName("fcstrk.root");
-		}
-		
-		if (runFwdQa){
-			StFwdQAMaker *fwdQA = new StFwdQAMaker();
-			fwdQA->SetDebug(2);
-			TString fwdqaname( gSystem->BaseName(inMuDstFile) );
-			fwdqaname.ReplaceAll(".MuDst.root", ".FwdTree.root");
-			cout << fwdqaname.Data() << endl;
-			fwdQA->setTreeFilename(fwdqaname);
-
-			gSystem->Load("StFwdUtils.so");
-			StFwdAnalysisMaker * fwdAna = new StFwdAnalysisMaker();
-			fwdAna->setMuDstInput();
-		}
-
-		// The PicoDst
-		gSystem->Load("libStPicoEvent");
-		gSystem->Load("libStPicoDstMaker");
-		StPicoDstMaker *picoMk = (StMaker*) (new StPicoDstMaker(StPicoDstMaker::IoWrite, inMuDstFile, "picoDst"));
-		cout << "picoMk = " << picoMk << endl;
-		picoMk->setVtxMode(StPicoDstMaker::Vtxless);
-	}
+    // The PicoDst
+    gSystem->Load("libStPicoEvent");
+    gSystem->Load("libStPicoDstMaker");
+    StPicoDstMaker *picoMk = (StMaker*) (new StPicoDstMaker(StPicoDstMaker::IoWrite, inMuDstFile, "picoDst"));
+    cout << "picoMk = " << picoMk << endl;
+    picoMk->setVtxMode(StPicoDstMaker::Vtxless);
+    // chain->SetAttr("TpcVpdVzDiffCut", 600.0);
 	/*******************************************************************************************/
 
 
@@ -160,19 +100,20 @@ void fwd( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/
 	size_t numProcessed = 0;
 	for (int i = 0; i < nEntries; i++) {
 		printf("Processing event %d of %d\n", i, nEntries);
-		fwdTrack->SetDebug(1);
         chain->Clear();
         if (kStOK != chain->Make())
             break;
 
-		if (refillMuDst){
-			StEvent *mStEvent = static_cast<StEvent *>(muDstMaker->GetInputDS("StEvent"));
-			// muDstMaker->fillFwdTrack( mStEvent);
-			// fwdQA->Make();
-		}
-		
-		// MipMaker->Make();
-		// picoMk->Make();
+        auto mMuDst = muDstMaker->muDst();
+        printf( "BEFORE muprimv: %d \n", mMuDst->primaryVertex());
+        StEvent *stEvent = static_cast<StEvent *>(muDstMaker->GetInputDS("StEvent"));
+        // muDstMaker->fillVertices(stEvent);
+        if (stEvent) {
+            printf("StPrimaryVertex::numberOfPrimaryVertices = %d \n", stEvent->numberOfPrimaryVertices());
+            printf( "AFTER muprimv: %d \n", mMuDst->primaryVertex());
+        }
+
+
         cout << "EVENT #" << i << " COMPLETED" << endl; 
     }
 	/*******************************************************************************************/

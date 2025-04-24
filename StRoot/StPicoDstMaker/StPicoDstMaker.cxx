@@ -378,6 +378,11 @@ Int_t StPicoDstMaker::setVtxModeAttr(){
     return kStOK;
   }
 #endif /* !__TFG__VERSION__ */
+  else if (strcasecmp(SAttr("PicoVtxMode"), "PicoVtxless") == 0) {
+      setVtxMode( PicoVtxMode::Vtxless );
+      LOG_INFO << " PicoVtxless is being used " << endm;
+      return kStOK;
+    }
 
   return kStErr;
 }
@@ -895,7 +900,7 @@ Int_t StPicoDstMaker::MakeWrite() {
   mFmsFiller.fill(*mMuDst);
 
   if (Debug()) mPicoDst->printTracks();
-
+  
   mTTree->Fill();
   if ( isFromDaq ) {
 //    delete mEmcCollection;
@@ -1055,7 +1060,7 @@ void StPicoDstMaker::fillTracks() {
     }
 
 #if defined (__TFG__VERSION__)
-    if ( StMuDst::dca3Dmax()>0 ) {
+    if ( StMuDst::dca3Dmax()>0) {
       // Cut large Dca
       THelixTrack t = dcaG->thelix();
       StThreeVectorD V(mMuDst->primaryVertex()->position());
@@ -1182,7 +1187,7 @@ void StPicoDstMaker::fillTracks() {
 
     // Calculate global momentum and position at point of DCA to the pVtx
     // at it is done in MuDst
-    if( dcaG ) {
+    if( dcaG && mMuDst->primaryVertex() ) {
       const StThreeVectorF &pvert =  mMuDst->primaryVertex()->position();
       Double_t vtx[3] = {pvert[0],pvert[1],pvert[2]};
       THelixTrack thelix =  dcaG->thelix();
@@ -1194,7 +1199,7 @@ void StPicoDstMaker::fillTracks() {
       picoTrk->setGlobalMomentum( momAtDca[0], momAtDca[1], momAtDca[2] );
       picoTrk->setOrigin( pos[0], pos[1], pos[2] );
     }
-    else {
+    else if ( mMuDst->primaryVertex() ){
       StPhysicalHelixD gHelix = dcaG->helix();
       gHelix.moveOrigin( gHelix.pathLength( mMuDst->primaryVertex()->position() ) );
       StThreeVectorF globMom =  gHelix.momentum( mBField * kilogauss );
@@ -2521,6 +2526,7 @@ void StPicoDstMaker::fillFwdTracks() {
       picoFwdTrack.setNumberOfFitPoints( evTrack->numberOfFitPoints() * evTrack->charge() );
       picoFwdTrack.setNumberOfSeedPoints( evTrack->numberOfSeedPoints() );
       picoFwdTrack.setChi2( evTrack->chi2() );
+      picoFwdTrack.setPVal( evTrack->pval() );
       picoFwdTrack.setDca( evTrack->dca().x(), evTrack->dca().y(), evTrack->dca().z() );
       if ( evTrack->didFitConvergeFully())
         picoFwdTrack.setStatus( 2 );
@@ -2663,6 +2669,9 @@ bool StPicoDstMaker::selectVertex() {
   StMuPrimaryVertex* selectedVertex = nullptr;
 
   // Switch between modes: Default and Vpd (VpdOrDefault)
+  if ( mVtxMode == PicoVtxMode::Vtxless ) {
+    return true;
+  }
   // Default takes the first primary vertex, meanwhile
   // Vpd
   if ( mVtxMode == PicoVtxMode::Default ) {

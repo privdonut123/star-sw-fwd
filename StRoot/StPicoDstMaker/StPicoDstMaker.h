@@ -90,7 +90,8 @@ class StPicoDstMaker : public StMaker {
   /// \par 3 VpdOrDefault
   /// \par 4 Mtd
   /// \par 5 FXT
-  enum PicoVtxMode {NotSet=0, Default=1, Vpd=2, VpdOrDefault=3, Mtd=4, FXT=5};
+  /// \par 6 VTXLess
+  enum PicoVtxMode {NotSet=0, Default=1, Vpd=2, VpdOrDefault=3, Mtd=4, FXT=5, Vtxless=6};
 #endif /* ! __TFG__VERSION__ */
   /// Write or not write covariance matrix: 0-skip, 1-write
   enum PicoCovMtxMode {Skip=0, Write=1};
