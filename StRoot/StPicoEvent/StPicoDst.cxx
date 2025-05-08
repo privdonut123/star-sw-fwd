@@ -20,6 +20,7 @@
 #include "StPicoETofHit.h"
 #include "StPicoETofPidTraits.h"
 #include "StPicoFwdTrack.h"
+#include "StPicoFwdVertex.h"
 #include "StPicoMcVertex.h"
 #include "StPicoMcTrack.h"
 #include "StPicoDst.h"          //MUST be the last one

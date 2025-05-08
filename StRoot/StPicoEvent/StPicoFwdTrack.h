@@ -21,6 +21,7 @@ class StPicoFwdTrack : public TObject {
     
 
 public:
+    enum StPicoFwdTrackType { kGlobal=0, kBeamlineConstrained=1, kPrimaryVertexConstrained=2, kForwardVertexConstrained=3 };
     /// Constructor
     StPicoFwdTrack(  );
     /// Copy constructor
@@ -65,13 +66,20 @@ public:
     Float_t dcaXY() const { return mDCAXY; }
     Float_t dcaZ() const { return mDCAZ; }
     // Index of the primary vertex used in the fit
-    UChar_t vtxIndex() const { return mVtxIndex; }
-    // Index of the corresponding Global Track if BLC tracks
-    // Index of the corresponding BLC Track if primary tracks
+    UChar_t vertexIndex() const {
+        // extract bits 7…2:
+        return (mVtxIndex >> 2) & 0x3F;
+    }
+    UChar_t trackType() const {
+        // extract bits 1…0:
+        return mVtxIndex & 0x03;
+    }
+    // Index of the corresponding Global Track if Primary, BLC, or FwdVertex constrained tracks
     UShort_t globalTrackIndex() const { return mGlobalTrackIndex; }
-    bool isGlobalTrack() const { return (mGlobalTrackIndex == USHRT_MAX); }
-    bool isBLCTrack() const { return (mGlobalTrackIndex != USHRT_MAX && mVtxIndex == USHRT_MAX-1); }
-    bool isPrimaryTrack() const { return (mGlobalTrackIndex != USHRT_MAX && mVtxIndex < USHRT_MAX-1); }
+    bool isGlobalTrack() const { return (trackType() == StPicoFwdTrack::kGlobal); }
+    bool isBeamLineConstrainedTrack() const { return (trackType() == StPicoFwdTrack::kBeamlineConstrained); }
+    bool isPrimaryTrack() const { return (trackType() == StPicoFwdTrack::kPrimaryVertexConstrained); }
+    bool isFwdVertexConstrainedTrack() const { return (trackType() == StPicoFwdTrack::kForwardVertexConstrained); }
 
      // access ecal match indices
      UChar_t ecalMatchIndex( Int_t i ) const { return (i < (Int_t)mEcalMatchIndex.size()) ? mEcalMatchIndex[i] : 0; }
@@ -95,7 +103,7 @@ public:
     /// Set index of the corresonding MC track
     void setMcTruth(Int_t index, Int_t qa)   { mIdTruth = (UShort_t)index; mQATruth = (UShort_t)qa; }
     void setDca( Float_t dcaX, Float_t dcaY, Float_t dcaZ ) { mDCAXY =sqrt(dcaX*dcaX + dcaY*dcaY); mDCAZ = dcaZ; }
-    void setVtxIndex( UChar_t vtxIndex ) { mVtxIndex = vtxIndex; }
+    void setVtxIndexRaw( UChar_t vtxIndex ) { mVtxIndex = vtxIndex; }
     void setGlobalTrackIndex( UShort_t index ) { mGlobalTrackIndex = index; }
 
 
@@ -108,8 +116,8 @@ protected:
     UChar_t mNumberOfSeedPoints;
     /// Charge * nHitsFit
     Char_t mNumberOfFitPoints;
-    /// Chi2 of the track (encoding = chi2*1000)
-    UShort_t mChi2;
+    /// Chi2 of the track
+    Float_t mChi2;
     
     /// Px momentum (GeV/c)
     Float_t mMomentumX;
@@ -123,7 +131,9 @@ protected:
     Float_t mDCAXY;
     /// DCA to primary vertex (Z)
     Float_t mDCAZ;
-    /// Index of primary vertex used in fit (primary tracks only)
+    /// Index of primary vertex used in fit (first 6 bits ) AND track type in last 2 bits
+    /// Track Type: 0=Global, 1=BLC, 2=Primary, 3=FwdVertex (See StFwdTrack::TrackType)
+    /// Global tracks set mVtxIndex to 2^6 - 1 = 63
     UChar_t mVtxIndex;
     /// USHRT_MAX if global tracks
     /// Index of the corresponding Global Track if BLC tracks
@@ -152,7 +162,7 @@ protected:
     Short_t mHCalY;
     Short_t mHCalZ;
 
-    ClassDef(StPicoFwdTrack,4)
+    ClassDef(StPicoFwdTrack,5)
 
 };
 

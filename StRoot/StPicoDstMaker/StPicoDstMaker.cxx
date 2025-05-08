@@ -43,6 +43,7 @@
 #include "StEvent/StFwdTrackCollection.h"
 #include "StEvent/StFwdTrack.h"
 #include "StEvent/StFcsCluster.h"
+#include "StEvent/StPrimaryVertex.h"
 
 #include "StMuDSTMaker/COMMON/StMuDst.h"
 #include "StMuDSTMaker/COMMON/StMuEvent.h"
@@ -102,6 +103,7 @@
 #include "StPicoEvent/StPicoETofHit.h"
 #include "StPicoEvent/StPicoETofPidTraits.h"
 #include "StPicoEvent/StPicoFwdTrack.h"
+#include "StPicoEvent/StPicoFwdVertex.h"
 #include "StPicoEvent/StPicoFcsHit.h"
 #include "StPicoEvent/StPicoFcsCluster.h"
 #include "StPicoEvent/StPicoMcVertex.h"
@@ -252,6 +254,7 @@ void StPicoDstMaker::streamerOff() {
   StPicoETofHit::Class()->IgnoreTObjectStreamer();
   StPicoETofPidTraits::Class()->IgnoreTObjectStreamer();
   StPicoFwdTrack::Class()->IgnoreTObjectStreamer();
+  StPicoFwdVertex::Class()->IgnoreTObjectStreamer();
   StPicoFcsHit::Class()->IgnoreTObjectStreamer();
   StPicoFcsCluster::Class()->IgnoreTObjectStreamer();
   StPicoMcVertex::Class()->IgnoreTObjectStreamer();
@@ -2536,8 +2539,8 @@ void StPicoDstMaker::fillFwdTracks() {
         picoFwdTrack.setStatus( 0 );
 
       picoFwdTrack.setMcTruth( evTrack->idTruth(), evTrack->qaTruth() );
-      picoFwdTrack.setVtxIndex( evTrack->vertexIndex() );
-      // picoFwdTrack.setGlobalTrackIndex( evTrack->index() );
+      picoFwdTrack.setVtxIndexRaw( evTrack->vertexIndexRaw() );
+      picoFwdTrack.setGlobalTrackIndex( evTrack->globalTrackIndex() );
 
       // fill matched ecal and hcal clusters for the track
       // ecal
@@ -2578,6 +2581,23 @@ void StPicoDstMaker::fillFwdTracks() {
   } else {
     LOG_WARN << "Cannot get Fwd Tracks from StEvent" << endm;
   }
+
+  // Fill FwdVertex also
+  // get primary vertex from StEvent
+  LOG_DEBUG << "There are " << evt->numberOfPrimaryVertices() << " primary vertices from StEvent" << endm; 
+  for ( size_t i = 0; i < evt->numberOfPrimaryVertices(); i++ ){
+    StPrimaryVertex * evVertex = evt->primaryVertex(i);
+    if (!evVertex || !evVertex->isFwdVtx()) continue; // only save valid FwdVertex
+    StPicoFwdVertex picoFwdVertex;
+    // Set the PicoDst attributes
+    picoFwdVertex.setPosition( evVertex->position().x(), evVertex->position().y(), evVertex->position().z() );
+    LOG_INFO << "Adding StPicoFwdVertex from StPrimaryVertex" << endm;
+    picoFwdVertex.setChi2( evVertex->chiSquared() );
+    picoFwdVertex.setNumberOfTracks( evVertex->numTracksUsedInFinder() );
+    int counter = mPicoArrays[StPicoArrays::FwdVertex]->GetEntries();
+    new((*(mPicoArrays[StPicoArrays::FwdVertex]))[counter]) StPicoFwdVertex(picoFwdVertex);
+  } // for each primary vertex
+
 } //fillFwdTracks
 
 //_________________

@@ -34,6 +34,7 @@ class StPicoBEmcSmdPHit;
 class StPicoETofHit;
 class StPicoETofPidTraits;
 class StPicoFwdTrack;
+class StPicoFwdVertex;
 class StPicoFcsHit;
 class StPicoFcsCluster;
 class StPicoMcVertex;
@@ -95,6 +96,8 @@ class StPicoDst {
   static StPicoETofHit* etofHit(Int_t i) { return (StPicoETofHit*)picoArrays[StPicoArrays::ETofHit]->UncheckedAt(i); }
   /// Return pointer to i-th fwd track
   static StPicoFwdTrack* fwdTrack(Int_t i) { return (StPicoFwdTrack*)picoArrays[StPicoArrays::FwdTrack]->UncheckedAt(i); }
+  /// Return pointer to i-th fwd vertex
+  static StPicoFwdVertex* fwdVertex(Int_t i) { return (StPicoFwdVertex*)picoArrays[StPicoArrays::FwdVertex]->UncheckedAt(i); }
   /// Return pointer to i-th fcs Hit
   static StPicoFcsHit* fcsHit(Int_t i) { return (StPicoFcsHit*)picoArrays[StPicoArrays::FcsHit]->UncheckedAt(i); }
   /// Return pointer to i-th fcs Cluster
