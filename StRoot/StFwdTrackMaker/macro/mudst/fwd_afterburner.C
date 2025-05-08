@@ -127,6 +127,7 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 			fitqaoutname.ReplaceAll(".MuDst.root", ".FwdFitQA.root");
 			fwdFitQA->setOutputFilename( fitqaoutname );
 		}
+		
 		if (runFwdQa){
 			StFwdQAMaker *fwdQA = new StFwdQAMaker();
 			fwdQA->SetDebug(2);
@@ -188,6 +189,13 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
     }
 	/*******************************************************************************************/
 
+	// Chain Finish
+	// if (nEntries > 1) {
+	// 	cout << "FINISH up" << endl;
+	// 	chain->Finish();
+	// }
+
+	// delete chain;
 }
 
 
