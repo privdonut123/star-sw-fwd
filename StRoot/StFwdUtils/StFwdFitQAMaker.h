@@ -5,6 +5,10 @@
 
 #include "StChain/StMaker.h"
 #include "TVector3.h"
+#include "TString.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TProfile.h"
 
 
 class g2t_track_st;
@@ -30,6 +34,7 @@ class StFwdFitQAMaker : public StMaker
     int Finish();
     int Make();
     void Clear(const Option_t *opts = "");
+    void ProcessData();
     void ProcessFwdTracks();
     void ProcessFwdMuTracks();
     void setOutputFilename(TString f) {mOutputFilename = f;}
@@ -71,6 +76,10 @@ class StFwdFitQAMaker : public StMaker
       return new TH1F( "NULL", "NULL", 1, 0, 1 ); // returning nullptr can lead to seg fault, this fails softly
     }
 
+    TH2* getHist2( TString n ){
+      return (TH2*) getHist(n);
+    }
+
     /**
      * @brief Control whether the analysis uses StEvent (default) or MuDst as input
      * 
@@ -78,6 +87,8 @@ class StFwdFitQAMaker : public StMaker
     bool mAnalyzeMuDst = false;
     vector<McFwdTrack> mcTracks;
     TString mOutputFilename;
+
+    std::vector<TVector3> mFcsPreHitsLastEvent;
 
   ClassDef(StFwdFitQAMaker, 0);
 };

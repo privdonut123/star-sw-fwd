@@ -37,6 +37,8 @@
 
 #include "StEventUtilities/StEventHelper.h"
 
+#include "StRoot/StEpdUtil/StEpdGeom.h"
+
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuDst.h"
 #include "StMuDSTMaker/COMMON/StMuFwdTrack.h"
@@ -185,6 +187,18 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F("QidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QMisidVsPtPrim", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QMisidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
+
+    // EPD
+    addHist( new TH2F("epdId", ";EPD ID (pp); EPD ID (tt)", 200, -0.5, 199.5, 200, -0.5, 199.5) );
+    addHist( new TH1F("epdEnergy", ";EPD nMIPs; counts", 200, 0, 10) );
+    addHist( new TH2F("epdEnergyPP", ";EPD ID (pp); EPD nMIPs;",14, -0.5, 13.5, 200, 0, 10) );
+    addHist( new TH2F("epdEnergyTT", ";EPD ID (tt); EPD nMIPs;",32, -0.5, 31.5, 200, 0, 10) );
+
+    addHist( new TH2F("epdTrackdXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdTrackdRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 40, -TMath::Pi(), TMath::Pi()) );
+
+    addHist( new TH2F("epdTrackdXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdTrackdRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 40, -TMath::Pi(), TMath::Pi()) );
     return kStOK;
 }
 //________________________________________________________________________
@@ -195,11 +209,99 @@ int StFwdFitQAMaker::Make() {
         ProcessFwdTracks();
     else
         ProcessFwdMuTracks();
+    
+    ProcessData();
     LOG_DEBUG << "Processing Fwd Track Fit QA took: " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e6 << " ms" << endm;
     return kStOK;
 } // Make
 //________________________________________________________________________
 void StFwdFitQAMaker::Clear(const Option_t *opts) { LOG_DEBUG << "StFwdFitQAMaker::CLEAR" << endm; }
+//________________________________________________________________________
+void StFwdFitQAMaker::ProcessData(  ){
+    // This is an example of how to process fwd track collection
+    LOG_DEBUG << "StFwdFitQAMaker::ProcessData" << endm;
+    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
+    if (!stEvent)
+        return;
+    
+
+    auto mFcsDb = static_cast<StFcsDb*>(GetDataSet("fcsDb"));
+    if (!mFcsDb)
+        return;
+    StEpdGeom epdgeo;
+
+    std::vector<TVector3> mFcsPreHits;
+
+    // LOAD PRESHOWER HITS (EPD)
+    for ( int det = 4; det < 6; det ++ ) {
+
+        StSPtrVecFcsHit& hits = stEvent->fcsCollection()->hits(det);
+        int nh=stEvent->fcsCollection()->numberOfHits(det);
+        LOG_INFO << "Det " << det << " has " << nh << " hits" << endm;
+        for ( int i = 0; i < nh; i++ ){
+            StFcsHit* hit=hits[i];
+
+            if(det==kFcsPresNorthDetId || det==kFcsPresSouthDetId){ //EPD
+                double zepd=375.0;
+                int pp,tt,n;
+                double x[5],y[5];
+
+                mFcsDb->getEPDfromId(det,hit->id(),pp,tt);
+                getHist2( "epdId" )->Fill( pp,tt );
+                getHist ( "epdEnergy" )->Fill( hit->energy() );
+                getHist2( "epdEnergyPP" )->Fill( pp, hit->energy() );
+                getHist2( "epdEnergyTT" )->Fill( tt, hit->energy() );
+                if ( hit->energy() < 0.2 ) continue;
+
+                // Get STAR position of EPD tile corners
+                epdgeo.GetCorners(100*pp+tt,&n,x,y);
+                double x0 = (x[0] + x[1] + x[2] + x[3]) / 4.0;
+                double y0 = (y[0] + y[1] + y[2] + y[3]) / 4.0;
+                mFcsPreHits.push_back( TVector3( x0, y0, zepd ) );
+            } // if det
+        } // for i
+    } // for det
+
+
+    StFwdTrackCollection * ftc = stEvent->fwdTrackCollection();
+    if (!ftc)
+        return;
+
+    for ( auto fwdTrack : ftc->tracks() ){
+        // get EPD projection
+        auto proj = fwdTrack->getProjectionFor(kFcsPresId);
+        
+        // now loop on EPD hits
+        for ( auto epdHit : mFcsPreHits){
+            TVector3 track(proj.mXYZ.x(),proj.mXYZ.y(),proj.mXYZ.z());
+            double dx = track.X() - epdHit.X();
+            double dy = track.Y() - epdHit.Y();
+            double dR = TMath::Sqrt(dx*dx + dy*dy);
+            double dPhi = track.DeltaPhi(epdHit);
+
+            getHist2( "epdTrackdXdY" )->Fill( dx, dy );
+            getHist2( "epdTrackdRdPhi" )->Fill( dR, dPhi );
+        }
+
+        // Mixed event
+        for ( auto epdHit : mFcsPreHitsLastEvent){
+            TVector3 track(proj.mXYZ.x(),proj.mXYZ.y(),proj.mXYZ.z());
+            double dx = track.X() - epdHit.X();
+            double dy = track.Y() - epdHit.Y();
+            double dR = TMath::Sqrt(dx*dx + dy*dy);
+            double dPhi = track.DeltaPhi(epdHit);
+
+            getHist2( "epdTrackdXdYMixed" )->Fill( dx, dy );
+            getHist2( "epdTrackdRdPhiMixed" )->Fill( dR, dPhi );
+        }
+        
+    }
+
+    mFcsPreHitsLastEvent.clear();
+    for ( auto epdHit : mFcsPreHits){
+        mFcsPreHitsLastEvent.push_back(epdHit);
+    }
+}
 //________________________________________________________________________
 void StFwdFitQAMaker::ProcessFwdTracks(  ){
     // This is an example of how to process fwd track collection
@@ -344,7 +446,7 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         getHist( "TrackStats" )->Fill( 8 );
 
 
-        if ( fwdTrack->isPrimary() ){
+        if ( fwdTrack->trackType() == StFwdTrack::kPrimaryVertexConstrained ){
             getHist( "RcMatched3FSTMcEtaPrimary" ) ->Fill( mct.p.Eta() );
             getHist( "RcMatched3FSTMcPtPrimary" )  ->Fill( mct.p.Pt() );
             getHist( "RcMatched3FSTMcPhiPrimary" ) ->Fill( mct.p.Phi() );
@@ -377,7 +479,7 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         if ( mct.g2track )
             getHist( "McStartVtx" )->Fill( mct.g2track->start_vertex_p );
         
-        if ( fwdTrack->isPrimary() ){
+        if ( fwdTrack->trackType() == StFwdTrack::kPrimaryVertexConstrained ){
             getHist( "curveResolutionPrim" )->Fill( dCurve );
             getHist( "curveResolutionVsPtPrim" )->Fill( mct.p.Pt(), dCurve );
             getHist("QidVsPtPrim")->Fill( mct.p.Pt(), mct.q == fwdTrack->charge() ? 1 : 0 );

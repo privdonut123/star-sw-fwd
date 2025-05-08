@@ -197,6 +197,60 @@ class TrackFitter {
         return projectToPlane(mFttPlanes[iFttPlane], fitTrack);
     }
 
+    void createTrackPointFromPlanarMeasurement(std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId){
+        TVectorD hitOnPlane(2);
+        hitOnPlane[0] = fh->getX();
+        hitOnPlane[1] = fh->getY();
+        auto tp = new genfit::TrackPoint();
+        genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitOnPlane, CovMatPlane(fh), fh->_detid, ++hitId, tp);
+        genfit::SharedPlanePtr plane = getPlaneFor( fh );
+        int planeId = fh->_genfit_plane_index;
+        
+        // I do this to make the planeId unique between FST and FTT
+        if (fh->isFtt()) {
+            planeId = kFstNumSensors + fh->_genfit_plane_index;
+        }          
+        measurement->setPlane(plane, planeId);
+
+        tp->addRawMeasurement(measurement);
+        tp->setTrack(fitTrack.get());
+        tp->setSortingParameter(planeId); // or use the hitId?
+        fitTrack->insertPoint( tp );
+    }
+
+
+    genfit::TrackPoint* createTrackSpacepointFromMeasurement( std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId ) {
+        if (fh == nullptr) return nullptr;
+
+        TVectorD pv(3);
+        pv[0] = fh->getX();
+        pv[1] = fh->getY();
+        pv[2] = fh->getZ();
+        LOG_DEBUG << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
+
+        auto tp = new genfit::TrackPoint();
+        genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
+        tp->addRawMeasurement(measurement);
+        tp->setTrack(fitTrack.get());
+        return tp;
+    }
+
+    void setSortingParameter( FwdHit*fh, genfit::TrackPoint*tp, size_t &idxFtt, size_t &idxFst ) {
+        // Set the sorting parameter
+        if ( fh->isPV() ){
+            tp->setSortingParameter(0);
+        }
+        // These below are only used if kUseSpacePoints is true
+        if ( fh->isFtt() ){
+            tp->setSortingParameter(4 + idxFtt);
+            idxFtt++;
+        }
+        if ( fh->isFst() ){
+            tp->setSortingParameter(1 + idxFst);
+            idxFst++;
+        }
+    }
+
     /**
      * @brief setup the track from the given seed and optional primary vertex
      * @param trackSeed : seed points
@@ -223,19 +277,14 @@ class TrackFitter {
 
         // create the track representations
         // Note that multiple track reps differing only by charge results in a silent failure of GenFit
-        auto theTrackRep = new genfit::RKTrackRep(mPdgMuon * -1 * seedQ); // bc pos PDG codes are for neg particles
+        auto theTrackRep = new genfit::RKTrackRep(mPdgPiPlus * seedQ);
 
         // Create the track
         mFitTrack = std::make_shared<genfit::Track>(theTrackRep, seedPos, seedMom);
         // now add the points to the track
 
         int hitId(0);       // hit ID
-        size_t planeId(0);     // detector plane ID
-
-        // initialize the hit coords on plane and spacepoint for PV
-        TVectorD hitOnPlane(2);
-        TVectorD spacepoint(3);
-
+        
         /******************************************************************************************************************
 		 * loop over the hits, add them to the track
 		 ******************************************************************************************************************/
@@ -255,55 +304,14 @@ class TrackFitter {
             ******************************************************************************************************************/
             if ( kUseSpacePoints || fh->isPV() ) {
                 LOG_DEBUG << "Treating hit as a spacepoint" << endm;
-                if ( fh->isPV() ){
-                    LOG_DEBUG << "Including primary vertex in fit" << endm;
-                }
-                TVectorD pv(3);
-                pv[0] = h->getX();
-                pv[1] = h->getY();
-                pv[2] = h->getZ();
-                LOG_DEBUG << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
-
-                auto tp = new genfit::TrackPoint();
-                genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
-                tp->addRawMeasurement(measurement);
-                tp->setTrack(mFitTrack.get());
-
-                // Set the sorting parameter
-                if ( fh->isPV() ){
-                    tp->setSortingParameter(0);
-                }
-                // These below are only used if kUseSpacePoints is true
-                if ( fh->isFtt() ){
-                    tp->setSortingParameter(4 + idxFtt);
-                    idxFtt++;
-                }
-                if ( fh->isFst() ){
-                    tp->setSortingParameter(1 + idxFst);
-                    idxFst++;
-                }
+                auto tp = createTrackSpacepointFromMeasurement( mFitTrack, fh, hitId );
+                setSortingParameter(fh, tp, idxFtt, idxFst);
                 // add the spacepoint to the track
                 mFitTrack->insertPoint( tp );
                 continue;
+            } else {
+                createTrackPointFromPlanarMeasurement( mFitTrack, fh, hitId );
             }
-
-            // Otherwise we treat the measurement as a planar measurement
-            hitOnPlane[0] = h->getX();
-            hitOnPlane[1] = h->getY();
-            auto tp = new genfit::TrackPoint();
-            genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitOnPlane, CovMatPlane(h), fh->_detid, ++hitId, tp);
-            genfit::SharedPlanePtr plane = getPlaneFor( fh );
-            planeId = fh->_genfit_plane_index;
-            // I do this to make the planeId unique between FST and FTT
-            // But I do not know if it is needed
-            if (fh->isFtt()) {
-                planeId = kFstNumSensors + fh->_genfit_plane_index;
-            }          
-            measurement->setPlane(plane, planeId);
-            tp->addRawMeasurement(measurement);
-            tp->setTrack(mFitTrack.get());
-            tp->setSortingParameter(planeId); // or use the hitId?
-            mFitTrack->insertPoint( tp );
         } // loop on trackSeed
         return true;
     } // setupTrack
@@ -492,12 +500,6 @@ class TrackFitter {
 
     // PDG codes for the default plc type for fits
     const int mPdgPiPlus = 211;
-    const int mPdgPiMinus = -211;
-    const int mPdgPositron = 11;
-    const int mPdgElectron = -11;
-    const int mPdgMuon = 13;
-    const int mPdgAntiMuon = -13;
-
     // GenFit state - resused
     std::shared_ptr<genfit::Track> mFitTrack;
 };

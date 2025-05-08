@@ -10,9 +10,18 @@ bool refillMuDst = false;
 bool runFwdQa = false;
 bool runFitQa = true;
 
+// For EPD QA only
+// bool runDb = false;
+// bool runFttChain = false;
+// bool runFcsChain = true;
+// bool runFwdChain = false;
+// bool refillMuDst = false;
+// bool runFwdQa = false;
+// bool runFitQa = true;
+
 
 void loadLibs();
-void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/ReversedFullField/P25ia/2022/055/23055059/st_physics_23055059_raw_2000001.MuDst.root", int firstEvent = 0, int nEvents = 50 ){
+void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/ReversedFullField/P25ia/2022/055/23055059/st_physics_23055059_raw_2000001.MuDst.root", int firstEvent = 0, int nEvents = 100 ){
 	cout << "FileList: " << fileList << endl;
 	
 	cout << "firstEvent: " << firstEvent << endl;
@@ -67,7 +76,7 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 
 	/*******************************************************************************************/
 	// Setup Fcs Database if needed
-	if (runFcsChain && runDb){
+	if ( (runFcsChain && runDb) || runFitQa){
 		StFcsDbMaker * fcsDb = new StFcsDbMaker();
 		chain->AddMaker(fcsDb);
 		// fcsDb->SetDebug();
@@ -82,7 +91,8 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
 		StFttClusterMaker * fttclu = new StFttClusterMaker();
 		fttclu->SetTimeCut(1, -40, 40);
-		StFttPointMaker * fttpoint = new StFttPointMaker();
+		StFttClusterPointMaker *fttCP = new StFttClusterPointMaker();
+		// StFttPointMaker * fttpoint = new StFttPointMaker();
 	}
 	/*******************************************************************************************/
 
@@ -94,17 +104,16 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		
 		StFcsWaveformFitMaker *fcsWFF = new StFcsWaveformFitMaker();
 		fcsWFF->setEnergySelect(0);
-
 		StFcsClusterMaker *fcsclu = new StFcsClusterMaker();
-		// fcsclu->setDebug(1);
 	}
 	/*******************************************************************************************/
 
 	/*******************************************************************************************/
 	// FwdTrackMaker Chain
+	StFwdTrackMaker *fwdTrack = NULL;
 	if (runFwdChain){
 		// FwdTrackMaker
-		StFwdTrackMaker *fwdTrack = new StFwdTrackMaker();
+		fwdTrack = new StFwdTrackMaker();
 		fwdTrack->SetDebug(1);
 		fwdTrack->setGeoCache( "fGeom.root" );
 		fwdTrack->setSeedFindingWithFst();
@@ -120,13 +129,7 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 			match->setFileName("fcstrk.root");
 		}
 
-		if ( runFitQa ){
-			StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
-			fwdFitQA->SetDebug();
-			TString fitqaoutname(gSystem->BaseName(inMuDstFile));
-			fitqaoutname.ReplaceAll(".MuDst.root", ".FwdFitQA.root");
-			fwdFitQA->setOutputFilename( fitqaoutname );
-		}
+		
 		
 		if (runFwdQa){
 			StFwdQAMaker *fwdQA = new StFwdQAMaker();
@@ -147,6 +150,13 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		StPicoDstMaker *picoMk = (StMaker*) (new StPicoDstMaker(StPicoDstMaker::IoWrite, inMuDstFile, "picoDst"));
 		cout << "picoMk = " << picoMk << endl;
 		picoMk->setVtxMode(StPicoDstMaker::Vtxless);
+	}
+	if ( runFitQa ){
+		StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
+		fwdFitQA->SetDebug();
+		TString fitqaoutname(gSystem->BaseName(inMuDstFile));
+		fitqaoutname.ReplaceAll(".MuDst.root", ".FwdFitQA.root");
+		fwdFitQA->setOutputFilename( fitqaoutname );
 	}
 	/*******************************************************************************************/
 
@@ -172,7 +182,8 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 	size_t numProcessed = 0;
 	for (int i = 0; i < nEntries; i++) {
 		printf("Processing event %d of %d\n", i, nEntries);
-		fwdTrack->SetDebug(1);
+		if ( fwdTrack )
+			fwdTrack->SetDebug(1);
         chain->Clear();
         if (kStOK != chain->Make())
             break;
