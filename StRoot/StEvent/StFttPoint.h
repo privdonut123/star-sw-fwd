@@ -28,48 +28,82 @@ public:
     UChar_t quadrant()   const; // detector quadrant.
     float x() const;  // x position in cell unit at which point intersects the sub-detector in local coordinate
     float y() const;  // y position in cell unit at which point intersects the sub-detector in local coordinate
-    size_t nClusters() const; // Number of points in the parent cluster.
+    float d1() const; // diagonal1
+    float d2() const; // diagonal2
+    float sigmaX() const; // diagonal1
+    float sigmaY() const; // diagonal2
+    float sigmaXY() const; // off diagonal covariance matrix elements (covariance, no sqrt())
+    int nClusters() const; // Number of points in the parent cluster.
     StFttCluster* cluster( size_t i); //  Parent cluster of the photon.
     const StThreeVectorD& xyz() const; // XYZ position in global STAR coordinate
-    UShort_t idTruth() const { return mIdTruth; } // Get the truth ID
-    UShort_t qaTruth() const { return mQaTruth; } // Get the truth quality
+    std::vector<std::vector<float>> cov() const; //Covariance matrix of the point position
+
+    UShort_t idTruth() const { return mIdTruth; }
+    UShort_t qaTruth() const { return mQaTruth; }
 
     void setPlane(UChar_t plane);
     void setQuadrant(UChar_t quad);
     void setX(float x);
     void setY(float y);
+    void setD1(float d1);
+    void setD2(float d2);
+    void setSigmaX(float SigmaX);
+    void setSigmaY(float SigmaY);
+    void setSigmaXY(float SigmaXY);
     void addCluster(StFttCluster* cluster, UChar_t dir);
     void setXYZ(const StThreeVectorD& p3);
-    void setIdTruth(UShort_t id) { mIdTruth = id; }
-    void setQaTruth(UShort_t qa) { mQaTruth = qa; }
-    
+    void setCov(std::vector<std::vector<float>> mat);
+
+    void setIdTruth( UShort_t id ) { mIdTruth = id; }
+    void setQaTruth( UShort_t qa ) { mQaTruth = qa; }
+
+
     void print(int option=0);
 
 private:
-    UChar_t mPlane;
-    UChar_t mQuadrant;
+    UChar_t mPlane=0;
+    UChar_t mQuadrant=0;
     Float_t  mX=0.0;         // x-position in local coordinate
     Float_t  mY=0.0;         // y-position in local coordinate
     StFttCluster *mClusters[4];
-    StThreeVectorD  mXYZ;    // Photon position in STAR coordinate
-    UShort_t mIdTruth=0; // Truth ID
-    UShort_t mQaTruth=0; // Truth quality
+    StThreeVectorD  mXYZ;    // Point position in STAR coordinate
 
-    ClassDef(StFttPoint, 3)
+    Float_t mD1=0.0;         // 1st diagnoal cluster position
+    Float_t mD2=0.0;         // 2nd diagnoal cluster position
+    Float_t mSigmaX = -99.;  // sigma for 1D X cluster along the strip direction, it should be the striplength/sqrt(12)
+    Float_t mSigmaY = -99.;  // sigma for 1D Y cluster along the strip direction, it should be the striplength/sqrt(12)
+    Float_t mSigmaXY = -99.; // off diagonal covariance matrix elements
+    std::vector<std::vector<float>> mCov; // Covariance matrix of the point position
+
+    UShort_t mIdTruth=0; // Truth ID
+    UShort_t mQaTruth=0; // Truth Quality
+
+    ClassDef(StFttPoint, 2)
 };
 
 inline UChar_t StFttPoint::plane() const { return mPlane; }
 inline UChar_t StFttPoint::quadrant() const { return mQuadrant; }
-inline float StFttPoint::x() const { return mX; } // x position (cm) in local coords.
-inline float StFttPoint::y() const { return mY; } // y position (cm) in local coords.
+inline float StFttPoint::x() const { return mX; } // x position (mm) in local coords.
+inline float StFttPoint::y() const { return mY; } // y position (mm) in local coords.
+inline float StFttPoint::d1() const { return mD1; } // 1st diagnoal position (mm) in local coords.(along diagnoal direction)
+inline float StFttPoint::d2() const { return mD2; } // 2nd diagnoal position (mm) in local coords.(along diagnoal direction)
+inline float StFttPoint::sigmaX() const { return mSigmaX; }
+inline float StFttPoint::sigmaY() const { return mSigmaY; }
+inline float StFttPoint::sigmaXY() const { return mSigmaXY; }
 inline StFttCluster* StFttPoint::cluster( size_t i ) { if ( i < 4 ) return mClusters[i]; return nullptr; } //  Parent cluster of the photon.
 inline const StThreeVectorD& StFttPoint::xyz() const { return mXYZ; }
+inline std::vector<std::vector<float>> StFttPoint::cov() const { return mCov; }
 inline void StFttPoint::setPlane(UChar_t plane) { mPlane = plane; }
 inline void StFttPoint::setQuadrant(UChar_t quadrant) { mQuadrant = quadrant; }
 inline void StFttPoint::setX(float xpos) { mX = xpos; }
 inline void StFttPoint::setY(float ypos) { mY = ypos; }
+inline void StFttPoint::setD1(float d1) { mD1 = d1; }
+inline void StFttPoint::setD2(float d2) { mD2 = d2; }
+inline void StFttPoint::setSigmaX( float SigmaX) { mSigmaX = SigmaX; }
+inline void StFttPoint::setSigmaY( float SigmaY) { mSigmaY = SigmaY; }
+inline void StFttPoint::setSigmaXY( float SigmaXY) { mSigmaXY = SigmaXY; }
 inline void StFttPoint::addCluster(StFttCluster* cluster, UChar_t dir) { mClusters[dir] = (cluster); }
 inline void StFttPoint::setXYZ(const StThreeVectorD& p3) { mXYZ = p3; }
+inline void StFttPoint::setCov(std::vector<std::vector<float>> mat) { mCov = mat; }
 
 #endif  // StFttPoint_h
-

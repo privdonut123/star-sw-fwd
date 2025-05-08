@@ -35,6 +35,10 @@ public:
 
     void setMapping( UChar_t mPlane, UChar_t mQuadrant, UChar_t mRow, UChar_t mStrip, UChar_t mOrientation );
 
+    void setStripEdges( Float_t mStripCenter, Float_t mStripLeftEdge, Float_t mStripRightEdge );
+
+    void setStripLength( Float_t mStripLength );
+
     void setTime( Short_t mTime ) { this->mTime = mTime; }
     void setIdTruth( UShort_t id ) { mIdTruth = id; }
     void setQaTruth( UShort_t qa ) { mQaTruth = qa; }
@@ -55,6 +59,10 @@ public:
     UChar_t quadrant() const;
     UChar_t row() const;
     UChar_t strip() const;
+    Float_t stripCenter() const;
+    Float_t stripLength() const;
+    Float_t stripLeftEdge() const;
+    Float_t stripRightEdge() const;
     UChar_t orientation() const;
     UShort_t idTruth() const { return mIdTruth; }
     UShort_t qaTruth() const { return mQaTruth; }
@@ -81,7 +89,12 @@ protected:
     UShort_t mIdTruth=0; // Truth ID
     UShort_t mQaTruth=0; // Truth Quality
 
-    ClassDef( StFttRawHit, 4 );
+    Float_t mStripCenter;
+    Float_t mStripLeftEdge;
+    Float_t mStripRightEdge;
+    Float_t mStripLength;
+
+    ClassDef( StFttRawHit, 5 );
 };
 
 ostream& operator << ( ostream&, const StFttRawHit& digi ); // Printing operator
@@ -102,6 +115,10 @@ inline UChar_t  StFttRawHit::quadrant()    const { return mQuadrant;    };
 inline UChar_t  StFttRawHit::row()         const { return mRow;         };
 inline UChar_t  StFttRawHit::strip()       const { return mStrip;       };
 inline UChar_t  StFttRawHit::orientation() const { return mOrientation; };
+inline Float_t  StFttRawHit::stripCenter() const { return mStripCenter;};
+inline Float_t  StFttRawHit::stripLength() const { return mStripLength;};
+inline Float_t  StFttRawHit::stripLeftEdge() const { return mStripLeftEdge; };
+inline Float_t  StFttRawHit::stripRightEdge() const { return mStripRightEdge; };
 
 
 #endif // STETOFDIGI_H
