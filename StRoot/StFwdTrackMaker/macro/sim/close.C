@@ -1,4 +1,4 @@
-//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-50}','${3:-0.01}','${4:-0.01}','${5:-3.0}','${6:-0.004}','${7:-1}',"'${8:- }'")'; exit $?
+//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-50}','${3:-0.01}','${4:-0.01}','${5:-3.0}','${6:-0.004}','${7:-4}',"'${8:- }'")'; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
 
@@ -13,7 +13,7 @@ void close(     char *inFile =  "sim.fzd",
                 double primaryVertexSigmaZ = 0.001,
                 double fstRasterR = 3.0,
                 double fstRasterPhi = 0.0040906154,
-                int  numFttToUse = 4,
+                int  numFttToUse = 1,
                 TString note = ""
             ) {
     // report all of the parameters passed in
@@ -32,7 +32,7 @@ void close(     char *inFile =  "sim.fzd",
     mOutput.ReplaceAll(".", "p");
     mOutput += ".root";
 
-    mOutput = "DEBUG.root";
+    // mOutput = "DEBUG.root";
     cout << "Output file = " << mOutput.Data() << endl;
 
 
@@ -86,7 +86,7 @@ void close(     char *inFile =  "sim.fzd",
     fwdClosure->mPrimaryVertexSigZ = primaryVertexSigmaZ;
     fwdClosure->mRasterR = fstRasterR;
     fwdClosure->mRasterPhi = fstRasterPhi;
-    fwdClosure->mNumFttToUse = 0;//numFttToUse;
+    fwdClosure->mNumFttToUse = numFttToUse;
     fwdClosure->mOutFile = mOutput;
 
     // fwdClosure->mBlowUp = 1e5;

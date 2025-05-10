@@ -285,6 +285,9 @@ class StFwdTrackMaker : public StMaker {
     */
     void setFitMinIterations( int n = 1) {mFwdConfig.set<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", n); }
 
+    void setDeltaPval( double dPV ) { mFwdConfig.set<double>( "TrackFitter.KalmanFitterRefTrack:DeltaPval", dPV ); }
+    void setRelChi2Change( double dPV ) { mFwdConfig.set<double>( "TrackFitter.KalmanFitterRefTrack:RelChi2Change", dPV ); }
+
     /** @brief Enables smearing of the MC Primary Vertex according to sigmaXY,Z
      * @param pvs : if true, smear vertex
     */

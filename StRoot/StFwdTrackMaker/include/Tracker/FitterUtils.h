@@ -59,6 +59,10 @@ class GenericFitSeeder : public FitSeedMaker {
 
             if (area == 0) {
                 std::cerr << "The points are collinear, curvature is undefined." << std::endl;
+                // Show each point:
+                std::cout << "p1 = " << p1.x << ", " << p1.y << std::endl;
+                std::cout << "p2 = " << p2.x << ", " << p2.y << std::endl;
+                std::cout << "p3 = " << p3.x << ", " << p3.y << std::endl;
                 return -1; // Curvature is undefined for collinear points
             }
 

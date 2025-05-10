@@ -2,9 +2,9 @@
 #include "gen.C"
 #include "TString.h"
 
-void single_particle_gun( Int_t nevents=5000, Int_t rngSeed=541522,
+void single_particle_gun( Int_t nevents=1000, Int_t rngSeed=541512,
                           TString particle="mu-", Int_t nParticles=1,
-                          Float_t _minPt=0.1, Float_t _maxPt=1.0,
+                          Float_t _minPt=5.5, Float_t _maxPt=5.51,
                           Float_t _minEta=2.5, Float_t _maxEta=4.0,
                           Float_t _minPhi=0.0, Float_t _maxPhi=2.0*TMath::Pi()
                         )

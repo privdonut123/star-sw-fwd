@@ -181,7 +181,16 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F( "curveResolutionVsPtGlobal", ";Pt_{MC};(C_{RC} - C_{MC})/C_{MC}; ", 100, 0, 5.0, 400, -2, 2 ) );
 
     addHist( new TH1F( "TrackStats", "Track Stats; Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "GlobalMult", "Global Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "BeamlineMult", "Beamline Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "PrimaryMult", "Primary Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "SecondaryMult", "Secondary Mult; N;Counts", 50, 0, 50 )  );
     
+    addHist( new TH1F( "GoodGlobalMult", "Global Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "GoodBeamlineMult", "Beamline Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "GoodPrimaryMult", "Primary Mult; N;Counts", 50, 0, 50 )  );
+    addHist( new TH1F( "GoodSecondaryMult", "Secondary Mult; N;Counts", 50, 0, 50 )  );
+
     addHist( new TH2F("QidVsPt", "QMatrix; Pt; Qid;", 100, 0, 2.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QidVsPtPrim", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
@@ -195,10 +204,31 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F("epdEnergyTT", ";EPD ID (tt); EPD nMIPs;",32, -0.5, 31.5, 200, 0, 10) );
 
     addHist( new TH2F("epdTrackdXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdTrackdRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 40, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdTrackdRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
 
     addHist( new TH2F("epdTrackdXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdTrackdRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 40, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdTrackdRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    // EPD vs. Global
+    addHist( new TH2F("epdGlobaldXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdGlobaldRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    addHist( new TH2F("epdGlobaldXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdGlobaldRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    // EPD vs. Beamline
+    addHist( new TH2F("epdBeamlinedXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdBeamlinedRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    addHist( new TH2F("epdBeamlinedXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdBeamlinedRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    // EPD vs. Primary
+    addHist( new TH2F("epdPrimarydXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdPrimarydRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+
+    addHist( new TH2F("epdPrimarydXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
+    addHist( new TH2F("epdPrimarydRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
     return kStOK;
 }
 //________________________________________________________________________
@@ -267,10 +297,39 @@ void StFwdFitQAMaker::ProcessData(  ){
     if (!ftc)
         return;
 
+    size_t nGlobal = 0;
+    size_t nBeamline = 0;
+    size_t nPrimary = 0;
+    size_t nSecondary = 0;
+
+    size_t nGoodGlobal = 0;
+    size_t nGoodBeamline = 0;
+    size_t nGoodPrimary = 0;
+    size_t nGoodSecondary = 0;
+
     for ( auto fwdTrack : ftc->tracks() ){
+
+        if (fwdTrack->isGlobalTrack() ){
+            nGlobal++;
+            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodGlobal++;
+        }
+        if (fwdTrack->isBeamLineConstrainedTrack() ){
+            nBeamline++;
+            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodBeamline++;
+        }
+        if (fwdTrack->isPrimaryTrack() ){
+            nPrimary++;
+            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodPrimary++;
+        }
+        if (fwdTrack->isFwdVertexConstrainedTrack() ){
+            nSecondary++;
+            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodSecondary++;            
+        }
+
         // get EPD projection
         auto proj = fwdTrack->getProjectionFor(kFcsPresId);
         
+        if ( fwdTrack->chi2() < 0.01 ) continue;
         // now loop on EPD hits
         for ( auto epdHit : mFcsPreHits){
             TVector3 track(proj.mXYZ.x(),proj.mXYZ.y(),proj.mXYZ.z());
@@ -281,6 +340,19 @@ void StFwdFitQAMaker::ProcessData(  ){
 
             getHist2( "epdTrackdXdY" )->Fill( dx, dy );
             getHist2( "epdTrackdRdPhi" )->Fill( dR, dPhi );
+
+            if ( fwdTrack->isGlobalTrack() ){
+                getHist2( "epdGlobaldXdY" )->Fill( dx, dy );
+                getHist2( "epdGlobaldRdPhi" )->Fill( dR, dPhi );
+            }
+            if ( fwdTrack->isBeamLineConstrainedTrack() ){
+                getHist2( "epdBeamlinedXdY" )->Fill( dx, dy );
+                getHist2( "epdBeamlinedRdPhi" )->Fill( dR, dPhi );
+            }
+            if ( fwdTrack->isPrimaryTrack() ){
+                getHist2( "epdPrimarydXdY" )->Fill( dx, dy );
+                getHist2( "epdPrimarydRdPhi" )->Fill( dR, dPhi );
+            }
         }
 
         // Mixed event
@@ -301,6 +373,17 @@ void StFwdFitQAMaker::ProcessData(  ){
     for ( auto epdHit : mFcsPreHits){
         mFcsPreHitsLastEvent.push_back(epdHit);
     }
+
+    getHist( "GlobalMult" )->Fill( nGlobal );
+    getHist( "BeamlineMult" )->Fill( nBeamline );
+    getHist( "PrimaryMult" )->Fill( nPrimary );
+    getHist( "SecondaryMult" )->Fill( nSecondary );
+
+    getHist( "GoodGlobalMult" )->Fill( nGoodGlobal );
+    getHist( "GoodBeamlineMult" )->Fill( nGoodBeamline );
+    getHist( "GoodPrimaryMult" )->Fill( nGoodPrimary );
+    getHist( "GoodSecondaryMult" )->Fill( nGoodSecondary );
+
 }
 //________________________________________________________________________
 void StFwdFitQAMaker::ProcessFwdTracks(  ){

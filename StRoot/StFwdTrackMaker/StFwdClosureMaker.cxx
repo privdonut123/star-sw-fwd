@@ -89,8 +89,8 @@ TMatrixDSym StFwdClosureMaker::makeSiCovMat(TVector3 hit) {
     const float sinphi = y / R;
     const float sqrt12 = sqrt(12.);
 
-    const float dr = 10.0*mRasterR / sqrt12;
-    const float dphi = 10.0*(mRasterPhi) / sqrt12;
+    const float dr = mRasterR / sqrt12;
+    const float dphi = 10.*(mRasterPhi) / sqrt12;
 
 
     // Setup the Transposed and normal Jacobian transform matrix;
@@ -486,7 +486,7 @@ int StFwdClosureMaker::Make() {
         //     // TestStraightFit();
         // }
         return kStOk;
-}
+    }
     
     /*****************************************************
      * Load the MC Vertex
@@ -635,6 +635,8 @@ int StFwdClosureMaker::Make() {
         LOG_INFO << "Not using FTT hits, skipping" << endm;
         nstg = 0;
     }
+    size_t nPointsBeforeAddingFtt = spoints.size();
+    std::map<int, int> fttPlaneMap;
     for (int i = 0; i < nstg; i++) {
 
         g2t_fts_hit_st *git = (g2t_fts_hit_st *)g2t_stg_hits->At(i);
@@ -662,23 +664,27 @@ int StFwdClosureMaker::Make() {
         rhc[2] = z;
         LOG_INFO << "FTT HIT: plane_id = " << plane_id << ", volume_d = " << volume_id << " x=" << x << ", y=" << y << ", z=" << z << endm;
 
-        if ( kPoint == mFttMode ){
+        if ( kPoint == mFttMode && fttPlaneMap.count(plane_id) == 0 ) {
+            LOG_INFO << "Adding FTT point" << endm;
+            fttPlaneMap[plane_id] = 1;
             auto spoint = new genfit::SpacepointMeasurement(rhc, hitCov3, 0, i+4, nullptr);
-            if ( nFttHits < mNumFttToUse )
+            if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
                 spoints.push_back(spoint);
-        } else {
+        } else if ( kPoint != mFttMode ){
             if ( volume_id % 2 == 0 ){
+                LOG_INFO << "Adding Ftt vStrip" << endm;
                 auto spoint = new genfit::SpacepointMeasurement(rhc, vStripCov3, 0, i+4, nullptr);
-                if ( nFttHits < mNumFttToUse )
+                if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
                     spoints.push_back(spoint);
             } else {
+                LOG_INFO << "Adding Ftt hStrip" << endm;
                 auto spoint = new genfit::SpacepointMeasurement(rhc, hStripCov3, 0, i+4, nullptr);
-                if ( nFttHits < mNumFttToUse )
+                if ( (spoints.size() - nPointsBeforeAddingFtt) < mNumFttToUse )
                     spoints.push_back(spoint);
             }
         }
 
-        if ( spoints.size() >= mNumFttToUse ){
+        if ( (spoints.size() - nPointsBeforeAddingFtt) >= mNumFttToUse ){
             LOG_INFO << "Reached max FTT hits, breaking" << endm;
             break;
         }

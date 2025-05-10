@@ -1,4 +1,4 @@
-//usr/bin/env root4star -l -b -q $0'("'${1:-sim.fzd}'",'${2:-2000}')'; exit $?
+//usr/bin/env root4star -l -b -q $0'("'${1:-/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw/Jet_Data_NoFilter_500/pythia_jet_vz0_run100.fzd}'",'${2:-100}')'; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
 
@@ -7,19 +7,15 @@
 
 TFile *output = 0;
 
-void sim(       char *inFile =  "sim.fzd",
+void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw/Jet_Data_NoFilter_500/pythia_jet_vz0_run100.fzd",
                 int n = 100, // nEvents to run
-                bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
-                bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
                 bool useZeroB = false
             ) {
     // report all of the parameters passed in
     cout << "inFile = " << inFile << endl;
     cout << "n = " << n << endl;
-    cout << "useFstForSeedFinding = " << useFstForSeedFinding << endl;
     cout << "enableTrackRefit = " << enableTrackRefit << endl;
-    cout << "realisticSim = " << realisticSim << endl;
     cout << "useZeroB = " << useZeroB << endl;
     const char *geom = "y2024 agml usexgeom";
     TString _geom = geom;
@@ -118,21 +114,20 @@ void sim(       char *inFile =  "sim.fzd",
                 fwdTrack->setGeoCache( "fGeom.root" );
             }
 
-            // choose
-                if (useFstForSeedFinding)
-                    fwdTrack->setSeedFindingWithFst();
-                else { // default for this true/false option
-                    fwdTrack->setSeedFindingWithFtt();
-                }
-            // other options
-                // fwdTrack->setSeedFindingWithFtt();
-                // fwdTrack->setSeedFindingWithFstFttSequential();
-                // fwdTrack->setSeedFindingWithFstFttSimultaneous();
-
             fwdTrack->setTrackRefit( enableTrackRefit );
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
             fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
+
+            // Fitter
+            fwdTrack->setFitDebugLvl( 0 );
+            fwdTrack->setFitMinIterations( 10 );
+            fwdTrack->setFitMaxIterations( 50 );
+            
+            fwdTrack->setDeltaPval( 1e-3 );
+            fwdTrack->setRelChi2Change( 1e-1 );
+            // fwdTrack->setSeedFindingWithFtt();
+
             // fwdTrack->setIncludePrimaryVertexInFit( false );
 
             // fwdTrack->setTrackFittingOff();

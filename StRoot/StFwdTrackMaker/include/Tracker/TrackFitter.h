@@ -103,19 +103,20 @@ class TrackFitter {
         genfit::FieldManager::getInstance()->init(mBField.get());
 
         // initialize the main mFitter using a KalmanFitter with reference tracks
-        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitter());
+        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitterRefTrack());
 
         // Here we load several options from the config,
         // to customize the mFitter behavior
         mFitter->setMaxFailedHits(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxFailedHits", -1)); // default -1, no limit
         mFitter->setDebugLvl(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:DebugLvl", 0)); // default 0, no output
-        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 1000)); // default 4 iterations
-        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 3)); // default 0 iterations
+        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 100)); // default 4 iterations
+        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 10)); // default 0 iterations
 
         // Set the fit convergence paramters
-        mFitter->setRelChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-3) );
-        // mFitter->setAbsChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:AbsChi2Change", 1e-3) );
-        mFitter->setDeltaPval( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-3) );
+        mFitter->setRelChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-1) );
+        // mFitter->setAbsChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:AbsChi2Change", 1e-1) );
+        mFitter->setDeltaPval( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-1) );
+        mFitter->setBlowUpMaxVal( 1e9 );
         mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e9) );
 
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
@@ -226,7 +227,7 @@ class TrackFitter {
         pv[0] = fh->getX();
         pv[1] = fh->getY();
         pv[2] = fh->getZ();
-        LOG_DEBUG << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
+        LOG_INFO << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
 
         auto tp = new genfit::TrackPoint();
         genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
@@ -260,6 +261,7 @@ class TrackFitter {
      */
     bool setupTrack(Seed_t trackSeed ) {
         
+        mCurrentTrackSeed = trackSeed;
         // setup the track fit seed parameters
         GenericFitSeeder gfs;
         int seedQ = 1;
@@ -334,20 +336,23 @@ class TrackFitter {
             // check the track for consistency
             mFitTrack->checkConsistency();
             // do the fit
-            mFitter->processTrack(mFitTrack.get());
+            float initialChi2Change = mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-1);
+            float initiaDeltaPVal = mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-1);
+            mFitter->setRelChi2Change( initialChi2Change );
+            mFitter->setDeltaPval( initiaDeltaPVal );
 
+            mFitter->processTrack(mFitTrack.get());
+            
             // check the track for consistency
             mFitTrack->checkConsistency();
 
             // find track rep with smallest chi2
             mFitTrack->determineCardinalRep();
-            // update the seed
-            // t->udpateSeed();
-
+            
             auto status = mFitTrack->getFitStatus();
-            if (status == nullptr) {
-                LOG_ERROR << "Fit status is null, cannot get fit status" << endm;
-                return;
+            if ( status == nullptr ) {
+                LOG_ERROR << "Track fit status is null" << endm;
+                return;   
             }
             if ( kVerbose > 0 ) {
                 LOG_INFO << "Fit status:  " << status->isFitConverged() << endm;
@@ -499,9 +504,10 @@ class TrackFitter {
     std::unique_ptr<genfit::AbsKalmanFitter> mFitter = nullptr;
 
     // PDG codes for the default plc type for fits
-    const int mPdgPiPlus = 211;
+    const int mPdgPiPlus = 13;
     // GenFit state - resused
     std::shared_ptr<genfit::Track> mFitTrack;
+    Seed_t mCurrentTrackSeed;
 };
 
 
