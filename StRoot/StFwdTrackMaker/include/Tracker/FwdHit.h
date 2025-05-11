@@ -100,7 +100,7 @@ class FwdHit : public KiTrack::IHit {
         _covmat = covmat;
 
         // these are the sector ids mapped to layers
-        int map[] = {0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 5, 6}; // ftsref6a
+        int map[] = {0, 0, 0, 0, 0, 1, 2, 0, 0, 3, 4, 5, 6, 7}; // ftsref6a
 
         if (vid > 0)
             _sector = map[vid];
@@ -132,6 +132,7 @@ class FwdHit : public KiTrack::IHit {
 
     bool isFst() const { return _detid == kFstId; } 
     bool isFtt() const { return _detid == kFttId; } 
+    bool isEpd() const { return _detid == kFcsPresId; } 
     bool isPV() const { return _detid == kTpcId; }
 
     std::shared_ptr<McTrack> getMcTrack() { return _mcTrack; }
