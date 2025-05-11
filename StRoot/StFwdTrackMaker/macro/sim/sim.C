@@ -116,7 +116,6 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
 
             fwdTrack->setTrackRefit( enableTrackRefit );
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
-            fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
 
             // Fitter
