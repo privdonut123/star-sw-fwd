@@ -119,6 +119,11 @@ class TrackFitter {
         mFitter->setBlowUpMaxVal( 1e9 );
         mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e9) );
 
+        if ( static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get()) != nullptr ) {
+            LOG_INFO << "Setting the KalmanFitterRefTrack to update ref track Chi2Ref" << endm;
+            static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get())->setDeltaChi2Ref( 1e-5 );
+        }
+
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
         FwdGeomUtils fwdGeoUtils( gMan );
 
@@ -126,6 +131,20 @@ class TrackFitter {
         createAllFstPlanes( fwdGeoUtils );
         createAllFttPlanes( fwdGeoUtils );
         LOG_DEBUG << "Created all FST and FTT planes" << endm;
+
+        if (kVerbose > 0) {
+            // report all fitter options
+            LOG_INFO << "Fitter options: " << endm;
+            LOG_INFO << "\tMaxFailedHits: " << mFitter->getMaxFailedHits() << endm;
+            LOG_INFO << "\tMaxIterations: " << mFitter->getMaxIterations() << endm;
+            LOG_INFO << "\tMinIterations: " << mFitter->getMinIterations() << endm;
+            LOG_INFO << "\tRelChi2Change: " << mFitter->getRelChi2Change() << endm;
+            // LOG_INFO << "\tAbsChi2Change: " << mFitter->getAbsChi2Change() << endm;
+            LOG_INFO << "\tDeltaPval: " << mFitter->getDeltaPval() << endm;
+            LOG_INFO << "\tBlowUpFactor: " << mFitter->getBlowUpFactor() << endm;
+            LOG_INFO << "\tBlowUpMaxVal: " << mFitter->getBlowUpMaxVal() << endm;
+        }
+        
     }
 
     /**
@@ -252,6 +271,22 @@ class TrackFitter {
         }
     }
 
+    void summarizeTrackReps() {
+        LOG_INFO << "Track Reps: " << mFitTrack->getNumReps() << endm;
+        for (int i = 0; i < mFitTrack->getNumReps(); i++) {
+            auto tr = mFitTrack->getTrackRep(i);
+            // LOG_INFO << "Track Rep " << i << ": " << tr->getName() << endm;
+            LOG_INFO << "Track Rep " << i << " " << endm;
+            tr->Print();
+            auto fs = mFitTrack->getFitStatus(tr);
+            if (fs != nullptr) {
+                fs->Print();
+            } else {
+                LOG_ERROR << "Track Rep " << i << " has no fit status" << endm;
+            }
+        }
+    }
+
     /**
      * @brief setup the track from the given seed and optional primary vertex
      * @param trackSeed : seed points
@@ -267,7 +302,7 @@ class TrackFitter {
         int seedQ = 1;
         TVector3 seedPos(0, 0, 0);
         TVector3 seedMom(0, 0, 10); // this default seed actually works better than a half-bad guess
-        gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
+        // gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
         LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(%f, %f, %f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << endm; 
         LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", seedMom.X(), seedMom.Y(), seedMom.Z() ) << endm;
         LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
@@ -279,10 +314,10 @@ class TrackFitter {
 
         // create the track representations
         // Note that multiple track reps differing only by charge results in a silent failure of GenFit
-        auto theTrackRep = new genfit::RKTrackRep(mPdgPiPlus * seedQ);
+        auto pionRep = new genfit::RKTrackRep(mPdgPiPlus);
 
         // Create the track
-        mFitTrack = std::make_shared<genfit::Track>(theTrackRep, seedPos, seedMom);
+        mFitTrack = std::make_shared<genfit::Track>(pionRep, seedPos, seedMom);
         // now add the points to the track
 
         int hitId(0);       // hit ID
@@ -315,6 +350,11 @@ class TrackFitter {
                 createTrackPointFromPlanarMeasurement( mFitTrack, fh, hitId );
             }
         } // loop on trackSeed
+
+        if (kVerbose){
+            LOG_INFO << "Track Setup complete, track has " << mFitTrack->getNumPoints() << " points" << endm;
+            LOG_INFO << " sorting changed track points: "  << mFitTrack->sort() << endm;
+        }
         return true;
     } // setupTrack
 
@@ -463,6 +503,7 @@ class TrackFitter {
 		 * Do the fit
 		 ******************************************************************************************************************/
         performFit( mFitTrack );
+        if ( kVerbose ) summarizeTrackReps();
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         return duration;
     } // fitTrack
@@ -504,7 +545,7 @@ class TrackFitter {
     std::unique_ptr<genfit::AbsKalmanFitter> mFitter = nullptr;
 
     // PDG codes for the default plc type for fits
-    const int mPdgPiPlus = 13;
+    static const int mPdgPiPlus = 211;
     // GenFit state - resused
     std::shared_ptr<genfit::Track> mFitTrack;
     Seed_t mCurrentTrackSeed;

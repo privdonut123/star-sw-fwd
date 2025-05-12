@@ -115,7 +115,7 @@ class GenericFitSeeder : public FitSeedMaker {
         virtual void makeSeed(Seed_t seed, TVector3 &posSeed, TVector3 &momSeed, int &q ) {
             const double qc = averageCurvature(seed);
             LOG_INFO << "GenericFitSeeder::makeSeed::Curvature: " << qc << endm;
-            posSeed.SetXYZ(seed[0]->getX(), seed[0]->getY(), seed[0]->getZ());
+            // posSeed.SetXYZ(seed[0]->getX(), seed[0]->getY(), seed[0]->getZ());
             momSeed.SetXYZ(0,0,10);
         
             const double BStrength = 0.5; // 0.5 T
@@ -124,7 +124,7 @@ class GenericFitSeeder : public FitSeedMaker {
             double pt = fabs((K*5)/qc); // pT from average measured curv
             LOG_INFO << "GenericFitSeeder::makeSeed::pt = " << pt << endm;
             // set the momentum seed's transverse momentum
-            // momSeed.SetXYZ(pt/sqrt(2.0),pt/sqrt(2.0),10);
+            momSeed.SetXYZ(pt/sqrt(2.0),pt/sqrt(2.0),10);
             // compute the seed's eta from seed points
             TVector3 p0 = TVector3(seed[0]->getX(), seed[0]->getY(), seed[0]->getZ());
             TVector3 p1 = TVector3(seed[1]->getX(), seed[1]->getY(), seed[1]->getZ());
@@ -140,6 +140,7 @@ class GenericFitSeeder : public FitSeedMaker {
 
             // momSeed.SetPhi(phi);
             // momSeed.SetTheta(theta);
+            momSeed.SetXYZ(pt * cos(phi), pt * sin(phi), pt / tan(theta));
             
             // assign charge based on sign of curvature
             q = sgn<double>(qc);
