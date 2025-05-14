@@ -64,70 +64,6 @@
 
 //________________________________________________________________________
 StFwdFitQAMaker::StFwdFitQAMaker() : StMaker("fwdFitQA"), mOutputFilename("StFwdFitQAMaker.root"){};
-int StFwdFitQAMaker::Finish() {
-
-    auto prevDir = gDirectory;
-
-    // output file name
-    string name = "StFwdFitQAMaker.root";
-    TFile *fOutput = new TFile(mOutputFilename.Data(), "RECREATE");
-    fOutput->cd();
-
-
-    // accumulated analysis
-    addHist( (TH1*)(getHist( "RcMatchedMcEta" )->Clone( "EffEta" )) );
-    getHist("EffEta")->Divide( (TH1*)getHist( "McEta" ) );
-
-    addHist( (TH1*)(getHist( "RcMatchedMcPt" )->Clone( "EffPt" )) );
-    getHist("EffPt")->Divide( (TH1*)getHist( "McPt" ) );
-
-    addHist( (TH1*)(getHist( "RcMatchedMcPhi" )->Clone( "EffPhi" )) );
-    getHist("EffPhi")->Divide( (TH1*)getHist( "McPhi" ) );
-
-
-        // 3 FST hits on MC Track
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaPrimary" )->Clone( "Eff3FSTEtaPrimary" )) );
-    getHist("Eff3FSTEtaPrimary")->Divide( (TH1*)getHist( "McEta3FST" ) );
-
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtPrimary" )->Clone( "Eff3FSTPtPrimary" )) );
-    getHist("Eff3FSTPtPrimary")->Divide( (TH1*)getHist( "McPt3FST" ) );
-
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiPrimary" )->Clone( "Eff3FSTPhiPrimary" )) );
-    getHist("Eff3FSTPhiPrimary")->Divide( (TH1*)getHist( "McPhi3FST" ) );
-
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaGlobal" )->Clone( "Eff3FSTEtaGlobal" )) );
-    getHist("Eff3FSTEtaGlobal")->Divide( (TH1*)getHist( "McEta3FST" ) );
-
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtGlobal" )->Clone( "Eff3FSTPtGlobal" )) );
-    getHist("Eff3FSTPtGlobal")->Divide( (TH1*)getHist( "McPt3FST" ) );
-
-    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiGlobal" )->Clone( "Eff3FSTPhiGlobal" )) );
-    getHist("Eff3FSTPhiGlobal")->Divide( (TH1*)getHist( "McPhi3FST" ) );
-
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 1, "MC" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 2, "MCFWD" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 3, "MCAcc" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 4, "RC" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 5, "GL" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 6, "GLMC" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 7, "PR" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 8, "PRMC" );
-    getHist( "TrackStats")->GetXaxis()->SetBinLabel( 9, "BEST" );
-
-
-    for (auto nh : mHists) {
-        nh.second->SetDirectory(gDirectory);
-        nh.second->Write();
-    }
-
-    // restore previous directory
-    gDirectory = prevDir;
-
-    LOG_INFO << "Writing StFwdFitQAMaker output" << endm;
-
-    return kStOk;
-}
-
 //________________________________________________________________________
 int StFwdFitQAMaker::Init() {
     LOG_DEBUG << "StFwdFitQAMaker::Init" << endm;
@@ -180,7 +116,15 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F( "curveResolutionVsPtPrim", ";Pt_{MC};(C_{RC} - C_{MC})/C_{MC}; ", 100, 0, 5.0, 400, -2, 2 ) );
     addHist( new TH2F( "curveResolutionVsPtGlobal", ";Pt_{MC};(C_{RC} - C_{MC})/C_{MC}; ", 100, 0, 5.0, 400, -2, 2 ) );
 
-    addHist( new TH1F( "TrackStats", "Track Stats; Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "RecoTrackStats", "Track Stats (All Reco); Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "GlobalTrackStats", "Track Stats (Global); Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "BeamlineTrackStats", "Track Stats (Beamline); Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "PrimaryTrackStats", "Track Stats (Primary); Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "SecondaryTrackStats", "Track Stats (Secondary); Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "McTrackStats", "MCTrack Stats; Cat;Counts", 10, 0, 10 )  );
+    addHist( new TH1F( "TrackSeedStats", "Track Seed Stats; Cat;Counts", 10, 0, 10 )  );
+
+
     addHist( new TH1F( "GlobalMult", "Global Mult; N;Counts", 50, 0, 50 )  );
     addHist( new TH1F( "BeamlineMult", "Beamline Mult; N;Counts", 50, 0, 50 )  );
     addHist( new TH1F( "PrimaryMult", "Primary Mult; N;Counts", 50, 0, 50 )  );
@@ -196,6 +140,11 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F("QidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QMisidVsPtPrim", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
     addHist( new TH2F("QMisidVsPtGlobal", "QMatrix; Pt; Qid;", 100, 0, 5.0, 2, -0.5, 1.5 ) );
+
+    //Chi2 plots
+    makeHistogramSet("Chi2All", 1000, 0, 500, " (All); #Chi^{2}; counts");
+    makeHistogramSet("Chi2Good", 1000, 0, 500, " (All); #Chi^{2}; counts");
+    makeHistogramSet("Chi2Bad", 100, 0, 50000, " (All); #Chi^{2}; counts");
 
     // EPD
     addHist( new TH2F("epdId", ";EPD ID (pp); EPD ID (tt)", 200, -0.5, 199.5, 200, -0.5, 199.5) );
@@ -230,6 +179,93 @@ int StFwdFitQAMaker::Init() {
     addHist( new TH2F("epdPrimarydXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
     addHist( new TH2F("epdPrimarydRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
     return kStOK;
+}
+//________________________________________________________________________
+int StFwdFitQAMaker::Finish() {
+
+    auto prevDir = gDirectory;
+
+    // output file name
+    string name = "StFwdFitQAMaker.root";
+    TFile *fOutput = new TFile(mOutputFilename.Data(), "RECREATE");
+    fOutput->cd();
+
+
+    // accumulated analysis
+    addHist( (TH1*)(getHist( "RcMatchedMcEta" )->Clone( "EffEta" )) );
+    getHist("EffEta")->Divide( (TH1*)getHist( "McEta" ) );
+
+    addHist( (TH1*)(getHist( "RcMatchedMcPt" )->Clone( "EffPt" )) );
+    getHist("EffPt")->Divide( (TH1*)getHist( "McPt" ) );
+
+    addHist( (TH1*)(getHist( "RcMatchedMcPhi" )->Clone( "EffPhi" )) );
+    getHist("EffPhi")->Divide( (TH1*)getHist( "McPhi" ) );
+
+
+        // 3 FST hits on MC Track
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaPrimary" )->Clone( "Eff3FSTEtaPrimary" )) );
+    getHist("Eff3FSTEtaPrimary")->Divide( (TH1*)getHist( "McEta3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtPrimary" )->Clone( "Eff3FSTPtPrimary" )) );
+    getHist("Eff3FSTPtPrimary")->Divide( (TH1*)getHist( "McPt3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiPrimary" )->Clone( "Eff3FSTPhiPrimary" )) );
+    getHist("Eff3FSTPhiPrimary")->Divide( (TH1*)getHist( "McPhi3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcEtaGlobal" )->Clone( "Eff3FSTEtaGlobal" )) );
+    getHist("Eff3FSTEtaGlobal")->Divide( (TH1*)getHist( "McEta3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPtGlobal" )->Clone( "Eff3FSTPtGlobal" )) );
+    getHist("Eff3FSTPtGlobal")->Divide( (TH1*)getHist( "McPt3FST" ) );
+
+    addHist( (TH1*)(getHist( "RcMatched3FSTMcPhiGlobal" )->Clone( "Eff3FSTPhiGlobal" )) );
+    getHist("Eff3FSTPhiGlobal")->Divide( (TH1*)getHist( "McPhi3FST" ) );
+
+    getHist( "McTrackStats")->GetXaxis()->SetBinLabel( 1, "ALLMC" );
+    getHist( "McTrackStats")->GetXaxis()->SetBinLabel( 1, "PRIMMC" );
+    getHist( "McTrackStats")->GetXaxis()->SetBinLabel( 2, "MCFWD" );
+    getHist( "McTrackStats")->GetXaxis()->SetBinLabel( 3, "MCAcc" );
+    
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 1, "All" );
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 2, "Converge" );    
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 3, "Good" );
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 4, "q+" );
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 5, "q0" );
+    getHist( "GlobalTrackStats")->GetXaxis()->SetBinLabel( 6, "q-" );
+
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 1, "All" );
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 2, "Converge" );    
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 3, "Good" );
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 4, "q+" );
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 5, "q0" );
+    getHist( "BeamlineTrackStats")->GetXaxis()->SetBinLabel( 6, "q-" );
+
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 1, "All" );
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 2, "Converge" );    
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 3, "Good" );
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 4, "q+" );
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 5, "q0" );
+    getHist( "PrimaryTrackStats")->GetXaxis()->SetBinLabel( 6, "q-" );
+
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 1, "All" );
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 2, "Converge" );    
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 3, "Good" );
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 4, "q+" );
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 5, "q0" );
+    getHist( "SecondaryTrackStats")->GetXaxis()->SetBinLabel( 6, "q-" );
+
+
+    for (auto nh : mHists) {
+        nh.second->SetDirectory(gDirectory);
+        nh.second->Write();
+    }
+
+    // restore previous directory
+    gDirectory = prevDir;
+
+    LOG_INFO << "Writing StFwdFitQAMaker output" << endm;
+
+    return kStOk;
 }
 //________________________________________________________________________
 int StFwdFitQAMaker::Make() {
@@ -302,28 +338,120 @@ void StFwdFitQAMaker::ProcessData(  ){
     size_t nPrimary = 0;
     size_t nSecondary = 0;
 
+    size_t nConvergedGlobal = 0;
+    size_t nConvergedBeamline = 0;
+    size_t nConvergedPrimary = 0;
+    size_t nConvergedSecondary = 0;
+
     size_t nGoodGlobal = 0;
     size_t nGoodBeamline = 0;
     size_t nGoodPrimary = 0;
     size_t nGoodSecondary = 0;
 
+    float minChi2 = 0.001;
+    float maxChi2 = 6000.0;
+
     for ( auto fwdTrack : ftc->tracks() ){
 
         if (fwdTrack->isGlobalTrack() ){
             nGlobal++;
-            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodGlobal++;
+            getHist( "GlobalTrackStats" )->Fill( 0 );
+            getHist( "GlobalChi2All" )->Fill( fwdTrack->chi2() );
+            if ( fwdTrack->didFitConverge() ) {
+                nConvergedGlobal++;
+                getHist( "GlobalTrackStats" )->Fill( 1 );
+                if ( fwdTrack->chi2() > minChi2 && fwdTrack->chi2() < maxChi2 ) {
+                    getHist( "GlobalChi2Good" )->Fill( fwdTrack->chi2() );
+                    nGoodGlobal++;
+                    getHist( "GlobalTrackStats" )->Fill( 2 );
+                    if ( fwdTrack->charge() == 1 ) 
+                        getHist( "GlobalTrackStats" )->Fill( 3 );
+                    else if ( fwdTrack->charge() == 0 ) 
+                        getHist( "GlobalTrackStats" )->Fill( 4 );
+                    else if ( fwdTrack->charge() == -1 )
+                        getHist( "GlobalTrackStats" )->Fill( 5 );
+                    else {
+                        LOG_INFO << "Unknown charge on global: " << fwdTrack->charge() << endm;
+                    }
+                } else {
+                    getHist( "GlobalChi2Bad" )->Fill( fwdTrack->chi2() );
+                }
+            }
         }
         if (fwdTrack->isBeamLineConstrainedTrack() ){
             nBeamline++;
-            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodBeamline++;
+            getHist( "BeamlineTrackStats" )->Fill( 0 );
+            getHist( "BeamlineChi2All" )->Fill( fwdTrack->chi2() );
+            if ( fwdTrack->didFitConverge() ) {
+                nConvergedBeamline++;
+                getHist( "BeamlineTrackStats" )->Fill( 1 );
+                if ( fwdTrack->chi2() > minChi2 && fwdTrack->chi2() < maxChi2 ) {
+                    getHist( "BeamlineChi2Good" )->Fill( fwdTrack->chi2() );
+                    nGoodBeamline++;
+                    getHist( "BeamlineTrackStats" )->Fill( 2 );
+                    if ( fwdTrack->charge() == 1 ) 
+                        getHist( "BeamlineTrackStats" )->Fill( 3 );
+                    else if ( fwdTrack->charge() == 0 ) 
+                        getHist( "BeamlineTrackStats" )->Fill( 4 );
+                    else if ( fwdTrack->charge() == -1 )
+                        getHist( "BeamlineTrackStats" )->Fill( 5 );
+                    else {
+                        LOG_INFO << "Unknown charge on beamline: " << fwdTrack->charge() << endm;
+                    }
+                } else {
+                    getHist( "BeamlineChi2Bad" )->Fill( fwdTrack->chi2() );
+                }
+            }
         }
         if (fwdTrack->isPrimaryTrack() ){
             nPrimary++;
-            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodPrimary++;
+            getHist( "PrimaryTrackStats" )->Fill( 0 );
+            getHist( "PrimaryChi2All" )->Fill( fwdTrack->chi2() );
+            if ( fwdTrack->didFitConverge() ) {
+                nConvergedPrimary++;
+                getHist( "PrimaryTrackStats" )->Fill( 1 );
+                if ( fwdTrack->chi2() > minChi2 && fwdTrack->chi2() < maxChi2 ) {
+                    nGoodPrimary++;
+                    getHist( "PrimaryChi2Good" )->Fill( fwdTrack->chi2() );
+                    getHist( "PrimaryTrackStats" )->Fill( 2 );
+                    if ( fwdTrack->charge() == 1 ) 
+                        getHist( "PrimaryTrackStats" )->Fill( 3 );
+                    else if ( fwdTrack->charge() == 0 ) 
+                        getHist( "PrimaryTrackStats" )->Fill( 4 );
+                    else if ( fwdTrack->charge() == -1 )
+                        getHist( "PrimaryTrackStats" )->Fill( 5 );
+                    else {
+                        LOG_INFO << "Unknown charge on primary: " << fwdTrack->charge() << endm;
+                    }
+                } else {
+                    getHist( "PrimaryChi2Bad" )->Fill( fwdTrack->chi2() );
+                }
+            }
         }
         if (fwdTrack->isFwdVertexConstrainedTrack() ){
             nSecondary++;
-            if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 6000 ) nGoodSecondary++;            
+            getHist( "SecondaryTrackStats" )->Fill( 0 );
+            if ( fwdTrack->didFitConverge() ) {
+                nConvergedSecondary++;
+                getHist( "SecondaryTrackStats" )->Fill( 1 );
+                getHist( "SecondaryChi2All" )->Fill( fwdTrack->chi2() );
+                if ( fwdTrack->chi2() > minChi2 && fwdTrack->chi2() < maxChi2 ) {
+                    nGoodSecondary++;
+                    getHist( "SecondaryChi2Good" )->Fill( fwdTrack->chi2() );
+                    getHist( "SecondaryTrackStats" )->Fill( 2 );
+                    if ( fwdTrack->charge() == 1 ) 
+                        getHist( "SecondaryTrackStats" )->Fill( 3 );
+                    else if ( fwdTrack->charge() == 0 ) 
+                        getHist( "SecondaryTrackStats" )->Fill( 4 );
+                    else if ( fwdTrack->charge() == -1 )
+                        getHist( "SecondaryTrackStats" )->Fill( 5 );
+                    else {
+                        LOG_INFO << "Unknown charge on secondary: " << fwdTrack->charge() << endm;
+                    }
+                } else {
+                    getHist( "SecondaryChi2Bad" )->Fill( fwdTrack->chi2() );
+                }
+            }
         }
 
         // get EPD projection
@@ -374,11 +502,19 @@ void StFwdFitQAMaker::ProcessData(  ){
         mFcsPreHitsLastEvent.push_back(epdHit);
     }
 
+    // Reco track stats
+    getHist( "RecoTrackStats" )->Fill( 1, nGlobal );
+    getHist( "RecoTrackStats" )->Fill( 2, nBeamline );
+    getHist( "RecoTrackStats" )->Fill( 3, nPrimary );
+    getHist( "RecoTrackStats" )->Fill( 4, nSecondary );
+    
+    // Multiplicity plots
     getHist( "GlobalMult" )->Fill( nGlobal );
     getHist( "BeamlineMult" )->Fill( nBeamline );
     getHist( "PrimaryMult" )->Fill( nPrimary );
     getHist( "SecondaryMult" )->Fill( nSecondary );
 
+    // Good Multiplicity plots
     getHist( "GoodGlobalMult" )->Fill( nGoodGlobal );
     getHist( "GoodBeamlineMult" )->Fill( nGoodBeamline );
     getHist( "GoodPrimaryMult" )->Fill( nGoodPrimary );
@@ -425,7 +561,7 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         getHist( "McPt" )->Fill( mct.p.Pt() );
         getHist( "McPhi" )->Fill( mct.p.Phi() );
         getHist( "McQ" )->Fill( mct.p.Pt() );
-        getHist( "TrackStats" )->Fill( 0 );
+        
     } // get MC tracks
 
     /***********************/
@@ -467,12 +603,23 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         }
     }
     for ( auto mct : mcTracks ){
+        LOG_INFO << "Track ID = " << mct.id << " numFST = " << mct.numFST << " numFTT = " << mct.numFTT << endm;
+        LOG_INFO 
+            << "\t n_fts_hit=" << mct.g2track->n_fts_hit 
+            << ", n_stg_hit=" << mct.g2track->n_stg_hit 
+            << ", n_pre_hit=" << mct.g2track->hit_stg_p 
+            << ", n_wca_hit=" << mct.g2track->n_wca_hit
+            << ", n_hca_hit=" << mct.g2track->hit_hca_p 
+            << endm;
+        LOG_INFO << "\t start_vertex_p=" << mct.g2track->start_vertex_p << endm;
+
+        getHist( "McTrackStats" )->Fill( 1 ); // all
         getHist( "McNumFst" )->Fill( mct.numFST );
         getHist( "McNumFtt" )->Fill( mct.numFTT );
         getHist( "McNumHits" )->Fill( mct.numFTT + mct.numFST );
 
         if ( mct.numFST >= 1 || mct.numFTT >= 1 ){
-            getHist( "TrackStats" )->Fill( 1 );
+            getHist( "McTrackStats" )->Fill( 1 );
         }
         if ( mct.numFST >= 3 ){
             getHist( "McEta3FST" )->Fill( mct.p.Eta() );
@@ -481,25 +628,16 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
 
         }
         if ( mct.numFST >=3 || mct.numFTT >= 4){
-            getHist( "TrackStats" )->Fill( 2 );
+            getHist( "McTrackStats" )->Fill( 2 );
         }
     }
 
     /**************************************************************************
     */
     for ( auto fwdTrack : ftc->tracks() ){
-        getHist( "TrackStats" )->Fill( 3 );
+        
         int idx = fwdTrack->idTruth() - 1;
-        if ( fwdTrack->vertexIndex() > 100 ){
-            getHist( "TrackStats" )->Fill( 4 );
-            if ( idx >= 0 && idx < mcTracks.size() )
-                getHist( "TrackStats" )->Fill( 5 );
-        } else {
-            getHist( "TrackStats" )->Fill( 6 );
-                if ( idx >= 0 && idx < mcTracks.size() )
-                    getHist( "TrackStats" )->Fill( 7 );
-        }
-
+        
         getHist( "RcIdTruth" )->Fill( fwdTrack->idTruth() );
         getHist( "RcEta" )->Fill( fwdTrack->momentum().pseudoRapidity() );
         getHist( "RcPt" )->Fill( fwdTrack->momentum().perp() );
@@ -510,7 +648,7 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
         LOG_INFO << "idx = " << idx << endm;
         if ( idx < 0 || idx >= mcTracks.size() ) continue;
         McFwdTrack mct = mcTracks[idx];
-        // getHist( "TrackStats" )->Fill( 8 );
+        
 
         getHist( "RcMatchedMcEta" )->Fill( mct.p.Eta() );
         getHist( "RcMatchedMcPt" )->Fill( mct.p.Pt() );
@@ -526,7 +664,7 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
 
         if ( mct.numFST < 1 || mct.numFTT < 1 ) continue;
         // if ( mct.numFTT < 4 ) continue;
-        getHist( "TrackStats" )->Fill( 8 );
+        
 
 
         if ( fwdTrack->trackType() == StFwdTrack::kPrimaryVertexConstrained ){

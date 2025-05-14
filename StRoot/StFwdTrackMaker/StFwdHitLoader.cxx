@@ -75,6 +75,12 @@ TMatrixDSym makeSiCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.004
 }
 
 int StFwdHitLoader::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap){
+    if ( mFttDataSource == StFwdHitLoader::DataSource::IGNORE ){
+        // this is a warning because it should not be set during production
+        // but it is useful for testing
+        LOG_WARN << "FTT Data Source is set to IGNORE, not loading FTT hits" << endm;
+        return 0;
+    }
     LOG_DEBUG << "Loading FTT Hits" << endm;
     LOG_DEBUG << "Ftt From Source: " << mFttDataSource << endm;
     if ( StFwdHitLoader::DataSource::GEANT == mFttDataSource ){
@@ -167,7 +173,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     int count = 0;
     // make the Covariance Matrix once and then reuse
     TMatrixDSym hitCov3(3);
-    const double sigXY = 0.02;
+    const double sigXY = 0.1;
     hitCov3(0, 0) = sigXY * sigXY;
     hitCov3(1, 1) = sigXY * sigXY;
     hitCov3(2, 2) = 0.1; // unused since they are loaded as points on plane
@@ -242,6 +248,12 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
  * @param count  : number of hits loaded
  */
 int StFwdHitLoader::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
+    if ( mFttDataSource == StFwdHitLoader::DataSource::IGNORE ){
+        // this is a warning because it should not be set during production
+        // but it is useful for testing
+        LOG_WARN << "FST Data Source is set to IGNORE, not loading FST hits" << endm;
+        return 0;
+    }
     LOG_DEBUG << "Loading FST Hits" << endm;
     LOG_DEBUG << "Fst From Source: " << mFstDataSource << endm;
     if ( StFwdHitLoader::DataSource::GEANT == mFstDataSource ){

@@ -52,6 +52,7 @@ class StFwdHitLoader {
         // clear vectors for visualization OBJ hits
         mFttSpacepoints.clear();
         mFstSpacepoints.clear();
+        mEpdSpacepoints.clear();
     }
 
   #if !defined(__CINT__) && !defined(__CLING__)
@@ -87,7 +88,7 @@ class StFwdHitLoader {
   #endif
 
     // all caps to avoid conflict with types themselves
-    enum DataSource { GEANT, STEVENT, MUDST };
+    enum DataSource { GEANT=0, STEVENT, MUDST, IGNORE };
     /********************************/
     // Specify the data source for FTT, FST and EPD hits
     //  * @param ds : data source (GEANT, StEvent, MuDst)
@@ -101,7 +102,7 @@ class StFwdHitLoader {
     void setMuDstMaker( StMuDstMaker *muDstMaker ) { mMuDstMaker = muDstMaker; }
     void setTables( St_g2t_fts_hit *stg_hits, St_g2t_fts_hit *fst_hits, St_g2t_fts_hit *epd_hits ) {
         mGeantFtt = stg_hits;
-        mGeantFst  = fst_hits;
+        mGeantFst = fst_hits;
         mGeantEpd = epd_hits;
     }
     FstRasterizer mFstRasterizer;

@@ -465,6 +465,12 @@ int StFwdTrackMaker::Make() {
         (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit"),
         nullptr
     );
+    mFcsDb = static_cast<StFcsDb*>(GetDataSet("fcsDb"));
+    if ( !mFcsDb ) {
+        LOG_WARN << "No FCS DB found, cannot load FCS hits" << endm;
+    } else {
+        // mFwdHitLoader.setFcsDb( mFcsDb );
+    }
 
     /**********************************************************************/
     // get the primary vertex for use with FWD tracking
@@ -597,6 +603,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         fwdTrack->setDidFitConvergeFully( false );
         fwdTrack->setNumberOfFailedPoints( 0 );
         fwdTrack->setNumberOfFitPoints( 0 );
+        LOG_WARN << "Genfit track is null, has no points, or has no status" << endm;
         return fwdTrack;
     }
     // Fill charge and quality info
@@ -620,6 +627,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     // if the track did not converged, do not try to project it
     if ( !gtr.mStatus->isFitConvergedFully() ){
         gtr.Clear();
+        LOG_WARN << "Genfit track did not converge fully, skipping projections" << endm;
         return fwdTrack;
     }
 
@@ -648,6 +656,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         int detIndex = zp.first;
         float z = zp.second;
         tv3.SetXYZ(0, 0, 0);
+        LOG_INFO << "Projecting to: " << detIndex << " at z=" << z << endm;
         if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
             float detpos[3] = {0,0,z};
             float detnorm[3] = {0,0,1};
@@ -668,7 +677,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
                 if( p[2]>=0 && p[0]>=0 ){ det=3; }
                 if( p[2]<0  && p[0]<0  ){ det=3; }
             }
-            if (!mFcsDb) continue;
+            if (!mFcsDb) {
+                LOG_ERROR << "FCS database not initialized, cannot project to FCS" << endm;
+                continue;
+            }
             StThreeVectorD xyzoff = mFcsDb->getDetectorOffset(det);
             StThreeVectorD planenormal = mFcsDb->getNormal(det);
             float xyz0[3] = { 0, 0, 575.0 };
@@ -679,6 +691,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
             tv3 = ObjExporter::projectAsStraightLine( gtr.mTrack.get(), xyz0, xyz1, xyzdet, detnorm, cov, mom );
         }
         fwdTrack->mProjections.push_back( StFwdTrackProjection( detIndex, StThreeVectorF( tv3.X(), tv3.Y(), tv3.Z() ), StThreeVectorF( mom.X(), mom.Y(), mom.Z() ), cov) );
+        LOG_INFO << "Projection added for " << detIndex << " at z=" << z << endm;
         zIndex++;
     }
     /*******************************************************************************/

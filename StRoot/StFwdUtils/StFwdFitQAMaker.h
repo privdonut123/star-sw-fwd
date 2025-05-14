@@ -72,13 +72,23 @@ class StFwdFitQAMaker : public StMaker
     TH1* getHist( TString n ){
       if (mHists.count(n))
         return mHists[n];
-      LOG_ERROR << "Attempting to access non-existing histogram" << endm;
+      LOG_ERROR << "Attempting to access non-existing histogram: " << n.Data() << endm;
       return new TH1F( "NULL", "NULL", 1, 0, 1 ); // returning nullptr can lead to seg fault, this fails softly
     }
 
     TH2* getHist2( TString n ){
       return (TH2*) getHist(n);
     }
+
+    void makeHistogramSet( TString baseName, int nBinsX, double xMin, double xMax,
+                          TString title = "" ){
+      
+      addHist( new TH1F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax ) );
+      addHist( new TH1F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax ) );
+      addHist( new TH1F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax ) );
+      addHist( new TH1F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax ) );
+    }
+
 
     /**
      * @brief Control whether the analysis uses StEvent (default) or MuDst as input

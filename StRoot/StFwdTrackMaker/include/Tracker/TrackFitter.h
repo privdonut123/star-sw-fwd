@@ -294,7 +294,7 @@ class TrackFitter {
      * @param seedPos : seed position
      * @param Vertex : primary vertex
      */
-    bool setupTrack(Seed_t trackSeed ) {
+    bool setupTrack(Seed_t trackSeed, TVector3 *externalSeedMom = nullptr ) {
         
         mCurrentTrackSeed = trackSeed;
         // setup the track fit seed parameters
@@ -303,7 +303,15 @@ class TrackFitter {
         TVector3 seedPos(0, 0, 0);
         TVector3 seedMom(0, 0, 10); // this default seed actually works better than a half-bad guess
         // gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
-        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(%f, %f, %f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << endm; 
+
+        if ( externalSeedMom != nullptr ) {
+            LOG_INFO << "Using externally provided seed momentum" << endm;
+            seedMom = *externalSeedMom;
+        } else {
+            seedMom.SetXYZ(0, 0, 10);
+        }
+
+        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(px=%f, py=%f, pz=%f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << ", " << TString::Format( "(pT=%f, eta=%f, phi=%f)", seedPos.Perp(), seedPos.Eta(), seedPos.Phi() ) << endm; 
         LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", seedMom.X(), seedMom.Y(), seedMom.Z() ) << endm;
         LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
 
@@ -433,7 +441,7 @@ class TrackFitter {
             TVector3 u(1, 0, 0); 
             TVector3 v(0, 1, 0);
             TVector3 o = fwdGeoUtils.getFstSensorOrigin(globalSensorIndex, u, v);
-            if (kVerbose > 0) {
+            if (kVerbose > 1) {
                 LOG_INFO << "Adding FST Sensor " << globalSensorIndex << " at " << o.X() << ", " << o.Y() << ", " << o.Z() << endm;
                 LOG_INFO << "\tSensor " << globalSensorIndex << " U = " << u.X() << ", " << u.Y() << ", " << u.Z() << endm;
                 LOG_INFO << "\tSensor " << globalSensorIndex << " V = " << v.X() << ", " << v.Y() << ", " << v.Z() << endm;
@@ -457,7 +465,7 @@ class TrackFitter {
             TVector3 u(1, 0, 0); 
             TVector3 v(0, 1, 0);
             TVector3 o = fwdGeoUtils.getFttQuadrant(globalPlaneIndex, u, v);
-            if (kVerbose > 0) { 
+            if (kVerbose > 1) { 
                 LOG_INFO << "Adding FTT Plane " << globalPlaneIndex << " at " << o.X() << ", " << o.Y() << ", " << o.Z() << endm;
                 LOG_INFO << "\tPlane " << globalPlaneIndex << " U = " << u.X() << ", " << u.Y() << ", " << u.Z() << endm;
                 LOG_INFO << "\tPlane " << globalPlaneIndex << " V = " << v.X() << ", " << v.Y() << ", " << v.Z() << endm;
@@ -492,7 +500,7 @@ class TrackFitter {
         /******************************************************************************************************************
 		 * Setup the track fit seed parameters and objects
 		 ******************************************************************************************************************/
-        bool valid = setupTrack(trackSeed);
+        bool valid = setupTrack(trackSeed, seedMomentum);
         if ( !valid ){
             LOG_ERROR << "Failed to setup track for fit" << endm;
             return -1;
