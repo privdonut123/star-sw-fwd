@@ -4,12 +4,8 @@
 #include "TMath.h"
 #include "TVector3.h"
 
-#include <limits>
-#include <map>
-#include <string>
-#include <string>
-#include <vector>
-
+#include "StFwdTrackMaker/StFwdTrackMaker.h"
+#include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
 #include "StBFChain/StBFChain.h"
 
 #include "StEvent/StEvent.h"
@@ -143,41 +139,90 @@ int StFwdFitQAMaker::Init() {
 
     //Chi2 plots
     makeHistogramSet("Chi2All", 1000, 0, 500, " (All); #Chi^{2}; counts");
-    makeHistogramSet("Chi2Good", 1000, 0, 500, " (All); #Chi^{2}; counts");
-    makeHistogramSet("Chi2Bad", 100, 0, 50000, " (All); #Chi^{2}; counts");
+    makeHistogramSet("Chi2Good", 1000, 0, 500, " (Good); #Chi^{2}; counts");
+    makeHistogramSet("Chi2Bad", 100, 0, 50000, " (Bad); #Chi^{2}; counts");
 
     // EPD
-    addHist( new TH2F("epdId", ";EPD ID (pp); EPD ID (tt)", 200, -0.5, 199.5, 200, -0.5, 199.5) );
-    addHist( new TH1F("epdEnergy", ";EPD nMIPs; counts", 200, 0, 10) );
-    addHist( new TH2F("epdEnergyPP", ";EPD ID (pp); EPD nMIPs;",14, -0.5, 13.5, 200, 0, 10) );
-    addHist( new TH2F("epdEnergyTT", ";EPD ID (tt); EPD nMIPs;",32, -0.5, 31.5, 200, 0, 10) );
+    addHist( new TH2F("epdId", ";EPD ID (pp); EPD ID (tt)", 200, -0.5, 199.5, 200, -0.5, 199.5), "EPD" );
+    addHist( new TH1F("epdEnergy", ";EPD nMIPs; counts", 200, 0, 10), "EPD" );
+    addHist( new TH2F("epdEnergyPP", ";EPD ID (pp); EPD nMIPs;",14, -0.5, 13.5, 200, 0, 10), "EPD" );
+    addHist( new TH2F("epdEnergyTT", ";EPD ID (tt); EPD nMIPs;",32, -0.5, 31.5, 200, 0, 10), "EPD" );
 
-    addHist( new TH2F("epdTrackdXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdTrackdRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdTrackdXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdTrackdRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
-    addHist( new TH2F("epdTrackdXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdTrackdRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdTrackdXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdTrackdRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
     // EPD vs. Global
-    addHist( new TH2F("epdGlobaldXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdGlobaldRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdGlobaldXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdGlobaldRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
-    addHist( new TH2F("epdGlobaldXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdGlobaldRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdGlobaldXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdGlobaldRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
     // EPD vs. Beamline
-    addHist( new TH2F("epdBeamlinedXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdBeamlinedRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdBeamlinedXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdBeamlinedRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
-    addHist( new TH2F("epdBeamlinedXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdBeamlinedRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdBeamlinedXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdBeamlinedRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
     // EPD vs. Primary
-    addHist( new TH2F("epdPrimarydXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdPrimarydRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdPrimarydXdY", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdPrimarydRdPhi", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
 
-    addHist( new TH2F("epdPrimarydXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100) );
-    addHist( new TH2F("epdPrimarydRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()) );
+    addHist( new TH2F("epdPrimarydXdYMixed", ";dX [cm]; dY [cm]", 400, -100, 100, 400, -100, 100), "EPD" );
+    addHist( new TH2F("epdPrimarydRdPhiMixed", ";dX [cm]; dY [cm]", 500, 0, 250, 120, -TMath::Pi(), TMath::Pi()), "EPD" );
+
+    // TRACK SEEDS
+    makeHistogramSet("SeedFstFtt", 5, 0, 5, 5, 0, 5, " ; nFTT; nFST", "Seed");
+    addHist( new TH2F( "SeedFstType", "; type; nFST", 5, 0, 5, 5, 0, 5 ), "Seed");
+    addHist( new TH2F( "SeedFttType", "; type; nFTT", 5, 0, 5, 5, 0, 5 ), "Seed");
+    addHist( new TH2F( "SeedQaTruthType", "; type; QA Truth", 5, 0, 5, 101, 0, 101 ), "Seed");
+
+
+    // EVENT STATS
+    addHist( new TH1F( "mNumSeeds", "mNumSeeds", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mAttemptedFits", "mAttemptedFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodFits", "mGoodFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedFits", "mFailedFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mAttemptedGlobalFits", "mAttemptedGlobalFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedGlobalFits", "mFailedGlobalFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodGlobalFits", "mGoodGlobalFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedGlobalRefits", "mFailedGlobalRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodGlobalRefits", "mGoodGlobalRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mNumFwdVertices", "mNumFwdVertices", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mAttemptedPrimaryFits", "mAttemptedPrimaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodPrimaryFits", "mGoodPrimaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedPrimaryFits", "mFailedPrimaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedPrimaryRefits", "mFailedPrimaryRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodPrimaryRefits", "mGoodPrimaryRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mAttemptedBeamlineFits", "mAttemptedBeamlineFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodBeamlineFits", "mGoodBeamlineFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedBeamlineFits", "mFailedBeamlineFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedBeamlineRefits", "mFailedBeamlineRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodBeamlineRefits", "mGoodBeamlineRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mAttemptedSecondaryFits", "mAttemptedSecondaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodSecondaryFits", "mGoodSecondaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedSecondaryFits", "mFailedSecondaryFits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mFailedSecondaryRefits", "mFailedSecondaryRefits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mGoodSecondaryRefits", "mGoodSecondaryRefits", 100, 0, 100 ), "EventStats" );
+
+    addHist( new TH1F( "numGlobalFoundHits", "numGlobalFoundHits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "numBeamlineFoundHits", "numBeamlineFoundHits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "numPrimaryFoundHits", "numPrimaryFoundHits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "numSecondaryFoundHits", "numSecondaryFoundHits", 100, 0, 100 ), "EventStats" );
+    addHist( new TH1F( "mStep1Duration", "mStep1Duration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mSeedFindingDuration", "mSeedFindingDuration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mStep2Duration", "mStep2Duration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mStep3Duration", "mStep3Duration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mStep4Duration", "mStep4Duration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mGlobalFitDuration", "mGlobalFitDuration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mBeamlineFitDuration", "mBeamlineFitDuration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mPrimaryFitDuration", "mPrimaryFitDuration", 500, 0, 500 ), "EventStats" );
+    addHist( new TH1F( "mSecondaryFitDuration", "mSecondaryFitDuration", 500, 0, 500 ), "EventStats" );
+
     return kStOK;
 }
 //________________________________________________________________________
@@ -256,6 +301,13 @@ int StFwdFitQAMaker::Finish() {
 
 
     for (auto nh : mHists) {
+        if ( mHistsDirectories.count( nh.first ) > 0 && mHistsDirectories[nh.first] != "" ) {
+            fOutput->mkdir( mHistsDirectories[nh.first].Data() );
+            fOutput->cd( mHistsDirectories[nh.first].Data() );
+        } else {
+            fOutput->cd();
+            // gDirectory->cd();
+        }
         nh.second->SetDirectory(gDirectory);
         nh.second->Write();
     }
@@ -284,6 +336,8 @@ int StFwdFitQAMaker::Make() {
 void StFwdFitQAMaker::Clear(const Option_t *opts) { LOG_DEBUG << "StFwdFitQAMaker::CLEAR" << endm; }
 //________________________________________________________________________
 void StFwdFitQAMaker::ProcessData(  ){
+
+    FillEventStats();
     // This is an example of how to process fwd track collection
     LOG_DEBUG << "StFwdFitQAMaker::ProcessData" << endm;
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
@@ -352,6 +406,8 @@ void StFwdFitQAMaker::ProcessData(  ){
     float maxChi2 = 6000.0;
 
     for ( auto fwdTrack : ftc->tracks() ){
+
+        FillTrackSeedHistograms( fwdTrack );
 
         if (fwdTrack->isGlobalTrack() ){
             nGlobal++;
@@ -714,4 +770,106 @@ void StFwdFitQAMaker::ProcessFwdTracks(  ){
     }
 
 
+}
+
+// what do I want to know:
+// 2D nFST vs. nFTT for each track type
+// 2D: nFST vs. track type
+// 2D: nFTT vs. track type
+void StFwdFitQAMaker::FillTrackSeedHistograms( StFwdTrack *fwdTrack ){
+    if ( fwdTrack->isGlobalTrack() ){
+        getHist2( "GlobalSeedFstFtt" )->Fill( fwdTrack->mFTTPoints.size(), fwdTrack->mFSTPoints.size() );
+    }
+    else if ( fwdTrack->isBeamLineConstrainedTrack() ){
+        getHist2( "BeamlineSeedFstFtt" )->Fill( fwdTrack->mFTTPoints.size(), fwdTrack->mFSTPoints.size() );
+    }
+    else if ( fwdTrack->isPrimaryTrack() ){
+        getHist2( "PrimarySeedFstFtt" )->Fill( fwdTrack->mFTTPoints.size(), fwdTrack->mFSTPoints.size() );
+    }
+    else if ( fwdTrack->isFwdVertexConstrainedTrack() ){
+        getHist2( "SecondarySeedFstFtt" )->Fill( fwdTrack->mFTTPoints.size(), fwdTrack->mFSTPoints.size() );
+    }
+    // now 2d vs type
+    getHist2( "SeedFstType" )->Fill( fwdTrack->trackType(), fwdTrack->mFSTPoints.size() );
+    getHist2( "SeedFttType" )->Fill( fwdTrack->trackType(), fwdTrack->mFTTPoints.size() );
+
+    getHist( "SeedQaTruthType" )->Fill( fwdTrack->trackType(), fwdTrack->qaTruth() );
+}
+
+
+
+void StFwdFitQAMaker::FillEventStats(){
+    // Get the StFwdTrackMaker 
+    StFwdTrackMaker *fwdTrackMaker = static_cast<StFwdTrackMaker *>(GetMaker( "fwdTrack" ));
+    if ( !fwdTrackMaker ) {
+        LOG_WARN << "StFwdTrackMaker not found" << endm;
+        return;
+    }
+    auto stats = fwdTrackMaker->GetEventStats();
+
+    getHist("mNumSeeds") -> Fill( stats.mNumSeeds );
+    getHist("mAttemptedFits") -> Fill( stats.mAttemptedFits );
+    getHist("mGoodFits") -> Fill( stats.mGoodFits );
+    getHist("mFailedFits") -> Fill( stats.mFailedFits );
+    getHist("mAttemptedGlobalFits") -> Fill( stats.mAttemptedGlobalFits );
+    getHist("mFailedGlobalFits") -> Fill( stats.mFailedGlobalFits );
+    getHist("mGoodGlobalFits") -> Fill( stats.mGoodGlobalFits );
+    getHist("mFailedGlobalRefits") -> Fill( stats.mFailedGlobalRefits );
+    getHist("mGoodGlobalRefits") -> Fill( stats.mGoodGlobalRefits );
+    getHist("mNumFwdVertices") -> Fill( stats.mNumFwdVertices );
+    getHist("mAttemptedPrimaryFits") -> Fill( stats.mAttemptedPrimaryFits );
+    getHist("mGoodPrimaryFits") -> Fill( stats.mGoodPrimaryFits );
+    getHist("mFailedPrimaryFits") -> Fill( stats.mFailedPrimaryFits );
+    getHist("mFailedPrimaryRefits") -> Fill( stats.mFailedPrimaryRefits );
+    getHist("mGoodPrimaryRefits") -> Fill( stats.mGoodPrimaryRefits );
+    getHist("mAttemptedBeamlineFits") -> Fill( stats.mAttemptedBeamlineFits );
+    getHist("mGoodBeamlineFits") -> Fill( stats.mGoodBeamlineFits );
+    getHist("mFailedBeamlineFits") -> Fill( stats.mFailedBeamlineFits );
+    getHist("mFailedBeamlineRefits") -> Fill( stats.mFailedBeamlineRefits );
+    getHist("mGoodBeamlineRefits") -> Fill( stats.mGoodBeamlineRefits );
+    getHist("mAttemptedSecondaryFits") -> Fill( stats.mAttemptedSecondaryFits );
+    getHist("mGoodSecondaryFits") -> Fill( stats.mGoodSecondaryFits );
+    getHist("mFailedSecondaryFits") -> Fill( stats.mFailedSecondaryFits );
+    getHist("mFailedSecondaryRefits") -> Fill( stats.mFailedSecondaryRefits );
+    getHist("mGoodSecondaryRefits") -> Fill( stats.mGoodSecondaryRefits );
+
+    for( auto elem : stats.numGlobalFoundHits){
+        getHist( "numGlobalFoundHits" ) -> Fill( elem );
+    }
+    for( auto elem : stats.numBeamlineFoundHits){
+        getHist( "numBeamlineFoundHits" ) -> Fill( elem );
+    }
+    for( auto elem : stats.numPrimaryFoundHits){
+        getHist( "numPrimaryFoundHits" ) -> Fill( elem );
+    }
+    for( auto elem : stats.numSecondaryFoundHits){
+        getHist( "numSecondaryFoundHits" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mStep1Duration){
+        getHist( "mStep1Duration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mSeedFindingDuration){
+        getHist( "mSeedFindingDuration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mStep2Duration){
+        getHist( "mStep2Duration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mStep3Duration){
+        getHist( "mStep3Duration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mStep4Duration){
+        getHist( "mStep4Duration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mGlobalFitDuration){
+        getHist( "mGlobalFitDuration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mBeamlineFitDuration){
+        getHist( "mBeamlineFitDuration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mPrimaryFitDuration){
+        getHist( "mPrimaryFitDuration" ) -> Fill( elem );
+    }
+    for( auto elem : stats.mSecondaryFitDuration){
+        getHist( "mSecondaryFitDuration" ) -> Fill( elem );
+    }
 }

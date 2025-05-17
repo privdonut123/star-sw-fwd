@@ -9,6 +9,7 @@
 #include "TH1.h"
 #include "TH2.h"
 #include "TProfile.h"
+#include "TString.h"
 
 
 class g2t_track_st;
@@ -23,6 +24,14 @@ class McFwdTrack {
   g2t_track_st *g2track = nullptr;
 };
 
+class StFwdTrack;
+
+// this provides lexical ordering for TString map keys
+struct TStringCaseInsensitiveLess {
+  bool operator()(const TString& a, const TString& b) const {
+      return a.CompareTo(b, TString::kIgnoreCase) < 0;
+  }
+};
 
 class StFwdFitQAMaker : public StMaker
 {
@@ -42,6 +51,8 @@ class StFwdFitQAMaker : public StMaker
     // StEvent analyzed by default
     // call this to analyze the MuDst instead
     void setMuDstInput() { mAnalyzeMuDst = true; }
+    void FillTrackSeedHistograms( StFwdTrack *fwdTrack );
+    void FillEventStats();
 
   protected:
 
@@ -49,7 +60,9 @@ class StFwdFitQAMaker : public StMaker
      * @brief Map of <name (TString), histogram>
      * 
      */
-    std::map<TString, TH1*> mHists;
+    std::map<TString, TH1*, TStringCaseInsensitiveLess> mHists;
+    std::map<TString, TString> mHistsDirectories;
+    
 
     /**
      * @brief Add a histogram to the map
@@ -58,8 +71,10 @@ class StFwdFitQAMaker : public StMaker
      * @param h1 TH1* histogram object
      * @return TH1* return the same object for ease of use
      */
-    TH1 * addHist( TH1 * h1){
+    TH1 * addHist( TH1 * h1, TString dir = "" ){
       mHists[h1->GetName()] = h1;
+      mHistsDirectories[h1->GetName()] = dir;
+      h1->SetDirectory(0); // don't write to the file yet
       return h1;
     }
 
@@ -81,12 +96,21 @@ class StFwdFitQAMaker : public StMaker
     }
 
     void makeHistogramSet( TString baseName, int nBinsX, double xMin, double xMax,
-                          TString title = "" ){
+                          TString title = "", TString dir = "" ){
       
-      addHist( new TH1F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax ) );
-      addHist( new TH1F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax ) );
-      addHist( new TH1F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax ) );
-      addHist( new TH1F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax ) );
+      addHist( new TH1F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax ), dir );
+      addHist( new TH1F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax ), dir );
+    }
+
+    void makeHistogramSet( TString baseName, int nBinsX, double xMin, double xMax,
+      int nBinsY, double yMin, double yMax,
+      TString title = "", TString dir = "" ){
+      addHist( new TH2F( Form( "Global%s", baseName.Data()), Form( "Global%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Beamline%s", baseName.Data()), Form( "Beamline%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Primary%s", baseName.Data()), Form( "Primary%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
+      addHist( new TH2F( Form( "Secondary%s", baseName.Data()), Form( "Secondary%s", title.Data()), nBinsX, xMin, xMax, nBinsY, yMin, yMax ), dir );
     }
 
 
