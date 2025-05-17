@@ -123,8 +123,9 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             fwdTrack->setFitMinIterations( 10 );
             fwdTrack->setFitMaxIterations( 50 );
             
-            fwdTrack->setDeltaPval( 1e-1 );
-            fwdTrack->setRelChi2Change( 1e-1 );
+            fwdTrack->setDeltaPval( 1e-4 );
+            fwdTrack->setRelChi2Change( 1e-4 );
+            
             fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             // fwdTrack->setSeedFindingWithFtt();
