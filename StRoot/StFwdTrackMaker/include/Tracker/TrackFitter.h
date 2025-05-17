@@ -130,6 +130,10 @@ class TrackFitter {
         // Create the genfit Planes for the FST sensors
         createAllFstPlanes( fwdGeoUtils );
         createAllFttPlanes( fwdGeoUtils );
+        // create the EPD plane at z=375
+        mEpdPlane = genfit::SharedPlanePtr(
+            new genfit::DetPlane( TVector3(0, 0, 375), TVector3(0, 0, 1) )
+        );
         LOG_DEBUG << "Created all FST and FTT planes" << endm;
 
         if (kVerbose > 0) {
@@ -184,6 +188,15 @@ class TrackFitter {
         return tst;   
     }
 
+    /**
+     * @brief Get projection to the EPD
+     *
+     * @param fitTrack : track to project
+     * @return genfit::MeasuredStateOnPlane
+     */
+    genfit::MeasuredStateOnPlane projectToEpd(std::shared_ptr<genfit::Track> fitTrack) {
+        return projectToPlane(mEpdPlane, fitTrack);
+    }
 
     /**
      * @brief Get projection to given FST plane
@@ -342,13 +355,23 @@ class TrackFitter {
                 LOG_ERROR << "Hit is not a FwdHit, cannot add to track" << endm;
                 continue;
             }
+
+            TString hitType = "Unknown";
+            if ( fh->isPV() ) hitType = "PV";
+            else if ( fh->isFst() ) hitType = "FST";
+            else if ( fh->isFtt() ) hitType = "FTT";
+            else if ( fh->isEpd() ) hitType = "EPD";
+            else {
+                LOG_ERROR << "Hit is not a valid FwdHit, cannot add to track" << endm;
+                continue;
+            }
             
 
             /******************************************************************************************************************
             * If the Primary vertex is included
             ******************************************************************************************************************/
             if ( kUseSpacePoints || fh->isPV() ) {
-                LOG_DEBUG << "Treating hit as a spacepoint" << endm;
+                LOG_DEBUG << "Treating " << hitType << " hit as a spacepoint" << endm;
                 auto tp = createTrackSpacepointFromMeasurement( mFitTrack, fh, hitId );
                 setSortingParameter(fh, tp, idxFtt, idxFst);
                 // add the spacepoint to the track
@@ -542,6 +565,8 @@ class TrackFitter {
     // Store the planes for FTT and FST
     vector<genfit::SharedPlanePtr> mFttPlanes;
     vector<genfit::SharedPlanePtr> mFstSensorPlanes; // 108 planes, one for each sensor
+
+    genfit::SharedPlanePtr mEpdPlane; // EPD plane
 
   protected:
     std::unique_ptr<genfit::AbsBField> mBField;
