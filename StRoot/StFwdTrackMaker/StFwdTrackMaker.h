@@ -6,6 +6,7 @@
 #ifndef __CINT__
 #include "GenFit/Track.h"
 #include "StFwdTrackMaker/include/Tracker/FwdHit.h"
+#include "StFwdTrackMaker/include/Tracker/GenfitTrackResult.h"
 #endif
 
 #include "FwdTrackerConfig.h"
@@ -73,6 +74,7 @@ class StFwdTrackMaker : public StMaker {
   #ifndef __CINT__
     // Get the FwdTracker object
     std::shared_ptr<ForwardTracker> GetForwardTracker() { return mForwardTracker; }
+    EventStats GetEventStats();
     const std::vector<Seed_t> &getTrackSeeds() const;
     const std::vector<GenfitTrackResult> &getFitResults() const;
   #endif

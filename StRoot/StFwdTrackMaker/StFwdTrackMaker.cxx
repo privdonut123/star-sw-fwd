@@ -9,13 +9,6 @@
 #include "GenFit/Track.h"
 
 #include "TMath.h"
-
-#include <climits>
-#include <map>
-#include <string>
-#include <string>
-#include <vector>
-
 #include "StBFChain/StBFChain.h"
 
 #include "StEvent/StEvent.h"
@@ -60,7 +53,6 @@
 #include "StarClassLibrary/SystemOfUnits.h"
 
 #include <SystemOfUnits.h>
-#include <exception>
 
 #include "TROOT.h"
 #include "TLorentzVector.h"
@@ -78,7 +70,6 @@
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
 
-#include "sys/types.h"
 #include "sys/sysinfo.h"
 
 FwdSystem* FwdSystem::sInstance = nullptr;
@@ -269,6 +260,10 @@ int StFwdTrackMaker::Init() {
     }
     return kStOK;
 };
+
+EventStats StFwdTrackMaker::GetEventStats() { 
+    return mForwardTracker->getEventStats(); 
+}
 
 /**
  * Loads the Monte Carlo (MC) tracks from the GEANT simulation data.
@@ -726,15 +721,30 @@ void StFwdTrackMaker::FillEvent() {
 
     LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
 
+
+    // get the vertices from the forward tracker
+    // and add them to the StEvent as Primary vertices
+    auto fwdVertices = mForwardTracker->getVertices();
+    for ( auto vert : fwdVertices ){
+        StPrimaryVertex *pv = new StPrimaryVertex();
+        pv->setPosition( StThreeVectorF( vert->getPos().X(), vert->getPos().Y(), vert->getPos().Z() ) );
+        pv->setCovariantMatrix( vert->getCov().GetMatrixArray() );
+        pv->setChiSquared( vert->getChi2() );
+        pv->setNumTracksUsedInFinder( vert->getNTracks() );
+        pv->setFwdVertex();
+        stEvent->addPrimaryVertex( pv );
+    }
+
+
     // Pico Dst requires a primary vertex,
     // if we have a PicoDst maker in the chain, we need to add a primary vertex
     // when one does not exist to get a "FWD" picoDst
-    auto mk = GetMaker("PicoDst");
-    if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
-        LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
-        stEvent->addPrimaryVertex( new StPrimaryVertex() );
-        LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
-    }
+    // auto mk = GetMaker("PicoDst");
+    // if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
+    //     LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
+    //     stEvent->addPrimaryVertex( new StPrimaryVertex() );
+    //     LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
+    // }
 
     // ProcessFwdTracks();
     LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;

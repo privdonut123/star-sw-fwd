@@ -580,5 +580,5 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
         hitMap[7].push_back(hit);
     }
 
-    return 0;
+    return mFwdHitsEpd.size();
 }
