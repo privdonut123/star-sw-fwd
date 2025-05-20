@@ -185,6 +185,7 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
     SetAttr("useFtt",1);                 // Default Ftt on
     SetAttr("useFst",1);                 // Default Fst on
     SetAttr("useFcs",1);                 // Default Fcs on
+    SetAttr("useEpd",1);                 // Default Epd on
     SetAttr("config", "config.xml");     // Default configuration file (user may override before Init())
     SetAttr("fillEvent",1); // fill StEvent
 
@@ -452,6 +453,7 @@ int StFwdTrackMaker::Make() {
     FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
     FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
     FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
+    FwdDataSource::HitMap_t &epdHitMap = mForwardData->getEpdHits();
 
     mFwdHitLoader.setStEvent( stEvent );
     mFwdHitLoader.setMuDstMaker( (StMuDstMaker *)GetMaker("MuDst") );
@@ -506,7 +508,7 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << ">>StFwdTrackMaker::loadFcsHits" << endm;
     if ( IAttr("useEpd") ) {
         LOG_DEBUG << ">>StFwdTrackMaker::loadEpdHits" << endm;
-        int epdCount = mFwdHitLoader.loadEpdHits( mcTrackMap, fsiHitMap, mFcsDb );
+        int epdCount = mFwdHitLoader.loadEpdHits( mcTrackMap, epdHitMap, mFcsDb );
         LOG_DEBUG << "Loaded " << epdCount << " Epd hits" << endm;
     }
 

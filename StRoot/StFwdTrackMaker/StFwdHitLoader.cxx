@@ -559,6 +559,17 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
             hitCov3(1, 1) = sigXY * sigXY;
             hitCov3(2, 2) = 1; //cm // unused if they are loaded as points on plane
 
+            const vector<pair<unsigned int, float>> gt = hit->getGeantTracks();
+            int track_id = -1;
+            shared_ptr<McTrack> mcTrack = nullptr;
+            if ( gt.size() > 0 ){
+                track_id = gt[0].first;
+                
+                if ( mcTrackMap.count(track_id) ) {
+                    mcTrack = mcTrackMap[track_id];
+                    LOG_DEBUG << "Adding McTrack to EPD hit: " << track_id << endm;
+                }
+            }
             // TODO: Make FwdHits
             mFwdHitsEpd.push_back(
                 FwdHit(
@@ -568,9 +579,10 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     kFcsPresId, // detid
                     0, // track id
                     hitCov3, // covariance matrix
-                    nullptr // mcTrack
+                    mcTrack // mcTrack
                 )
             );
+            LOG_DEBUG << TString::Format("Adding Epd as FwdHit: %f %f %f", x0, y0, zepd) << endm;
         } // for i
     } // for det
 
@@ -578,6 +590,10 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
         FwdHit *hit = &(mFwdHitsFst[ iFwdHit ]);
         // EPD is 7 (3 FST, 4 FTT, starting at 0)
         hitMap[7].push_back(hit);
+
+        // add to MC track map
+        // if ( hit->getMcTrack() )
+        //     hit->getMcTrack()->addFstHit(hit);
     }
 
     return mFwdHitsEpd.size();

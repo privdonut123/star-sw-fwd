@@ -43,6 +43,9 @@ class EventStats {
     TString classname() const { return "EventStats"; }
     void reset(){
         mNumSeeds = 0;
+        mNumEpdHits = 0; // across all track types, did we find an EPD hit?
+        
+
 
         mAttemptedFits = 0;
         mGoodFits = 0;
@@ -78,6 +81,11 @@ class EventStats {
         numPrimaryFoundHits.clear();
         numSecondaryFoundHits.clear();
 
+        mGlobalNumEpdFoundHits.clear();
+        mBeamlineNumEpdFoundHits.clear();
+        mPrimaryNumEpdFoundHits.clear();
+        mSecondaryNumEpdFoundHits.clear();
+
         mStep1Duration.clear();
         mStep2Duration.clear();
         mStep3Duration.clear();
@@ -88,6 +96,8 @@ class EventStats {
         mSecondaryFitDuration.clear();
     }
     int mNumSeeds = 0;
+    int mNumEpdHits = 0; // across all track types, did we find an EPD hit?
+    
 
     int mAttemptedFits = 0;
     int mGoodFits = 0;
@@ -122,6 +132,11 @@ class EventStats {
     vector<int> numBeamlineFoundHits;
     vector<int> numPrimaryFoundHits;
     vector<int> numSecondaryFoundHits;
+
+    vector<int> mGlobalNumEpdFoundHits;
+    vector<int> mBeamlineNumEpdFoundHits;
+    vector<int> mPrimaryNumEpdFoundHits;
+    vector<int> mSecondaryNumEpdFoundHits;
 
     vector<float> mStep1Duration;
     vector<float> mSeedFindingDuration;

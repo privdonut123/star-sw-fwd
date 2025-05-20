@@ -179,6 +179,7 @@ int StFwdFitQAMaker::Init() {
     makeHistogramSet("SeedFstFtt", 5, 0, 5, 5, 0, 5, " ; nFTT; nFST", "Seed");
     addHist( new TH2F( "SeedFstType", "; type; nFST", 5, 0, 5, 5, 0, 5 ), "Seed");
     addHist( new TH2F( "SeedFttType", "; type; nFTT", 5, 0, 5, 5, 0, 5 ), "Seed");
+    addHist( new TH2F( "SeedEpdType", "; type; nEPD", 5, 0, 5, 5, 0, 5 ), "Seed");
     addHist( new TH2F( "SeedQaTruthType", "; type; QA Truth", 5, 0, 5, 101, 0, 101 ), "Seed");
 
 
@@ -792,6 +793,7 @@ void StFwdFitQAMaker::FillTrackSeedHistograms( StFwdTrack *fwdTrack ){
     // now 2d vs type
     getHist2( "SeedFstType" )->Fill( fwdTrack->trackType(), fwdTrack->mFSTPoints.size() );
     getHist2( "SeedFttType" )->Fill( fwdTrack->trackType(), fwdTrack->mFTTPoints.size() );
+    //Seed Epd type is filled in EventStats because it is not in StFwdTrack yet
 
     getHist( "SeedQaTruthType" )->Fill( fwdTrack->trackType(), fwdTrack->qaTruth() );
 }
@@ -832,6 +834,19 @@ void StFwdFitQAMaker::FillEventStats(){
     getHist("mFailedSecondaryFits") -> Fill( stats.mFailedSecondaryFits );
     getHist("mFailedSecondaryRefits") -> Fill( stats.mFailedSecondaryRefits );
     getHist("mGoodSecondaryRefits") -> Fill( stats.mGoodSecondaryRefits );
+
+    for( auto elem : stats.mGlobalNumEpdFoundHits){
+        getHist( "SeedEpdType" ) -> Fill( 0.5, elem );
+    }
+    for( auto elem : stats.mBeamlineNumEpdFoundHits){
+        getHist( "SeedEpdType" ) -> Fill( 1.5, elem );
+    }
+    for( auto elem : stats.mPrimaryNumEpdFoundHits){
+        getHist( "SeedEpdType" ) -> Fill( 2.5, elem );
+    }
+    for( auto elem : stats.mSecondaryNumEpdFoundHits){
+        getHist( "SeedEpdType" ) -> Fill( 3.5, elem );
+    }
 
     for( auto elem : stats.numGlobalFoundHits){
         getHist( "numGlobalFoundHits" ) -> Fill( elem );

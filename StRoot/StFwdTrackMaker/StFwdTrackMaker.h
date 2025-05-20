@@ -119,7 +119,7 @@ class StFwdTrackMaker : public StMaker {
         size_t loadMcTracks( std::map<int, std::shared_ptr<McTrack>> &mcTrackMap );
         void loadFcs();
     #endif
-
+    
 
     /** @brief Fit the primary vertex using FWD tracks */
     void FitVertex();
@@ -281,6 +281,15 @@ class StFwdTrackMaker : public StMaker {
      */
     void setConfigKeyValue( std::string k, std::string v ){
       mFwdConfig.set( k, v );
+    }
+    void setConfigKeyValue( std::string k, int v ){
+      mFwdConfig.set<int>( k, v );
+    }
+    void setConfigKeyValue( std::string k, double v ){
+      mFwdConfig.set<double>( k, v );
+    }
+    void setConfigKeyValue( std::string k, bool v ){
+      mFwdConfig.set<bool>( k, v );
     }
 
     /** @brief Sets a criteria value in the config for 2-hit criteria

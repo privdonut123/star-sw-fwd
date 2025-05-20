@@ -7,6 +7,29 @@
 
 TFile *output = 0;
 
+void DisableTrackFitting() {
+    // Disable track fitting
+    StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
+    assert( fwdTrack );
+    fwdTrack->setTrackFittingOff();
+    fwdTrack->setConfigKeyValue("TrackFitter:refit", "false");
+    
+}
+
+void DoOnlyGlobalTrackFitting() {
+    // Disable track fitting
+    StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
+    if ( fwdTrack ){
+        fwdTrack->setConfigKeyValue("TrackFitter:refit", "false");
+        fwdTrack->setConfigKeyValue("TrackFitter:doGlobalTrackFitting", true);
+        fwdTrack->setConfigKeyValue("TrackFitter:doBeamlineTrackFitting", false);
+        fwdTrack->setConfigKeyValue("TrackFitter:doPrimaryTrackFitting", false);
+        fwdTrack->setConfigKeyValue("TrackFitter:doSecondaryTrackFitting", false);
+        // skip finding fwd vertices
+        fwdTrack->setConfigKeyValue("TrackFitter:findFwdVertices", false);
+    }
+}
+
 void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw/Jet_Data_NoFilter_500/pythia_jet_vz0_run100.fzd",
                 int n = 100, // nEvents to run
                 bool enableTrackRefit = true, // Enable track refit (default off)
@@ -128,13 +151,12 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             
             fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
-            // fwdTrack->setSeedFindingWithFtt();
 
-            // fwdTrack->setIncludePrimaryVertexInFit( false );
+            // DisableTrackFitting();
+            // DoOnlyGlobalTrackFitting();
+            
 
-            // fwdTrack->setTrackFittingOff();
-            // fwdTrack->setUseMcSeedForFit(true);
-            // fwdTrack->setConfigKeyValue("")
+            
             if ( useZeroB ){
                 cout << "Setting B = 0" << endl;
                 fwdTrack->setZeroB( true );
