@@ -21,7 +21,7 @@
 #include "StMuDSTMaker/COMMON/StMuFstCollection.h"
 #include "StMuDSTMaker/COMMON/StMuFstHit.h"
 
-TMatrixDSym makeSiCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.0040906154) {
+TMatrixDSym makeFstCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.0040906154) {
     // we can calculate the CovMat since we know the det info, but in future we should probably keep this info in the hit itself
     // measurements on a plane only need 2x2
     // for Si geom we need to convert from cylindrical to cartesian coords
@@ -35,8 +35,8 @@ TMatrixDSym makeSiCovMat(TVector3 hit, float rSize = 3.0 , float phiSize = 0.004
     const float sinphi = y / R;
     const float sqrt12 = sqrt(12.);
 
-    const float dr = rSize / sqrt12;
-    const float dphi = (phiSize) / sqrt12;
+    const float dr = rSize;
+    const float dphi = phiSize;
 
     // Setup the Transposed and normal Jacobian transform matrix;
     // note, the si fast sim did this wrong
@@ -304,7 +304,7 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
 
         float x0 = vR * cos( vPhi );
         float y0 = vR * sin( vPhi );
-        hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ) );
+        hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
         mFstSpacepoints.push_back( TVector3( x0, y0, vZ)  );
 
         // we use d+4 so that both FTT and FST start at 4
@@ -374,7 +374,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     LOG_DEBUG << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
-                    hitCov3 = makeSiCovMat( TVector3( x0, y0, vZ ) );
+                    hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
 
                        
                     mFstSpacepoints.push_back( TVector3( x0, y0, vZ)  );
@@ -468,7 +468,7 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
             continue;
         }
 
-        hitCov3 = makeSiCovMat( TVector3( x, y, z ) );
+        hitCov3 = makeFstCovMat( TVector3( x, y, z ) );
         mFwdHitsFst.push_back(
             FwdHit(
                 count++, // id
@@ -529,6 +529,11 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
         return 0;
     }
     StFcsCollection *fcsCol = mStEvent->fcsCollection();
+
+    if (!fcsCol) {
+        LOG_INFO << "StFcsCollection is NULL, cannot load EPD hits" << endm;
+        return 0;
+    }
 
     StEpdGeom epdgeo;
     int count = 0; // counts hits above threshold
