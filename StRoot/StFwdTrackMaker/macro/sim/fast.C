@@ -23,11 +23,7 @@ void fast(       char *inFile =  "sim.fzd",
     cout << "useZeroB = " << useZeroB << endl;
     const char *geom = "";
     TString _geom = geom;
-
-    // Switches for common options
-    bool SiIneff = false;
     bool useConstBz = false;
-    bool useFCS = true;
 
     // to use the geom cache (skip agml build which is faster)
     // set the _geom string to "" and make sure the cache file ("fGeom.root") is present
@@ -46,11 +42,8 @@ void fast(       char *inFile =  "sim.fzd",
 
     gSystem->Load( "libStFttSimMaker" );
     gSystem->Load( "libStFcsTrackMatchMaker" );
-
     gSystem->Load( "libMathMore.so" );
     gSystem->Load( "libStarGeneratorUtil" );
-
-    
     gSystem->Load("StFwdUtils.so");
 
 
@@ -66,28 +59,21 @@ void fast(       char *inFile =  "sim.fzd",
                 fwdTrack->setGeoCache( "fGeom.root" );
             }
 
-            // choose
-                if (useFstForSeedFinding)
-                    fwdTrack->setSeedFindingWithFst();
-                else { // default for this true/false option
-                    fwdTrack->setSeedFindingWithFtt();
-                }
-            // other options
-                // fwdTrack->setSeedFindingWithFtt();
-                // fwdTrack->setSeedFindingWithFstFttSequential();
-                // fwdTrack->setSeedFindingWithFstFttSimultaneous();
-
-            
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
-            fwdTrack->SetVisualize( false );
             fwdTrack->SetDebug();
-            fwdTrack->setTrackRefit( enableTrackRefit );
-            fwdTrack->setConstB( useConstBz );
+
+            // Fitter
+            fwdTrack->setFitDebugLvl( 0 );
+            fwdTrack->setFitMinIterations( 10 );
+            fwdTrack->setFitMaxIterations( 50 );
             
-            if ( useZeroB ){
-                cout << "Setting B = 0" << endl;
-                fwdTrack->setZeroB( true );
-            }
+            fwdTrack->setDeltaPval( 1e-1 );
+            fwdTrack->setRelChi2Change( 1e-1 );
+            
+            fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+            fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+            
+            // fwdTrack->setEpdHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             
             bool doFitQA = true;
             if ( doFitQA ){

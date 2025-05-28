@@ -318,14 +318,17 @@ class TrackFitter {
         // gfs.makeSeed( trackSeed, seedPos, seedMom, seedQ );
 
         if ( externalSeedMom != nullptr ) {
-            LOG_INFO << "Using externally provided seed momentum" << endm;
+            LOG_INFO << "Note: Using externally provided seed momentum" << endm;
             seedMom = *externalSeedMom;
         } else {
             seedMom.SetXYZ(0, 0, 10);
         }
 
-        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(px=%f, py=%f, pz=%f)", seedPos.X(), seedPos.Y(), seedPos.Z() ) << ", " << TString::Format( "(pT=%f, eta=%f, phi=%f)", seedPos.Perp(), seedPos.Eta(), seedPos.Phi() ) << endm; 
+        LOG_DEBUG << "Setting track fit seed position = " << TString::Format( "(px=%f, py=%f, pz=%f)", seedPos.X(), seedPos.Y(), seedPos.Z() )  << endm; 
         LOG_DEBUG << "Setting track fit seed momentum = " << TString::Format( "(%f, %f, %f)", seedMom.X(), seedMom.Y(), seedMom.Z() ) << endm;
+        if ( seedMom.Perp() > 1e-5 && (seedMom.Perp() / seedMom.Pz()) > 1e-5 ) {
+            LOG_DEBUG << "\t" << TString::Format( "(pT=%f, eta=%f, phi=%f)", seedMom.Perp(), seedMom.Eta(), seedMom.Phi() ) << endm;
+        }
         LOG_DEBUG << "Setting track fit seed charge = " << seedQ << endm;
 
         if ( seedQ == 0 ) {

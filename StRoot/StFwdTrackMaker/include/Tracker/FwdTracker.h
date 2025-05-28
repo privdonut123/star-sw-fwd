@@ -520,6 +520,11 @@ class ForwardTrackMaker {
             GenfitTrackResult nil;
             return nil;
         }
+        if ( !gtrGlobal.mIsFitConvergedFully ){
+            LOG_DEBUG << "Cannot refit a track that did not converge, returning nill track result" << endm;
+            GenfitTrackResult nil;
+            return nil;
+        }
 
         int numHitsFound = 0;
         if (mSeedSource != kFttSeed){ // Look for FTT hits if it was not the original seed source
@@ -596,7 +601,7 @@ class ForwardTrackMaker {
             /*******************************************************/
 
             // if the first fit fails then we cannot proceed with the refit steps
-            if (gtrGlobal.mIsFitConvergedPartially == false) {
+            if (gtrGlobal.mIsFitConvergedFully == false) {
                 LOG_WARN << "\tInitial global fitting failed for seed " << index << endm;
                 LOG_DEBUG << "\tFitting failed for seed " << index << endm;
                 LOG_DEBUG << "\tSkipping the refit steps but saving the seed and failed fit" << endm;
@@ -686,6 +691,8 @@ class ForwardTrackMaker {
             if (verbose){
                 LOG_INFO << "Refitting Track " << index << ", McId=" << gtr.mIdTruth << " with Primary Vertex, seed already has: " << gtr.mSeed.size() << " hits" << endm;
                 LOG_INFO << "mEventVertexHit: " << mEventVertexHit.getX() << ", " << mEventVertexHit.getY() << ", " << mEventVertexHit.getZ() << endm;
+
+                LOG_INFO << "This fit is for a global that converged? = " << gtr.mIsFitConvergedFully << endm;
             }
             // just use the global track to build the track that will use the PV also
             Seed_t seedWithPV = gtr.mSeed;
@@ -770,12 +777,23 @@ class ForwardTrackMaker {
             if (verbose){
                 LOG_INFO << "doBeamlineTrackFitting>>" << index << " McId=" << gtr.mIdTruth << " with Beamline, seed already has: " << gtr.mSeed.size() << " hits" << endm;
                 LOG_INFO << "mBeamlineHit: " << mBeamlineHit.getX() << ", " << mBeamlineHit.getY() << ", " << mBeamlineHit.getZ() << endm;
+
+                LOG_INFO << "This fit is for a global that converged? = " << gtr.mIsFitConvergedFully << endm;
             }
             // just use the global track to build the track that will use the PV also
             Seed_t seedWithPV = gtr.mSeed;
             seedWithPV.push_back( &mBeamlineHit );
 
-            GenfitTrackResult gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
+            
+            
+            GenfitTrackResult gtrPV; 
+            if ( gtr.mIsFitConvergedFully == false ){
+                // if we do not provide a momentum seed state then the setup will compute one using the selected scheme
+                gtrPV = fitTrack(seedWithPV);    
+            } else {
+                // Only use the momentum of the global track if it converged
+                gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
+            }
             if ( gtrPV.mIsFitConvergedFully ) {
                 mEventStats.mGoodBeamlineFits++;
             } else {
@@ -988,12 +1006,24 @@ class ForwardTrackMaker {
         if ( !do_global_fitting || !mDoTrackFitting ){
             LOG_WARN << "Event configuration is skipping global track fitting" << endm;
             LOG_WARN << "No Fwd track fitting will be done" << endm;
+            // create a dummy track result to keep the seeds
+            for ( auto seed : trackSeeds ){
+                GenfitTrackResult gtr;
+                gtr.setSeed( seed );
+                gtr.mTrackType = StFwdTrack::kGlobal;
+                globalTracks.push_back( gtr );
+                LOG_INFO << "Adding dummy global track with seed: " << seed.size() << " hits" << endm;
+            }
+            mTrackResults.insert( mTrackResults.end(), globalTracks.begin(), globalTracks.end() );
             return;
         }
 
         /***********************************************************************************************************/
         // Step 1: Global Tracking
         globalTracks = doGlobalTrackFitting( trackSeeds );
+        if (verbose > 0){
+            LOG_INFO << "Global track fitting completed, found " << globalTracks.size() << " global tracks from " << trackSeeds.size() << " track seed candidates" << endm;
+        }
         // End Step 1
         /***********************************************************************************************************/
         
