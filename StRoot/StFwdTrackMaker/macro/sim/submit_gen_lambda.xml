@@ -1,0 +1,31 @@
+<job  name="FwdTracking"  simulateSubmission="false" nProcesses="100">
+
+    <!-- Modify these for your case -->
+    <stdout URL="file:/star/data03/pwg/jdb/scratch/log/log_$JOBID.log" />
+    <stderr URL="file:/star/data03/pwg/jdb/scratch/log/err_$JOBID.err" />
+
+    <output fromScratch="*.fzd" toURL="file:/star/data03/pwg/jdb/scratch/" />
+    <!-- <output fromScratch="job_*.LOG" toURL="file:/star/data03/pwg/jdb/scratch/" /> -->
+
+    <command>
+        echo "JOBINDEX = ${JOBINDEX}"
+        echo "JOBID = ${JOBID}"
+        ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
+
+        <!-- setup 64b -->
+        starver dev
+        root4star -b -q -l 'sim/lambda.C( 500 )' 
+        mv fwd_lambda.fzd job_${JOBID}_fwd_lambda.fzd
+    </command>
+
+    <SandBox>
+        <Package>
+            <File>file:./StRoot</File>
+            <File>file:./.sl73_x8664_gcc485/</File>
+        </Package>
+    </SandBox>
+
+    <Generator>
+        <Location>/star/data03/pwg/jdb/scratch/gen</Location>
+    </Generator>
+</job>

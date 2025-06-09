@@ -17,7 +17,7 @@ class StarKinematics;
 StarKinematics *kinematics = 0;
 
 
-TH1F* hMll = 0;
+TH1F* hM = 0;
 float numParticles = 1;
 
 // ----------------------------------------------------------------------------
@@ -45,42 +45,43 @@ void trig( Int_t n=1 )
     chain->Clear();
 
     //(Momentum, Energy units are Gev/C, GeV)
-    Double_t masses[2] = { 0.13957, 0.938} ;
+    Double_t masses[2] = { 0.13957039, 0.93827208943};
 
     TGenPhaseSpace genEvent;
     TLorentzVector W;
     // W.SetPtEtaPhiM( 0.0, 100.0, 0, 3.096 );
-    W.SetXYZM( 0, 0, 5, 1.11568 );
+    double px = gRandom->Uniform(-1.0, 1.0);
+    double py = gRandom->Uniform(-1.0, 1.0);
+    double pz = gRandom->Uniform(0, 50.0);
+    W.SetXYZM( px, py, pz, 1.115683 );
+    printf("W: px = %f, py = %f, pz = %f, m = %f\n", W.Px(), W.Py(), W.Pz(), W.M() );
     genEvent.SetDecay(W, 2, masses);
 
     TLorentzVector lv;
     for ( int j = 0; j < numParticles; j++ ){
       Double_t weight = genEvent.Generate();
-      TLorentzVector *pPion = genEvent.GetDecay(0);
-      TLorentzVector *pProton = genEvent.GetDecay(1);
-      lv = *pPion + *pProton;
+      TLorentzVector lvPion = *(genEvent.GetDecay(0));
+      TLorentzVector lvProton = *(genEvent.GetDecay(1));
+      lv = lvPion + lvProton;
 
       StarGenParticle *pion;
-    pion = kinematics->AddParticle( "pi-" );
-    
-      pion->SetPx(pPion->Px());
-      pion->SetPy(pPion->Py());
-      pion->SetPz(pPion->Pz());
+      pion = kinematics->AddParticle( "pi+" );
+      pion->SetPx(lvPion.Px());
+      pion->SetPy(lvPion.Py());
+      pion->SetPz(lvPion.Pz());
       pion->SetMass( masses[0] );
 
-    StarGenParticle *proton;
-    proton = kinematics->AddParticle( "p" );
-
-    
-      proton->SetPx(pProton->Px());
-      proton->SetPy(pProton->Py());
-      proton->SetPz(pProton->Pz());
+      StarGenParticle *proton;
+      proton = kinematics->AddParticle( "p" );
+      proton->SetPx(lvProton.Px());
+      proton->SetPy(lvProton.Py());
+      proton->SetPz(lvProton.Pz());
       proton->SetMass( masses[1] );
 
-      hMll->Fill( lv.M() );
+      hM->Fill( lv.M() );
 
-      cout << "pion eta = " << pPion->Eta() << endl;
-      cout << "proton eta = " << pProton->Eta() << endl;
+      cout << "pion eta = " << lvPion.Eta() << endl;
+      cout << "proton eta = " << lvProton.Eta() << endl;
     }
 
     
@@ -89,16 +90,8 @@ void trig( Int_t n=1 )
     // Generate the event
     chain->Make();
 
-    // TTable* hits = chain->GetDataSet("bfc/.make/geant/.data/g2t_stg_hit");
-    // if ( hits ) {
-    //   double nhits = hits->GetNRows();
-    //   hNumHits->Fill( double(i), nhits / 4.0 / numParticles );
-    //   std::cout << "N hits  = " << nhits << std::endl;
-    // }
-
     // Print the event
-    // command("gprint hits stgh");
-
+    cout << "Event: " << i << " generated with " << numParticles << " Lambda." << endl;
   }
 }
 // ----------------------------------------------------------------------------
@@ -116,19 +109,18 @@ void Kinematics()
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-void lambda( Int_t nevents=100, Int_t rngSeed=12352342 )
+void lambda( Int_t nevents=10000, Int_t rngSeed=0 )
 { 
-  hMll = new TH1F("hMll",";Mll;counts [10MeV]", 200, 2.0, 4.0 );
-  cout << "Generating: " << nevents << " events with seed: " << rngSeed << endl;
-  cout << "Simulating J/psi->e+e-" << endl;
 
+  hM = new TH1F("hM",";M_{p#pi};counts [10MeV]", 50, 1.0, 1.5 );
+  cout << "Generating: " << nevents << " events with seed: " << rngSeed << endl;
   gSystem->Load( "libStarRoot.so" );
   gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
 
   gROOT->ProcessLine(".L bfc.C");
   {
-      TString simple = "sdt20211016 y2023 geant gstar usexgeom agml ";
-      bfc(0, simple );
+    TString simple = "y2024 geant gstar usexgeom agml ";
+    bfc(0, simple );
   }
 
   gSystem->Load( "libVMC.so");
@@ -139,6 +131,8 @@ void lambda( Int_t nevents=100, Int_t rngSeed=12352342 )
 
   gSystem->Load( "libMathMore.so"   );  
   gSystem->Load( "xgeometry.so"     );
+
+  
 
   // Setup RNG seed and map all ROOT TRandom here
   StarRandom::seed( rngSeed );
@@ -151,8 +145,8 @@ void lambda( Int_t nevents=100, Int_t rngSeed=12352342 )
   //  StarPrimaryMaker *
   _primary = new StarPrimaryMaker();
   {
-      _primary -> SetFileName( "lambda_fwd_gun.root");
-      chain -> AddBefore( "geant", _primary );
+    _primary -> SetFileName( "lambda.root");
+    chain -> AddBefore( "geant", _primary );
   }
 
   Kinematics();
@@ -169,19 +163,16 @@ void lambda( Int_t nevents=100, Int_t rngSeed=12352342 )
   //
   //geometry("y2012");
   command("gkine -4 0");
-  command("gfile o lambda_fwd_gun.fzd");
-
-
-  hNumHits = new TH1F("hNumEvents","Nhits/plane/incident track vs event number",nevents + 1, -0.5, (float)( nevents ) + 0.5 );
-
+  command("gfile o fwd_lambda.fzd");
+ 
   //
   // Trigger on nevents
   //
   trig( nevents );
 
-  TFile * f = new TFile( "lambda_gen.root", "RECREATE" );
+  TFile * f = new TFile( "fwd_lambda_gen.root", "RECREATE" );
   f->cd();
-  hMll->Write();
+  hM->Write();
   f->Write();
 
   command("call agexit");  // Make sure that STARSIM exits properly
