@@ -1,20 +1,20 @@
-<job  name="FwdTracking"  simulateSubmission="false" nProcesses="100">
+<job  name="FwdLambdaGun"  simulateSubmission="false" nProcesses="100">
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/err_$JOBID.err" />
 
-    <!-- Modify these for your case -->
-    <stdout URL="file:/star/data03/pwg/jdb/scratch/log/log_$JOBID.log" />
-    <stderr URL="file:/star/data03/pwg/jdb/scratch/log/err_$JOBID.err" />
-
-    <output fromScratch="*.fzd" toURL="file:/star/data03/pwg/jdb/scratch/" />
-    <!-- <output fromScratch="job_*.LOG" toURL="file:/star/data03/pwg/jdb/scratch/" /> -->
-
+    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/" />
+    <!-- MUST be submitted from ALMA nodes -->
+    <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
     <command>
         echo "JOBINDEX = ${JOBINDEX}"
         echo "JOBID = ${JOBID}"
         ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
 
-        <!-- setup 64b -->
+        set SEED = `od -An -N4 -tu4 /dev/urandom | tr -d ' '`
+        echo "RNG Seed: $SEED"
+
         starver dev
-        root4star -b -q -l 'sim/lambda.C( 500 )' 
+        root4star -b -q -l 'sim/lambda.C( 1000, '"$SEED"' )' 
         mv fwd_lambda.fzd job_${JOBID}_fwd_lambda.fzd
     </command>
 
@@ -26,6 +26,6 @@
     </SandBox>
 
     <Generator>
-        <Location>/star/data03/pwg/jdb/scratch/gen</Location>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/gen</Location>
     </Generator>
 </job>
