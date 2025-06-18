@@ -6,6 +6,7 @@
  * Description: StPicoFcsCluster stores the Fcs Clusters
  *
  **************************************************************************/
+ 
  #ifndef StPicoFcsCluster_hh
  #define StPicoFcsCluster_hh
  

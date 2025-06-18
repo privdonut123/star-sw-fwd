@@ -1,9 +1,9 @@
-#include "StPicoMcTrack.h"
-#include "StPicoMcVertex.h"
-#include "StPicoFwdTrack.h"
-#include "StPicoFwdVertex.h"
-#include "StPicoFcsHit.h"
-#include "StPicoFcsCluster.h"
+#include "StPicoMcTrack.hpp"
+#include "StPicoMcVertex.hpp"
+#include "StPicoFwdTrack.hpp"
+#include "StPicoFwdVertex.hpp"
+#include "StPicoFcsHit.hpp"
+#include "StPicoFcsCluster.hpp"
 
 bool inAcc(StPicoMcTrack *track) {
     // Example acceptance criteria
