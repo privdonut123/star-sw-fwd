@@ -21,8 +21,8 @@ void single_particle_gun( Int_t nevents=1000, Int_t rngSeed=541512,
   TString safeName = particle;
   safeName.ReplaceAll("+", "plus");
   safeName.ReplaceAll("-", "minus");
-  fzdFilename = TString::Format("single_particle_gun_%s_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.fzd", safeName.Data(), nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
-  primaryName = TString::Format("single_particle_gun_%s_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.root", safeName.Data(), nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
+  fzdFilename = TString::Format("single_particle_gun_%s_rng%d_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.fzd", safeName.Data(), rngSeed, nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
+  primaryName = TString::Format("single_particle_gun_%s_rng%d_%dEvents_%dPerEvent_Pt_%0.2fto%0.2f_Eta_%0.2fto%0.2f_Phi_%0.2fto%0.2f.root", safeName.Data(), rngSeed, nevents, numParticles, minPt, maxPt, minEta, maxEta, minPhi, maxPhi);
   cout << "Writing output to: " << fzdFilename << endl;
   gen( nevents, rngSeed );
 }

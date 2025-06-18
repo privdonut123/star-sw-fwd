@@ -1,8 +1,8 @@
-<job  name="FwdLambdaGun"  simulateSubmission="false" nProcesses="100">
-    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/log_$JOBID.log" />
-    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/log/err_$JOBID.err" />
+<job  name="FwdJpsiGun"  simulateSubmission="false" nProcesses="100">
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/jpsi/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/jpsi/log/err_$JOBID.err" />
 
-    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/" />
+    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/jpsi/" />
     <!-- MUST be submitted from ALMA nodes -->
     <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
     <command>
@@ -14,9 +14,9 @@
         echo "RNG Seed: $SEED"
 
         starver dev
-        echo root4star -b -q -l 'sim/lambda.C( 1000, '"$SEED"' )'
-        root4star -b -q -l 'sim/lambda.C( 1000, '"$SEED"' )' 
-        mv fwd_lambda.fzd job_${JOBID}_fwd_lambda.fzd
+        echo root4star -b -q -l 'sim/jpsi.C( 1000, '"$SEED"' )'
+        root4star -b -q -l 'sim/jpsi.C( 1000, '"$SEED"' )' 
+        mv jpsi.fzd job_${JOBID}_fwd_jpsi.fzd
     </command>
 
     <SandBox>
@@ -27,6 +27,6 @@
     </SandBox>
 
     <Generator>
-        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/lambda/gen</Location>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/jpsi/gen</Location>
     </Generator>
 </job>
