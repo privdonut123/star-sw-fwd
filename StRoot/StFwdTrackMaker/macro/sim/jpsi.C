@@ -18,7 +18,7 @@ StarKinematics *kinematics = 0;
 
 
 TH1F* hMll = 0;
-bool decayJPsiToElectrons = false;
+bool decayJPsiToElectrons = true;
 float numParticles = 1;
 
 // ----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ void trig( Int_t n=1 )
 
     // Print the event
     // command("gprint hits stgh");
-
+    cout << "Event: " << i << " generated with " << numParticles << " particles." << endl;
   }
 }
 // ----------------------------------------------------------------------------
@@ -125,7 +125,7 @@ void Kinematics()
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
-void jpsi( Int_t nevents=10000, Int_t rngSeed=12352342, bool decayToElectrons = true )
+void jpsi( Int_t nevents=5000, Int_t rngSeed=12334342, bool decayToElectrons = true )
 { 
 
   hMll = new TH1F("hMll",";Mll;counts [10MeV]", 200, 2.0, 4.0 );

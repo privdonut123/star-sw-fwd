@@ -65,7 +65,7 @@ void trig( Int_t n=1 )
       lv = lvPion + lvProton;
 
       StarGenParticle *pion;
-      pion = kinematics->AddParticle( "pi+" );
+      pion = kinematics->AddParticle( "pi-" );
       pion->SetPx(lvPion.Px());
       pion->SetPy(lvPion.Py());
       pion->SetPz(lvPion.Pz());
