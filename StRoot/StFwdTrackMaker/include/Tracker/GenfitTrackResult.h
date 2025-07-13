@@ -11,7 +11,6 @@
 struct MCTruthUtils {
 
     static int dominantContribution(Seed_t hits, double &qa) {
-
         // track_id, hits on track
         std::unordered_map<int,int> truth;
         for ( auto hit : hits ) {
@@ -90,6 +89,7 @@ class EventStats {
         mStep2Duration.clear();
         mStep3Duration.clear();
         mStep4Duration.clear();
+        mSeedFindingDuration.clear();
         mGlobalFitDuration.clear();
         mBeamlineFitDuration.clear();
         mPrimaryFitDuration.clear();
@@ -161,6 +161,7 @@ public:
     void Clear() {
         if ( mTrack ){
             mTrack->Clear();
+            mTrack.reset(); // inform the shared pointer to release the memory
         }
     }
     void set(   Seed_t &seeds, std::shared_ptr<genfit::Track> track ){
@@ -173,6 +174,19 @@ public:
         LOG_INFO << "GenFitTrackResult::mIdTruth = " << mIdTruth << ", QaTruth = " << mQaTruth << endm;
     }
     void setTrack( std::shared_ptr<genfit::Track> track ){
+        if (track == nullptr) {
+            LOG_ERROR << "GenfitTrackResult::setTrack called with nullptr track" << endm;
+            this->mTrack                    = nullptr;
+            this->mTrackRep                 = nullptr;
+
+            this->mIsFitConverged           = false;
+            this->mIsFitConvergedFully      = false;
+            this->mIsFitConvergedPartially  = false;
+            this->mNFailedPoints            = 99;
+            this->mCharge                   = 0;
+            this->mChi2                     = -1;
+            return;
+        }
         try {
             // this->track = new genfit::Track(*track);
             mTrack      = track;

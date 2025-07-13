@@ -164,7 +164,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     /************************************************************/
     // STGC Hits
     // St_g2t_fts_hit *mGeantFtt = (St_g2t_fts_hit *)GetDataSet("geant/g2t_stg_hit");
-
+    LOG_INFO << "Loading FTT Hits from GEANT" << endm;
     size_t numFwdHitsPrior = mFwdHitsFtt.size();
     if (!mGeantFtt){
         LOG_WARN << "geant/g2t_stg_hit is empty" << endm;
@@ -229,7 +229,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     }
 
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from MuDst" << endm;
+        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from GEANT" << endm;
     }
     return count;
 } // loadFttHits

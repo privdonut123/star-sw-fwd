@@ -61,6 +61,9 @@ class ForwardTrackMaker {
             gtr.Clear();
         }
         mTrackResults.clear();
+        if (mTrackFitter) {
+            mTrackFitter->clear();
+        }
     }
 
     /**
@@ -396,15 +399,15 @@ class ForwardTrackMaker {
 
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
 
-        mEventStats.mStep1Duration.push_back( duration );
+        if (kProfile) mEventStats.mStep1Duration.push_back( duration );
 
         /*************************************************************/
         // DO MC Track Finding (if set to do so)
         if (useMcTrackFinding()) {
             doMcTrackFinding(mcTrackMap, mSeedSource);
-            mEventStats.mNumSeeds = mTrackSeeds.size();
+            if (kProfile) mEventStats.mNumSeeds = mTrackSeeds.size();
             long long duration2 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-            mEventStats.mSeedFindingDuration.push_back( duration2 );
+            if (kProfile) mEventStats.mSeedFindingDuration.push_back( duration2 );
             return;
         } else {
             LOG_DEBUG << "Performing Standard Track Finding" << endm;
@@ -427,9 +430,9 @@ class ForwardTrackMaker {
             }
         } // iIteration
         /*************************************************************/
-        mEventStats.mNumSeeds = mTrackSeeds.size();
+        if (kProfile) mEventStats.mNumSeeds = mTrackSeeds.size();
         long long duration2 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mSeedFindingDuration.push_back( duration2 );
+        if (kProfile) mEventStats.mSeedFindingDuration.push_back( duration2 );
     } // FindTrackSeeds
 
 
@@ -440,8 +443,10 @@ class ForwardTrackMaker {
         for ( auto gtr : globalTracks ){
             if ( gtr.mTrack ){
                 tracks.push_back( gtr.mTrack.get() );
+                LOG_DEBUG << "Adding track with track obj: " << gtr.mTrack.get() << endm;
             }
         }
+        LOG_DEBUG << "FwdTracker::findFwdVertices with " << tracks.size() << " tracks" << endm;
 
         //  we are not using this because secondary vertices should not neccessarily be at the beamline
         bool useBeamConstraint = false;
@@ -478,7 +483,7 @@ class ForwardTrackMaker {
      */
     GenfitTrackResult fitTrack(Seed_t &seed, TVector3 *momentumSeedState = nullptr) {
         LOG_DEBUG << "FwdTracker::fitTrack->" << endm;
-        mEventStats.mAttemptedFits++;
+        if (kProfile) mEventStats.mAttemptedFits++;
         // We will build this up as we go
         GenfitTrackResult gtr;
 
@@ -506,14 +511,16 @@ class ForwardTrackMaker {
             LOG_DEBUG << "--isFitConverged() = " << gtr.mStatus->isFitConverged() << endm;
             LOG_DEBUG << "--isFitConvergedFully() = " << gtr.mStatus->isFitConvergedFully() << endm;
 
-            if (gtr.mStatus && gtr.mStatus->isFitConvergedFully()) {
-                mEventStats.mGoodFits++;
-            } else {
-                mEventStats.mFailedFits++;
+            if (kProfile){
+                if (gtr.mStatus && gtr.mStatus->isFitConvergedFully()) {
+                    mEventStats.mGoodFits++;
+                } else {
+                    mEventStats.mFailedFits++;
+                }
             }
         } else { // set the track as a failed fit, but keep the seed info
             LOG_ERROR << "--FitTrack is nullptr, setting seed only" << endm;
-            mEventStats.mFailedFits++;
+            if (kProfile) mEventStats.mFailedFits++;
         }
         LOG_DEBUG << "<-FwdTracker::fitTrack complete" << endm;
         return gtr;
@@ -548,18 +555,20 @@ class ForwardTrackMaker {
         int numEpdFound = addEpdHits( gtrGlobal );
         numHitsFound += numEpdFound;
 
-        if ( gtrGlobal.mTrackType == StFwdTrack::kGlobal ){
-            mEventStats.numGlobalFoundHits.push_back( numHitsFound );
-            mEventStats.mGlobalNumEpdFoundHits.push_back(numEpdFound);
-        } else if ( gtrGlobal.mTrackType == StFwdTrack::kBeamlineConstrained ){
-            mEventStats.numBeamlineFoundHits.push_back( numHitsFound );
-            mEventStats.mBeamlineNumEpdFoundHits.push_back(numEpdFound);
-        } else if ( gtrGlobal.mTrackType == StFwdTrack::kPrimaryVertexConstrained ){
-            mEventStats.numPrimaryFoundHits.push_back( numHitsFound );
-            mEventStats.mPrimaryNumEpdFoundHits.push_back(numEpdFound);
-        } else if ( gtrGlobal.mTrackType == StFwdTrack::kForwardVertexConstrained ){
-            mEventStats.numSecondaryFoundHits.push_back( numHitsFound );
-            mEventStats.mSecondaryNumEpdFoundHits.push_back(numEpdFound);
+        if (kProfile) {
+            if ( gtrGlobal.mTrackType == StFwdTrack::kGlobal ){
+                mEventStats.numGlobalFoundHits.push_back( numHitsFound );
+                mEventStats.mGlobalNumEpdFoundHits.push_back(numEpdFound);
+            } else if ( gtrGlobal.mTrackType == StFwdTrack::kBeamlineConstrained ){
+                mEventStats.numBeamlineFoundHits.push_back( numHitsFound );
+                mEventStats.mBeamlineNumEpdFoundHits.push_back(numEpdFound);
+            } else if ( gtrGlobal.mTrackType == StFwdTrack::kPrimaryVertexConstrained ){
+                mEventStats.numPrimaryFoundHits.push_back( numHitsFound );
+                mEventStats.mPrimaryNumEpdFoundHits.push_back(numEpdFound);
+            } else if ( gtrGlobal.mTrackType == StFwdTrack::kForwardVertexConstrained ){
+                mEventStats.numSecondaryFoundHits.push_back( numHitsFound );
+                mEventStats.mSecondaryNumEpdFoundHits.push_back(numEpdFound);
+            }
         }
 
         auto gtrGlobalRefit = fitTrack( gtrGlobal.mSeed, &gtrGlobal.mMomentum );
@@ -582,7 +591,7 @@ class ForwardTrackMaker {
         LOG_DEBUG << "Starting Track fitting loop on " << trackSeeds.size() << " track seeds" << endm;
         size_t index = 0;
         for (auto t : trackSeeds) {
-            mEventStats.mAttemptedGlobalFits++;
+            if (kProfile) mEventStats.mAttemptedGlobalFits++;
             // GenfitTrackResult gtrGlobalRefit; // will store refit if needed
             LOG_DEBUG << "\tTrack seed initial global fit #" << index << endm;
             /***********************************************************************************************************/
@@ -596,13 +605,12 @@ class ForwardTrackMaker {
             //  Get the quality and MC truth id
             idt = MCTruthUtils::dominantContribution(t, qual);
             LOG_INFO << "\t\tMc Match idTruth=" << idt << ", quality = " << qual << endm;
-
+            
             // Fit the track seed and get the GenfitTrackResult
             GenfitTrackResult gtrGlobal = fitTrack(t);
             gtrGlobal.setDCA( mEventVertex );
             gtrGlobal.mIndex = index;
             gtrGlobal.mTrackType = StFwdTrack::kGlobal;
-
             LOG_DEBUG << "\tGLOBAL Fit: Track seed with " << gtrGlobal.mSeed.size() << " hits" << endm;
             // End Step 1
             /*******************************************************/
@@ -613,12 +621,12 @@ class ForwardTrackMaker {
                 LOG_DEBUG << "\tFitting failed for seed " << index << endm;
                 LOG_DEBUG << "\tSkipping the refit steps but saving the seed and failed fit" << endm;
                 globalTracks.push_back( gtrGlobal );
-                mEventStats.mFailedGlobalFits++;
+                if (kProfile) mEventStats.mFailedGlobalFits++;
                 index++;
                 continue;
                 // BREAK OUT OF THE LOOP
             }
-            mEventStats.mGoodGlobalFits++;
+            if (kProfile) mEventStats.mGoodGlobalFits++;
             if (doRefit == false) {
                 LOG_INFO << "\tRefit is disabled, saving the seed and initial fit" << endm;
                 globalTracks.push_back( gtrGlobal );
@@ -643,11 +651,11 @@ class ForwardTrackMaker {
             if ( gtrGlobalRefit.mIsFitConvergedFully ){
                 globalTracks.push_back( gtrGlobalRefit ); // save this global track result
                 gtrGlobal.Clear(); // clear the original global track result since we will save the refit
-                mEventStats.mGoodGlobalRefits++;
+                if (kProfile) mEventStats.mGoodGlobalRefits++;
             } else {
                 globalTracks.push_back( gtrGlobal ); // save the original global track result
                 gtrGlobalRefit.Clear(); // clear the refit since it failed
-                mEventStats.mFailedGlobalRefits++;
+                if (kProfile) mEventStats.mFailedGlobalRefits++;
             }            
             // End Step 4
             /***********************************************************************************************************/
@@ -655,9 +663,9 @@ class ForwardTrackMaker {
 
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mGlobalFitDuration.push_back( duration1 );
+        if (kProfile) mEventStats.mGlobalFitDuration.push_back( duration1 );
         // SUMMARY OF STATUS
-        if (verbose > 0){
+        if (verbose > 0 && kProfile) {
             float perGood = (float) mEventStats.mGoodGlobalFits / (float) mEventStats.mAttemptedGlobalFits;
             float perFailed = (float) mEventStats.mFailedGlobalFits / (float) mEventStats.mAttemptedGlobalFits;
             float perGoodRefit = (float) mEventStats.mGoodGlobalRefits / (float) mEventStats.mGoodGlobalFits;
@@ -694,7 +702,7 @@ class ForwardTrackMaker {
 
         size_t index = 0;
         for (auto &gtr : globalTracks) {
-            mEventStats.mAttemptedPrimaryFits ++;
+            if (kProfile) mEventStats.mAttemptedPrimaryFits ++;
             if (verbose){
                 LOG_INFO << "Refitting Track " << index << ", McId=" << gtr.mIdTruth << " with Primary Vertex, seed already has: " << gtr.mSeed.size() << " hits" << endm;
                 LOG_INFO << "mEventVertexHit: " << mEventVertexHit.getX() << ", " << mEventVertexHit.getY() << ", " << mEventVertexHit.getZ() << endm;
@@ -707,9 +715,9 @@ class ForwardTrackMaker {
 
             GenfitTrackResult gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
             if ( gtrPV.mIsFitConvergedPartially ) {
-                mEventStats.mGoodPrimaryFits++;
+                if (kProfile) mEventStats.mGoodPrimaryFits++;
             } else {
-                mEventStats.mFailedPrimaryFits++;
+                if (kProfile) mEventStats.mFailedPrimaryFits++;
                 gtrPV.Clear();
                 continue;
             }
@@ -729,9 +737,9 @@ class ForwardTrackMaker {
             if ( gtrPVRefit.mIsFitConvergedPartially ){
                 primaryTracks.push_back( gtrPVRefit );
                 gtrPV.Clear(); // clear the original global track result since we will save the refit
-                mEventStats.mGoodPrimaryRefits++;
+                if (kProfile) mEventStats.mGoodPrimaryRefits++;
             } else {
-                mEventStats.mFailedPrimaryRefits++;
+                if (kProfile) mEventStats.mFailedPrimaryRefits++;
                 gtrPVRefit.Clear(); // clear the refit since it failed
                 primaryTracks.push_back( gtrPV );
                 LOG_WARN << "\tFWD primary track refit failed (both initial + refit)" << endm;
@@ -741,16 +749,17 @@ class ForwardTrackMaker {
         }
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mPrimaryFitDuration.push_back( duration1 );
+        if (kProfile) mEventStats.mPrimaryFitDuration.push_back( duration1 );
 
-        // SUMMARY OF STATUS
-        float perGoodPrim = (float) mEventStats.mGoodPrimaryFits / (float) mEventStats.mAttemptedPrimaryFits;
-        float perFailedPrim = (float) mEventStats.mFailedPrimaryFits / (float) mEventStats.mAttemptedPrimaryFits;
-        float perGoodRefit = (float) mEventStats.mGoodPrimaryRefits / (float) mEventStats.mGoodPrimaryFits;
-        float perFailedRefit = (float) mEventStats.mFailedPrimaryRefits / (float) mEventStats.mGoodPrimaryFits;
-        float sum = std::accumulate(mEventStats.numPrimaryFoundHits.begin(), mEventStats.numPrimaryFoundHits.end(), 0.0f);
-        float avgAdded = sum / mEventStats.numPrimaryFoundHits.size();
-        if (verbose > 0){ 
+        
+        if (verbose > 0 && kProfile) { 
+            // SUMMARY OF STATUS
+            float perGoodPrim = (float) mEventStats.mGoodPrimaryFits / (float) mEventStats.mAttemptedPrimaryFits;
+            float perFailedPrim = (float) mEventStats.mFailedPrimaryFits / (float) mEventStats.mAttemptedPrimaryFits;
+            float perGoodRefit = (float) mEventStats.mGoodPrimaryRefits / (float) mEventStats.mGoodPrimaryFits;
+            float perFailedRefit = (float) mEventStats.mFailedPrimaryRefits / (float) mEventStats.mGoodPrimaryFits;
+            float sum = std::accumulate(mEventStats.numPrimaryFoundHits.begin(), mEventStats.numPrimaryFoundHits.end(), 0.0f);
+            float avgAdded = sum / mEventStats.numPrimaryFoundHits.size();
             LOG_INFO << "\tPrimary Track Fitting Results " << Form( "(took %lld ms):", duration1 ) <<
                     TString::Format(
                         "Attempts = %d, Good = %d (%f%%), Failed = %d (%f%%), <#hits> added = %f, Refit:Good = %d (%f%%), Failed = %d (%f%%)",
@@ -780,7 +789,7 @@ class ForwardTrackMaker {
 
         size_t index = 0;
         for (auto &gtr : globalTracks) {
-            mEventStats.mAttemptedBeamlineFits ++;
+            if (kProfile) mEventStats.mAttemptedBeamlineFits ++;
             if (verbose){
                 LOG_INFO << "doBeamlineTrackFitting>>" << index << " McId=" << gtr.mIdTruth << " with Beamline, seed already has: " << gtr.mSeed.size() << " hits" << endm;
                 LOG_INFO << "mBeamlineHit: " << mBeamlineHit.getX() << ", " << mBeamlineHit.getY() << ", " << mBeamlineHit.getZ() << endm;
@@ -802,10 +811,10 @@ class ForwardTrackMaker {
                 gtrPV = fitTrack(seedWithPV, &gtr.mMomentum);
             }
             if ( gtrPV.mIsFitConvergedFully ) {
-                mEventStats.mGoodBeamlineFits++;
+                if (kProfile) mEventStats.mGoodBeamlineFits++;
             } else {
                 LOG_DEBUG << "\tInitial Beamline fitting failed for seed " << index << endm;
-                mEventStats.mFailedBeamlineFits++;
+                if (kProfile) mEventStats.mFailedBeamlineFits++;
                 gtrPV.Clear();
                 continue;
             }
@@ -826,21 +835,21 @@ class ForwardTrackMaker {
             if ( gtrPVRefit.mIsFitConvergedFully){
                 beamlineTracks.push_back( gtrPVRefit );
                 gtrPV.Clear(); // clear the original global track result since we will save the refit
-                mEventStats.mGoodBeamlineRefits++;
+                if (kProfile) mEventStats.mGoodBeamlineRefits++;
             } else {
                 beamlineTracks.push_back( gtrPV );
                 gtrPVRefit.Clear(); // clear the refit since it failed
-                mEventStats.mFailedBeamlineRefits++;
+                if (kProfile) mEventStats.mFailedBeamlineRefits++;
                 LOG_DEBUG << "\tBeamline track refit failed" << endm;
             }
             index++;
         }
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mBeamlineFitDuration.push_back( duration1 );
+        if (kProfile) mEventStats.mBeamlineFitDuration.push_back( duration1 );
 
         // SUMMARY OF STATUS
-        if (verbose > 0){
+        if (verbose > 0 && kProfile) {
             float perGoodPrim = (float) mEventStats.mGoodBeamlineFits / (float) mEventStats.mAttemptedBeamlineFits;
             float perFailedPrim = (float) mEventStats.mFailedBeamlineFits / (float) mEventStats.mAttemptedBeamlineFits;
             float perGoodRefit = (float) mEventStats.mGoodBeamlineRefits / (float) mEventStats.mGoodBeamlineFits;
@@ -919,9 +928,9 @@ class ForwardTrackMaker {
                 seedWithVtx.push_back( &mFwdVerticesAsHits.back() );
                 GenfitTrackResult gtrPV = fitTrack(seedWithVtx, &gtr->mMomentum);
                 if ( gtrPV.mIsFitConvergedFully ) {
-                    mEventStats.mGoodSecondaryFits++;
+                    if (kProfile) mEventStats.mGoodSecondaryFits++;
                 } else {
-                    mEventStats.mFailedSecondaryFits++;
+                    if (kProfile) mEventStats.mFailedSecondaryFits++;
                     gtrPV.Clear();
                     continue;
                 }
@@ -940,11 +949,11 @@ class ForwardTrackMaker {
                 if ( gtrPVRefit.mIsFitConvergedPartially ){
                     secondaryTracks.push_back( gtrPVRefit );
                     gtrPV.Clear(); // clear the original global track result since we will save the refit
-                    mEventStats.mGoodSecondaryRefits++;
+                    if (kProfile) mEventStats.mGoodSecondaryRefits++;
                 } else {
                     secondaryTracks.push_back( gtrPV );
                     gtrPVRefit.Clear(); // clear the refit since it failed
-                    mEventStats.mFailedSecondaryRefits++;
+                    if (kProfile) mEventStats.mFailedSecondaryRefits++;
                     LOG_WARN << "\tFWD secondary track refit failed" << endm;
                 }
                 index++;
@@ -952,10 +961,10 @@ class ForwardTrackMaker {
         } // loop on vertices
 
         long long duration1 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mSecondaryFitDuration.push_back( duration1 );
+        if (kProfile) mEventStats.mSecondaryFitDuration.push_back( duration1 );
 
         // SUMMARY OF STATUS
-        if (verbose > 0){
+        if (verbose > 0 && kProfile) {
             float perGoodPrim = (float) mEventStats.mGoodSecondaryFits / (float) mEventStats.mAttemptedSecondaryFits;
             float perFailedPrim = (float) mEventStats.mFailedSecondaryFits / (float) mEventStats.mAttemptedSecondaryFits;
             float perGoodRefit = (float) mEventStats.mGoodSecondaryRefits / (float) mEventStats.mGoodSecondaryFits;
@@ -1018,8 +1027,9 @@ class ForwardTrackMaker {
                 GenfitTrackResult gtr;
                 gtr.setSeed( seed );
                 gtr.mTrackType = StFwdTrack::kGlobal;
+                gtr.mVertexIndex = 0;
                 globalTracks.push_back( gtr );
-                LOG_INFO << "Adding dummy global track with seed: " << seed.size() << " hits" << endm;
+                LOG_DEBUG << "Adding dummy global track with seed: " << seed.size() << " hits" << endm;
             }
             mTrackResults.insert( mTrackResults.end(), globalTracks.begin(), globalTracks.end() );
             return;
@@ -1040,7 +1050,7 @@ class ForwardTrackMaker {
         if (do_fwd_vertex_finding){
             LOG_DEBUG << "\tPerforming FWD Vertex Finding" << endm;
             auto fwdVertices = findFwdVertices( globalTracks );
-            mEventStats.mNumFwdVertices = fwdVertices.size();
+            if (kProfile) mEventStats.mNumFwdVertices = fwdVertices.size();
         } else {
             LOG_WARN << "Event configuration is skipping FWD vertex finding" << endm;
             LOG_WARN << "Secondary track fitting will also be skipped" << endm;
@@ -1258,7 +1268,7 @@ class ForwardTrackMaker {
         // we can apply an optional parameter <nHits> to only get tracks with >=nHits in them
 
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mStep2Duration.push_back(duration);
+        if (kProfile) mEventStats.mStep2Duration.push_back(duration);
         itStart = FwdTrackerUtils::nowNanoSecond();
 
         /*************************************************************/
@@ -1277,7 +1287,7 @@ class ForwardTrackMaker {
         automaton.addCriteria(mThreeHitCrit);
 
         duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mStep3Duration.push_back( duration );
+        if (kProfile) mEventStats.mStep3Duration.push_back( duration );
         if (duration > 2000 || automaton.getNumberOfConnections() > 9000){
             LOG_WARN << "The Three Hit Criteria took more than 200ms to process, duration: " << duration << " ms" << endm;
             LOG_WARN << "bailing out (skipping subset HNN)" << endm;
@@ -1338,7 +1348,7 @@ class ForwardTrackMaker {
         }// subset off
 
         duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
-        mEventStats.mStep4Duration.push_back( duration );
+        if (kProfile) mEventStats.mStep4Duration.push_back( duration );
         if (duration > 500){
             LOG_WARN << "The took more than 500ms to process, duration: " << duration << " ms" << endm;
             LOG_WARN << "We got " << acceptedTrackSeeds.size() << " tracks this round" << endm;
@@ -1693,7 +1703,7 @@ class ForwardTrackMaker {
                     continue;
                 } else {
                     gtr.mSeed.push_back( h );
-                    mEventStats.mNumEpdHits++;
+                    if (kProfile) mEventStats.mNumEpdHits++;
                 }
             }            
             return hits_near_plane.size();
@@ -1775,6 +1785,7 @@ class ForwardTrackMaker {
     TVector3 getEventVertex() { return mEventVertex; }
 
   protected:
+    static constexpr bool kProfile = false; // set to true to profile the tracking steps
     unsigned long long int nEvents;
 
     bool mDoTrackFitting = true;

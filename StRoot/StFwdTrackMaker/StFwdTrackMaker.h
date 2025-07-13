@@ -92,10 +92,6 @@ class StFwdTrackMaker : public StMaker {
     TVector3 mEventVertex; // primary vertex used in fwd tracking this event
 
     std::string mConfigFile;
-    
-    vector<TVector3>  mFcsClusters;
-    vector<float>     mFcsClusterEnergy;
-    vector<TVector3>  mFcsPreHits;
 
     std::vector< genfit::GFRaveVertex * > mRaveVertices;
     vector<float> mFttZFromGeom, mFstZFromGeom;

@@ -1,4 +1,5 @@
 #include "StFwdTrackMaker/StFwdTrackMaker.h"
+#include "StFwdTrackMaker.h"
 #include "StFwdTrackMaker/include/Tracker/FwdHit.h"
 #include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
 #include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
@@ -41,6 +42,7 @@
 #include "StMcEvent/StMcEvent.hh"
 #include "StMcEvent/StMcVertex.hh"
 
+#include "include/Tracker/GenfitTrackResult.h"
 #include "tables/St_g2t_fts_hit_Table.h"
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_vertex_Table.h"
@@ -73,6 +75,7 @@
 #include "sys/sysinfo.h"
 #include "StMemStat.h"
 #include <malloc.h>
+
 FwdSystem* FwdSystem::sInstance = nullptr;
 
 StMemStat stm;
@@ -225,7 +228,6 @@ void StFwdTrackMaker::LoadConfiguration() {
 
 //________________________________________________________________________
 int StFwdTrackMaker::Init() {
-    
     if ( mGeoCache == "" ){
         /// Instantiate and cache the geometry
         GetDataBase("VmcGeometry");
@@ -452,14 +454,14 @@ int StFwdTrackMaker::Make() {
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     if (!stEvent) return kStOk;
 
-    
+
 
     /**********************************************************************/
     // Access forward track and hit maps
     FwdDataSource::McTrackMap_t &mcTrackMap = mForwardData->getMcTracks();
-    FwdDataSource::HitMap_t &hitMap = mForwardData->getFttHits();
-    FwdDataSource::HitMap_t &fsiHitMap = mForwardData->getFstHits();
-    FwdDataSource::HitMap_t &epdHitMap = mForwardData->getEpdHits();
+    FwdDataSource::HitMap_t &hitMap         = mForwardData->getFttHits();
+    FwdDataSource::HitMap_t &fsiHitMap      = mForwardData->getFstHits();
+    FwdDataSource::HitMap_t &epdHitMap      = mForwardData->getEpdHits();
 
     mFwdHitLoader.setStEvent( stEvent );
     mFwdHitLoader.setMuDstMaker( (StMuDstMaker *)GetMaker("MuDst") );
@@ -480,8 +482,8 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << "FWD Vertex Source: " << mFwdVertexSource << endm;
     LOG_DEBUG << "Setting FWD event vertex to: " << TString::Format("mEventVertex=(%0.3f+/-%0.3f, %0.3f+/-%0.3f, %0.3f+/-%0.3f)", mEventVertex.X(), sqrt(mEventVertexCov(0, 0)), mEventVertex.Y(), sqrt(mEventVertexCov(1, 1)), mEventVertex.Z(), sqrt(mEventVertexCov(2, 2)) ) << endm;
     mForwardTracker->setEventVertex( mEventVertex, mEventVertexCov );
-    
 
+    
     /**********************************************************************/
     // Load MC tracks
     size_t nForwardTracks = loadMcTracks( mcTrackMap );
@@ -528,9 +530,8 @@ int StFwdTrackMaker::Make() {
     }
     LOG_INFO << "There are: " << Form( "%d with 0 FST, %d with 1 FST, %d with 2 FST, %d with 3 FST", nFstMcTracks[0], nFstMcTracks[1], nFstMcTracks[2], nFstMcTracks[3] ) << endm;
     LOG_INFO << "There are: " << Form( "%d with 0 FTT, %d with 1 FTT, %d with 2 FTT, %d with 3 FTT, %d with 4 FTT", nFttMcTracks[0], nFttMcTracks[1], nFttMcTracks[2], nFttMcTracks[3], nFttMcTracks[3] ) << endm;
-    int idealNumberOfSeeds = (nFstMcTracks[2]+nFstMcTracks[3]);
-    LOG_INFO << "There are " << Form( "%d McTracks with >= 2 FST hits (#of possible seeds)", idealNumberOfSeeds  ) << endm;
-
+    int idealNumberOfSeeds = (nFstMcTracks[3]);
+    LOG_INFO << "There are " << Form( "%d McTracks with > 2 FST hits (#of possible seeds)", idealNumberOfSeeds  ) << endm;
 
     /**********************************************************************/
     // Run Track finding + fitting
@@ -615,6 +616,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         fwdTrack->setDidFitConvergeFully( false );
         fwdTrack->setNumberOfFailedPoints( 0 );
         fwdTrack->setNumberOfFitPoints( 0 );
+        fwdTrack->setChi2( 0 );
+        fwdTrack->setNDF( 0 );
+        fwdTrack->setPval( 0 );
+        fwdTrack->setCharge( 0 );
         fwdTrack->setVtxIndexAndTrackType( gtr.mVertexIndex, gtr.mTrackType );
         LOG_WARN << "Genfit track is null, has no points, or has no status" << endm;
         return fwdTrack;
@@ -641,7 +646,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     if ( !gtr.mStatus->isFitConvergedFully() ){
         gtr.Clear();
         LOG_WARN << "Genfit track did not converge fully, skipping projections" << endm;
-        fwdTrack->setCharge( 0 );
+        fwdTrack->setCharge( 0 ); // set charge to 0 if track did not converge
         return fwdTrack;
     }
 
@@ -772,15 +777,16 @@ void StFwdTrackMaker::FillEvent() {
 }
 
 
+
+
 //________________________________________________________________________
 void StFwdTrackMaker::Clear(const Option_t *opts) {
-    LOG_DEBUG << "StFwdTrackMaker::CLEAR" << endm;
+    LOG_DEBUG << "StFwdTrackMaker::Clear" << endm;
     mForwardData->clear();
-    mForwardTracker->Clear();
     mFwdHitLoader.clear();
-    mFcsPreHits.clear();
-    mFcsClusters.clear();
+    mForwardTracker->Clear();
 }
+
 
 std::string StFwdTrackMaker::defaultConfig = R"(
 <?xml version="1.0" encoding="UTF-8"?>
@@ -790,22 +796,22 @@ std::string StFwdTrackMaker::defaultConfig = R"(
             <SegmentBuilder>
                 <!-- <Criteria name="Crit2_RZRatio" min="0" max="1.20" /> -->
                 <!-- <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/> -->
-                <Criteria name="Crit2_DeltaPhi" min="0" max="10.0" />
+                <Criteria name="Crit2_DeltaPhi" min="0" max="2.0" />
                 <!-- <Criteria name="Crit2_StraightTrackRatio" min="0.01" max="5.85"/> -->
             </SegmentBuilder>
 
             <ThreeHitSegments>
-				<Criteria name="Crit3_3DAngle" min="0" max="60" />
+				<Criteria name="Crit3_3DAngle" min="0" max="6" />
                 <!-- <Criteria name="Crit3_PT" min="0" max="100" /> -->
 				<!-- <Criteria name="Crit3_ChangeRZRatio" min="0.8" max="1.21" /> -->
-				<Criteria name="Crit3_2DAngle" min="0" max="30" />
+				<Criteria name="Crit3_2DAngle" min="0" max="6" />
             </ThreeHitSegments>
 
         </Iteration>
 
         <Connector distance="2"/>
 
-        <SubsetNN active="true" min-hits-on-track="2" >
+        <SubsetNN active="true" min-hits-on-track="3" >
             <!-- <InitialTemp>2.1</InitialTemp> -->
             <!-- <InfTemp>0.1</InfTemp> -->
             <Omega>0.99</Omega>

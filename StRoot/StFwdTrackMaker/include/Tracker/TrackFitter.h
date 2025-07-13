@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <memory>
+#include "malloc.h"
 
 #include "StFwdTrackMaker/Common.h"
 
@@ -27,6 +28,8 @@
 
 #include "StarGenerator/UTIL/StarRandom.h"
 #include "FitterUtils.h"
+
+#include "StMemStat.h"
 
 /* Class for interfacing with GenFit for fitting tracks 
  *
@@ -39,6 +42,17 @@ class TrackFitter {
     // this is used rarely for debugging purposes, especially to check/compare plane misalignment
     static const bool kUseSpacePoints = true; // use spacepoints instead of planar measurements
     static const int kVerbose = 1; // verbosity level for debugging
+
+    void clear(){
+        LOG_DEBUG << "TrackFitter::clear() called" << endm;
+        mFitTrack.reset();
+        for (auto &track : mFitTracks) {
+            if (track) {
+                track->Clear();
+                LOG_INFO << "Track Shared Pointer use count: " << track.use_count() << endm;
+            }
+        }
+    }
 
   public:
 
@@ -102,27 +116,7 @@ class TrackFitter {
         // note, the pointer is still bound to the lifetime of the TackFitter
         genfit::FieldManager::getInstance()->init(mBField.get());
 
-        // initialize the main mFitter using a KalmanFitter with reference tracks
-        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitterRefTrack());
-
-        // Here we load several options from the config,
-        // to customize the mFitter behavior
-        mFitter->setMaxFailedHits(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxFailedHits", -1)); // default -1, no limit
-        mFitter->setDebugLvl(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:DebugLvl", 0)); // default 0, no output
-        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 100)); // default 4 iterations
-        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 10)); // default 0 iterations
-
-        // Set the fit convergence paramters
-        mFitter->setRelChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-1) );
-        // mFitter->setAbsChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:AbsChi2Change", 1e-1) );
-        mFitter->setDeltaPval( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-1) );
-        mFitter->setBlowUpMaxVal( 1e9 );
-        mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e9) );
-
-        if ( static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get()) != nullptr ) {
-            LOG_INFO << "Setting the KalmanFitterRefTrack to update ref track Chi2Ref" << endm;
-            static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get())->setDeltaChi2Ref( 1e-5 );
-        }
+        setupFitter();
 
         // FwdGeomUtils looks into the loaded geometry and gets detector z locations if present
         FwdGeomUtils fwdGeoUtils( gMan );
@@ -149,6 +143,35 @@ class TrackFitter {
             LOG_INFO << "\tBlowUpMaxVal: " << mFitter->getBlowUpMaxVal() << endm;
         }
         
+    }
+
+    /**
+     * @brief Setup the fitter
+     *
+     * This is called in the setup() method but could be called again to remake the fitter
+     */
+    void setupFitter(){
+        // initialize the main mFitter using a KalmanFitter with reference tracks
+        mFitter = std::unique_ptr<genfit::AbsKalmanFitter>(new genfit::KalmanFitterRefTrack());
+
+        // Here we load several options from the config,
+        // to customize the mFitter behavior
+        mFitter->setMaxFailedHits(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxFailedHits", -1)); // default -1, no limit
+        mFitter->setDebugLvl(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:DebugLvl", 0)); // default 0, no output
+        mFitter->setMaxIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MaxIterations", 100)); // default 4 iterations
+        mFitter->setMinIterations(mConfig.get<int>("TrackFitter.KalmanFitterRefTrack:MinIterations", 10)); // default 0 iterations
+
+        // Set the fit convergence paramters
+        mFitter->setRelChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-1) );
+        // mFitter->setAbsChi2Change( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:AbsChi2Change", 1e-1) );
+        mFitter->setDeltaPval( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-1) );
+        mFitter->setBlowUpMaxVal( 1e9 );
+        mFitter->setBlowUpFactor( mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:BlowUpFactor", 1e9) );
+
+        if ( static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get()) != nullptr ) {
+            LOG_INFO << "Setting the KalmanFitterRefTrack to update ref track Chi2Ref" << endm;
+            static_cast<genfit::KalmanFitterRefTrack*>(mFitter.get())->setDeltaChi2Ref( 1e-5 );
+        }
     }
 
     /**
@@ -230,7 +253,99 @@ class TrackFitter {
         return projectToPlane(mFttPlanes[iFttPlane], fitTrack);
     }
 
-    void createTrackPointFromPlanarMeasurement(std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId){
+    vector<genfit::Track*> pTracks;
+    vector<FwdHit> stressHits;
+    void stressTest(){
+        pTracks.reserve(10000); // reserve space for 1000 tracks
+
+        double memStart = StMemStat::Used();
+        double memEndInside = 0;
+        StMemStat::PrintMem("TrackFitter::stressTest START");
+        LOG_INFO << "TrackFitter::stressTest" << endm;
+        
+        { // scope the stack variables
+            
+            // generate some random hits
+            if (stressHits.size() > 0) {
+                LOG_INFO << "Stress hits already generated, skipping generation" << endm;
+            } else {
+                LOG_INFO << "Generating stress hits" << endm;
+                for ( size_t i = 0; i < 1000; i++ ) {
+                    FwdHit hit;
+                    hit.setXYZDetId( 
+                        gRandom->Uniform(-500, 500), // random x between -500 and 500
+                        gRandom->Uniform(-500, 500), // random y between -500 and 500
+                        gRandom->Uniform(-500, 500), // random z between -500 and 500
+                        kFstId           // random detector id between 0 and 2
+                    );
+                    
+                    hit._covmat.ResizeTo( 3, 3 );
+                    hit._covmat(0, 0) = 1; // set covariance matrix to identity
+                    hit._covmat(1, 1) = 1;
+                    hit._covmat(2, 2) = 1;
+                    hit._covmat(0, 1) = 0;
+                    hit._covmat(1, 0) = 0;
+                    hit._covmat(0, 2) = 0;
+                    hit._covmat(2, 0) = 0;
+                    hit._covmat(1, 2) = 0;
+                    hit._covmat(2, 1) = 0;
+                    stressHits.push_back(hit);
+                }
+            }
+        
+            const int n = 10000; // number of seeds to fit
+            // loop on the track seeds and fit them
+            genfit::Track* fitTrack = new genfit::Track();
+            for ( size_t i = 0; i < n; i++ ) {
+                // generate a random seed by sampling the hits
+                Seed_t seed;
+                for ( size_t j = 0; j < rand() % 7 + 3; j++ ) { // 2 - 9 hits per seed
+                    size_t hitIndex = rand() % stressHits.size();
+                    seed.push_back( &stressHits[hitIndex] );    
+
+                    int hitId = 0;
+                    
+                    fitTrack->insertPoint(
+                        createTrackSpacepointFromMeasurement(nullptr, &stressHits[hitIndex], hitId)
+                    );
+                } // loop of seed generation     
+            } // loop tracks
+            
+            // Test fit
+            performFit(fitTrack);
+
+            fitTrack->Clear();
+            delete fitTrack; // delete the track
+            fitTrack = nullptr; // clear the pointer
+
+            StMemStat::PrintMem("TrackFitter::stressTest END (inside of scope)");
+            memEndInside = StMemStat::Used();
+        }
+        StMemStat::PrintMem("TrackFitter::stressTest END (out of scope)");
+        double memEndOutside = StMemStat::Used();
+
+        malloc_trim(0);
+
+        StMemStat::PrintMem("TrackFitter::stressTest END (clear HEAP)");
+        double memEndFinal= StMemStat::Used();
+
+        printf("Memory used in TrackFitter::stressTest: %.2f MB (start) -> %.2f MB (end inside scope) -> %.2f MB (end outside scope) -> %.2f MB (final clear)\n",
+            memStart, memEndInside, memEndOutside, memEndFinal);
+        printf("Memory difference: %.2f MB (inside scope) -> %.2f MB (outside scope) -> %.2f MB (final clear)\n",
+            memEndInside - memStart, memEndOutside - memEndInside, memEndFinal - memEndOutside);
+        printf("Total memory used: %.2f MB\n", memEndFinal - memStart);
+
+
+        auto mi = mallinfo();
+        printf("Heap in use: %.2f MB | Free blocks: %.2f MB | Total arena: %.2f MB\n",
+            mi.uordblks / 1024.0 / 1024.0,
+            mi.fordblks / 1024.0 / 1024.0,
+            mi.arena / 1024.0 / 1024.0);
+
+    }
+
+    genfit::TrackPoint* createTrackPointFromPlanarMeasurement(std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId){
+        assert( fh != nullptr && "FwdHit pointer is null, cannot create planar measurement" );
         TVectorD hitOnPlane(2);
         hitOnPlane[0] = fh->getX();
         hitOnPlane[1] = fh->getY();
@@ -248,23 +363,27 @@ class TrackFitter {
         tp->addRawMeasurement(measurement);
         tp->setTrack(fitTrack.get());
         tp->setSortingParameter(planeId); // or use the hitId?
-        fitTrack->insertPoint( tp );
+        if (fitTrack)
+            fitTrack->insertPoint( tp );
+        return tp;
     }
 
 
     genfit::TrackPoint* createTrackSpacepointFromMeasurement( std::shared_ptr<genfit::Track> fitTrack, FwdHit *fh, int &hitId ) {
-        if (fh == nullptr) return nullptr;
+        assert( fh != nullptr && "FwdHit pointer is null, cannot create space point" );
 
         TVectorD pv(3);
         pv[0] = fh->getX();
         pv[1] = fh->getY();
         pv[2] = fh->getZ();
-        LOG_INFO << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
+        LOG_DEBUG << "x = " << pv[0] << "+/- " << fh->_covmat(0,0) << ", y = " << pv[1] << " +/- " << fh->_covmat(1,1) << ", z = " << pv[2] << " +/- " << fh->_covmat(2,2) << endm;
 
         auto tp = new genfit::TrackPoint();
         genfit::SpacepointMeasurement *measurement = new genfit::SpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
         tp->addRawMeasurement(measurement);
-        tp->setTrack(fitTrack.get());
+        if ( fitTrack ){
+            tp->setTrack(fitTrack.get());
+        }
         return tp;
     }
 
@@ -342,6 +461,7 @@ class TrackFitter {
 
         // Create the track
         mFitTrack = std::make_shared<genfit::Track>(pionRep, seedPos, seedMom);
+        mFitTracks.push_back(mFitTrack);
         // now add the points to the track
 
         int hitId(0);       // hit ID
@@ -385,6 +505,10 @@ class TrackFitter {
             }
         } // loop on trackSeed
 
+        if ( mFitTrack == nullptr ) {
+            LOG_ERROR << "Track is null, cannot setup track" << endm;
+            return false;
+        }
         if (kVerbose){
             LOG_INFO << "Track Setup complete, track has " << mFitTrack->getNumPoints() << " points" << endm;
             LOG_INFO << " sorting changed track points: "  << mFitTrack->sort() << endm;
@@ -395,35 +519,24 @@ class TrackFitter {
     /** @brief performs the fit on a track
      *  @param t : track to fit
     */
-    void performFit( std::shared_ptr<genfit::Track> t ){
+    void performFit( genfit::Track* trackPointer ){
+        assert( trackPointer != nullptr && "Track pointer is null, cannot perform fit" );
         /******************************************************************************************************************
 		 * Do the fit
 		 ******************************************************************************************************************/
         try {
-
-            // prepare the track for fitting
-            // int nFailedPoints = 0;
-            // bool changed = false;
-            // changed = dynamic_cast<genfit::KalmanFitterRefTrack*>( mFitter.get() )->prepareTrack( mFitTrack.get(), mFitTrack->getCardinalRep(), false, nFailedPoints);
-            // LOG_DEBUG << "Track prepared for fit with " << nFailedPoints << " failed points, changed? = " << changed << endm;
-
             // check the track for consistency
-            mFitTrack->checkConsistency();
+            trackPointer->checkConsistency();
             // do the fit
-            float initialChi2Change = mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:RelChi2Change", 1e-1);
-            float initiaDeltaPVal = mConfig.get<double>("TrackFitter.KalmanFitterRefTrack:DeltaPval", 1e-1);
-            mFitter->setRelChi2Change( initialChi2Change );
-            mFitter->setDeltaPval( initiaDeltaPVal );
-
-            mFitter->processTrack(mFitTrack.get());
+            mFitter->processTrack(trackPointer);
             
             // check the track for consistency
-            mFitTrack->checkConsistency();
+            trackPointer->checkConsistency();
 
             // find track rep with smallest chi2
-            mFitTrack->determineCardinalRep();
+            trackPointer->determineCardinalRep();
             
-            auto status = mFitTrack->getFitStatus();
+            auto status = trackPointer->getFitStatus();
             if ( status == nullptr ) {
                 LOG_ERROR << "Track fit status is null" << endm;
                 return;   
@@ -436,8 +549,8 @@ class TrackFitter {
 
             if ( status->isFitConverged() ){
              
-                auto cr = mFitTrack->getCardinalRep();
-                auto p = cr->getMom( mFitTrack->getFittedState( 0, cr ));
+                auto cr = trackPointer->getCardinalRep();
+                auto p = cr->getMom( trackPointer->getFittedState( 0, cr ));
                 int rcQ = status->getCharge(); 
                 if ( kVerbose > 0 ) { 
                     LOG_INFO << "Fit momentum: " << p.X() << ", " << p.Y() << ", " << p.Z() << endm;
@@ -536,7 +649,7 @@ class TrackFitter {
         /******************************************************************************************************************
 		 * Do the fit
 		 ******************************************************************************************************************/
-        performFit( mFitTrack );
+        performFit( mFitTrack.get() );
         if ( kVerbose ) summarizeTrackReps();
         long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         return duration;
@@ -584,6 +697,7 @@ class TrackFitter {
     static const int mPdgPiPlus = 211;
     // GenFit state - resused
     std::shared_ptr<genfit::Track> mFitTrack;
+    vector<std::shared_ptr<genfit::Track>> mFitTracks; // save all genfitTracks to make sure we clear them properly
     Seed_t mCurrentTrackSeed;
 };
 
