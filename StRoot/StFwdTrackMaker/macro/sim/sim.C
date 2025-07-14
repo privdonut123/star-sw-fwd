@@ -70,6 +70,7 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
     if ( useConstBz )
         StarMagField::setConstBz(true);
 
+
     gSystem->Load( "libStFttSimMaker" );
     gSystem->Load( "libStFcsTrackMatchMaker" );
 
@@ -152,7 +153,7 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 
-            // DisableTrackFitting();
+            DisableTrackFitting();
             // DoOnlyGlobalTrackFitting();
             
 
@@ -209,7 +210,7 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
     }
 
     // if (muDstMaker){
-    //     // StFwdQAMaker *fwdQA = new StFwdQAMaker();
+    //     StFwdQAMaker *fwdQA = new StFwdQAMaker();
     //     fwdQA->SetDebug(2);
     //     TString fwdqaname(gSystem->BaseName(inFile));
     //     fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");

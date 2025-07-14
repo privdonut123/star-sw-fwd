@@ -334,4 +334,35 @@ void compare_tt( TString label = "", TString note = "" ){
     }
 
     c->Print( TString::Format("plots/%s_curve_resolution.png", label.Data()));
+
+
+    c = new TCanvas("cMult", "Efficiency Comparison", 3840/2.0, 2160/2.0);
+    // c->Divide(1, 1);
+    {
+        c->cd();
+        TH1 *hGlobalMultEff = (TH1*)fGlobal->Get("Mult_MatchedPrimary_McPrimary");
+        TH1 *hBLCMultEff = (TH1*)fBLC->Get("Mult_MatchedPrimary_McPrimary");
+        TH1 *hPrimaryMultEff = (TH1*)fPrimary->Get("Mult_MatchedPrimary_McPrimary");
+        
+        hGlobalMultEff->SetLineColor(kBlack);
+        hBLCMultEff->SetLineColor(kRed);
+        hPrimaryMultEff->SetLineColor(kBlue);
+
+        hGlobalMultEff->SetLineWidth(5);
+        hBLCMultEff->SetLineWidth(5);
+        hPrimaryMultEff->SetLineWidth(5);
+
+        hGlobalMultEff->GetXaxis()->SetRangeUser(0.0, 30.0);
+        hGlobalMultEff->SetTitle(label + "; Multiplicity; Efficiency (Matched McPrimary / McPrimary)");
+        hGlobalMultEff->Draw();
+        hBLCMultEff->Draw("same");
+        hPrimaryMultEff->Draw("same");
+
+        TLegend *leg3 = new TLegend(0.6, 0.1, 0.9, 0.3);
+        leg3->AddEntry(hGlobalMultEff, "Global", "l");
+        leg3->AddEntry(hBLCMultEff, "Beamline", "l");
+        leg3->AddEntry(hPrimaryMultEff, "Primary", "l");
+        leg3->Draw();
+    }
+    c->Print( TString::Format("plots/%s_eff_vs_mult.png", label.Data()));
 }

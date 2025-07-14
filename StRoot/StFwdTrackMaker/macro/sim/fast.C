@@ -5,15 +5,20 @@
 // Run very fast fwd tracking
 // generate some input data using genfzd
 void loadLibs();
+void loadLibs();
 TFile *output = 0;
 
+StMemStat stmem;
+
 void fast(       char *inFile =  "sim.fzd",
+                int n = 100, // nEvents to run
                 int n = 100, // nEvents to run
                 bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
                 bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
                 bool useZeroB = false
             ) {
+    stmem.PrintMem("STARTUP");
     // report all of the parameters passed in
     cout << "inFile = " << inFile << endl;
     cout << "n = " << n << endl;
@@ -32,16 +37,19 @@ void fast(       char *inFile =  "sim.fzd",
     // Setup the chain for reading an FZD
     TString _chain;
     
-    // _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
+    _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
     // _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout", _geom.Data() );
-    _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig", _geom.Data() );
+    // _chain = Form("fzin %s sdt20211016 fcsDb MakeEvent bigbig ", _geom.Data() );
     
 
     gSystem->Load( "libStarRoot.so" );
     loadLibs();
+    loadLibs();
     gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
     gROOT->LoadMacro("bfc.C");
+    stmem.PrintMem("Libs LOADED");
     bfc(-1, _chain, inFile);
+    stmem.PrintMem("CHAIN SETUP");
 
     gSystem->Load( "libStFttSimMaker" );
     gSystem->Load( "libStFcsTrackMatchMaker" );
@@ -53,8 +61,8 @@ void fast(       char *inFile =  "sim.fzd",
 
     // Configure the Forward Tracker
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
-        // fwdTrack = nullptr;
         if ( fwdTrack ){
+            // fwdTrack->SetDebug(0);
             // fwdTrack->SetDebug(0);
             // config file set here for ideal simulation
             if ( _geom == "" ){
@@ -63,6 +71,7 @@ void fast(       char *inFile =  "sim.fzd",
             }
 
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
+            fwdTrack->SetDebug(1);
             fwdTrack->SetDebug(1);
 
             // Fitter
@@ -90,6 +99,7 @@ void fast(       char *inFile =  "sim.fzd",
             // fwdTrack->setEpdHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             
             bool doFitQA = false;
+            bool doFitQA = false;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
                 fwdFitQA->SetDebug();
@@ -102,8 +112,17 @@ void fast(       char *inFile =  "sim.fzd",
         }
 
     // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
+    // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
 
     // The PicoDst
+    // gSystem->Load("libStPicoEvent");
+    // gSystem->Load("libStPicoDstMaker");
+    // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+    // cout << "picoMk = " << picoMk << endl;
+    // picoMk->setVtxMode(StPicoDstMaker::Default);
+
+    
+    
     // gSystem->Load("libStPicoEvent");
     // gSystem->Load("libStPicoDstMaker");
     // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
@@ -114,6 +133,7 @@ void fast(       char *inFile =  "sim.fzd",
     stmem.Start();
 chain_loop:
 	chain->Init();
+    stmem.PrintMem("CHAIN INIT COMPLETE");
 
     //_____________________________________________________________________________
     //
@@ -121,7 +141,10 @@ chain_loop:
     //_____________________________________________________________________________
     for (int i = 0; i < n; i++) {
         cout << "--------->START EVENT: " << i << endl;
+        stmem.PrintMem("BEFORE CHAIN CLEAR");
         chain->Clear();
+        stmem.PrintMem("AFTER CHAIN CLEAR COMPLETE");
+        stmem.Start();
         if (kStOK != chain->Make())
             break;
         
@@ -130,8 +153,14 @@ chain_loop:
             stmem.PrintMem();
         }
         
+            break;        
         cout << "<---------- END EVENT" << endl;
+        stmem.Stop();
     } // event loop
+
+    
+    stmem.Summary();
+    stmem.PrintMem("FINAL MEMORY:");
 }
 
 
