@@ -1,0 +1,50 @@
+<job  name="FwdTracking"  simulateSubmission="false" maxFilesPerProcess="1" filesPerHour="10" fileListSyntax="paths">
+
+    <input URL="filelist:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/forwardCrossSection_MuDst_P25ia.lis" nFiles="10" />
+
+    <!-- Modify these for your case -->
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/log/err_$JOBID.err" />
+
+    <output fromScratch="*.picoDst.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/" />
+    <output fromScratch="*.FwdFitQA.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/" />
+    <!-- <output fromScratch="job_*.LOG" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/" /> -->
+
+    <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
+    <command>
+    <![CDATA[
+        echo "JOBINDEX = ${JOBINDEX}"
+        echo "JOBID = ${JOBID}"
+
+        starver dev
+        setup 64b
+
+        set inputfile = "$INPUTFILE0"
+        set start = 0
+        set step = 30000
+        set index = 0
+
+        while ( $index < 1 )
+            @ current_start = $index * $step
+
+            root4star -b -q -l 'StRoot/StFwdTrackMaker/macro/mudst/fwd_afterburner.C("'"$inputfile"'", '$current_start', '$step')'
+            ./StRoot/StFwdTrackMaker/macro/sub/renamer.sh $index
+
+            @ index++
+        end
+    ]]>
+    </command>
+
+    <SandBox>
+        <Package>
+            <File>file:./StRoot</File>
+            <File>file:./.sl73_gcc485/</File>
+            <File>file:./.sl73_x8664_gcc485/</File>
+            <File>file:./fGeom.root</File>
+        </Package>
+    </SandBox>
+
+    <Generator>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/PROD/forwardCrossSection_2022/test/gen</Location>
+    </Generator>
+</job>

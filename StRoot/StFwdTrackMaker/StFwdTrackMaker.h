@@ -121,9 +121,6 @@ class StFwdTrackMaker : public StMaker {
     #endif
     
 
-    /** @brief Fit the primary vertex using FWD tracks */
-    void FitVertex();
-
     static std::string defaultConfig;
     bool configLoaded = false;
     TString mGeoCache;
@@ -171,6 +168,10 @@ class StFwdTrackMaker : public StMaker {
      *
     */
     void setSeedFindingWithFst() { mFwdConfig.set( "TrackFinder:source", "fst" ); }
+    /** @brief Use Fst hits in the Seed Finding
+     *
+    */
+    void setSeedFindingOff() { mFwdConfig.set( "TrackFinder:source", "NONE" ); }
     /** @brief Set the number of track finding iterations
      * @param n : number of iterations to run
     */

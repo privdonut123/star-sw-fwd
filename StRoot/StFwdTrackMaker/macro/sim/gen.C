@@ -55,11 +55,6 @@ void command( TString cmd )
 // ----------------------------------------------------------------------------
 void trig_event( Int_t i )
 {
-  if ( gRandom->Rndm() > 0.5 ) {
-    nameParticle = "mu+";
-  } else {
-    nameParticle = "mu-";
-  }
   kinematics->Kine( numParticles, nameParticle.Data(), minPt, maxPt, minEta, maxEta, minPhi, maxPhi );
 }
 // ----------------------------------------------------------------------------

@@ -4,11 +4,11 @@
 
 // Run very fast fwd tracking
 // generate some input data using genfzd
-
+void loadLibs();
 TFile *output = 0;
 
 void fast(       char *inFile =  "sim.fzd",
-                int n = 1000, // nEvents to run
+                int n = 100, // nEvents to run
                 bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
                 bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
@@ -32,10 +32,13 @@ void fast(       char *inFile =  "sim.fzd",
     // Setup the chain for reading an FZD
     TString _chain;
     
-    _chain = Form("fzin %s sdt20211016 fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
+    // _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout cmudst tree", _geom.Data() );
+    // _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig evout", _geom.Data() );
+    _chain = Form("fzin %s sdt20211016 fcsDb fwdTrack MakeEvent bigbig", _geom.Data() );
     
 
     gSystem->Load( "libStarRoot.so" );
+    loadLibs();
     gROOT->SetMacroPath(".:/star-sw/StRoot/macros/:./StRoot/macros:./StRoot/macros/graphics:./StRoot/macros/analysis:./StRoot/macros/test:./StRoot/macros/examples:./StRoot/macros/html:./StRoot/macros/qa:./StRoot/macros/calib:./StRoot/macros/mudst:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/graphics:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/analysis:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/test:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/examples:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/html:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/qa:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/calib:/afs/rhic.bnl.gov/star/packages/DEV/StRoot/macros/mudst:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/macros:/afs/rhic.bnl.gov/star/ROOT/36/5.34.38/.sl73_x8664_gcc485/rootdeb/tutorials");
     gROOT->LoadMacro("bfc.C");
     bfc(-1, _chain, inFile);
@@ -50,9 +53,9 @@ void fast(       char *inFile =  "sim.fzd",
 
     // Configure the Forward Tracker
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
-
+        // fwdTrack = nullptr;
         if ( fwdTrack ){
-            fwdTrack->SetDebug(1);
+            // fwdTrack->SetDebug(0);
             // config file set here for ideal simulation
             if ( _geom == "" ){
                 cout << "Using the Geometry cache: fGeom.root" << endl;
@@ -60,7 +63,7 @@ void fast(       char *inFile =  "sim.fzd",
             }
 
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
-            fwdTrack->SetDebug();
+            fwdTrack->SetDebug(1);
 
             // Fitter
             fwdTrack->setFitDebugLvl( 0 );
@@ -72,10 +75,21 @@ void fast(       char *inFile =  "sim.fzd",
             
             fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+
+            fwdTrack->setTrackFittingOff();
+            
+            fwdTrack->setConfigKeyValue( "TrackFitter:doGlobalTrackFitting", false ); 
+            fwdTrack->setConfigKeyValue( "TrackFitter:findFwdVertices", false ); 
+            fwdTrack->setConfigKeyValue( "TrackFitter:doBeamlineTrackFitting", false ); 
+            fwdTrack->setConfigKeyValue( "TrackFitter:doPrimaryTrackFitting", false ); 
+            fwdTrack->setConfigKeyValue( "TrackFitter:doSecondaryTrackFitting", false );
+            fwdTrack->setConfigKeyValue( "TrackFitter:refit", false );
+            
+            
             
             // fwdTrack->setEpdHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             
-            bool doFitQA = true;
+            bool doFitQA = false;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
                 fwdFitQA->SetDebug();
@@ -87,24 +101,17 @@ void fast(       char *inFile =  "sim.fzd",
             cout << "fwd tracker setup" << endl;
         }
 
-    StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
-    
-    if (muDstMaker){
-        StFwdQAMaker *fwdQA = new StFwdQAMaker();
-        fwdQA->SetDebug(2);
-        TString fwdqaname(gSystem->BaseName(inFile));
-        fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
-        fwdQA->setTreeFilename(fwdqaname);
-        chain->AddAfter("MuDst", fwdQA);
-    }
+    // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
 
     // The PicoDst
-    gSystem->Load("libStPicoEvent");
-    gSystem->Load("libStPicoDstMaker");
-    StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
-    cout << "picoMk = " << picoMk << endl;
-    picoMk->setVtxMode(StPicoDstMaker::Default);
+    // gSystem->Load("libStPicoEvent");
+    // gSystem->Load("libStPicoDstMaker");
+    // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+    // cout << "picoMk = " << picoMk << endl;
+    // picoMk->setVtxMode(StPicoDstMaker::Default);
 
+    StMemStat stmem;
+    stmem.Start();
 chain_loop:
 	chain->Init();
 
@@ -117,6 +124,86 @@ chain_loop:
         chain->Clear();
         if (kStOK != chain->Make())
             break;
+        
+        if ( true || i % 2 == 0 ) {
+            // stmem.PM();
+            stmem.PrintMem();
+        }
+        
         cout << "<---------- END EVENT" << endl;
     } // event loop
+}
+
+
+void loadLibs(){	
+	// if (gClassTable->GetID("TTable") < 0) {
+	// 	gSystem->Load("libStar");
+	// 	gSystem->Load("libPhysics");
+	// }  
+	cout << "LL0" << endl;
+	gSystem->Load("libStarClassLibrary.so");
+	gSystem->Load("libStarRoot.so");
+	cout << "LL1" << endl;
+	gROOT->LoadMacro("$STAR/StRoot/StMuDSTMaker/COMMON/macros/loadSharedLibraries.C");
+	loadSharedLibraries();
+	cout << "LL2" << endl;
+	
+	gSystem->Load("StarMagField");
+	gSystem->Load("StMagF");
+	gSystem->Load("StDetectorDbMaker");
+	gSystem->Load("StTpcDb");
+	gSystem->Load("StDaqLib");
+	gSystem->Load("StDbBroker");
+	gSystem->Load("StDbUtilities");
+	gSystem->Load("St_db_Maker");
+
+	gSystem->Load("StEvent");
+	gSystem->Load("StEventMaker");
+	gSystem->Load("StarMagField");
+ 
+	gSystem->Load("libGeom");
+	gSystem->Load("St_g2t");
+	
+	// Added for Run16 And beyond
+	gSystem->Load("libGeom.so");
+	
+	gSystem->Load("St_base.so");
+	gSystem->Load("StUtilities.so");
+	gSystem->Load("libPhysics.so");
+	gSystem->Load("StarAgmlUtil.so");
+	gSystem->Load("StarAgmlLib.so");
+	gSystem->Load("libStarGeometry.so");
+	gSystem->Load("libGeometry.so");
+	
+	gSystem->Load("xgeometry");
+ 
+	gSystem->Load("St_geant_Maker");
+
+
+	// needed since I use the StMuTrack
+	gSystem->Load("StarClassLibrary");
+	gSystem->Load("StStrangeMuDstMaker");
+	gSystem->Load("StMuDSTMaker");
+	gSystem->Load("StBTofCalibMaker");
+	gSystem->Load("StVpdCalibMaker");
+	gSystem->Load("StBTofMatchMaker");
+	gSystem->Load("StFcsDbMaker");	
+
+	/*******************************************************************************************/
+	// loading libraries
+	gSystem->Load("StFcsDbMaker");
+	gSystem->Load( "StFttDbMaker" );
+	gSystem->Load( "StFttHitCalibMaker" );
+	gSystem->Load( "StFttClusterMaker" );
+	gSystem->Load( "StFttPointMaker" );
+    gSystem->Load("libStarGeneratorUtil.so");
+    gSystem->Load("libgenfit2");
+    gSystem->Load("libKiTrack");
+    gSystem->Load("libXMLIO.so");
+    gSystem->Load( "StFwdTrackMaker.so" );
+	gSystem->Load( "StFwdUtils.so" );
+    gSystem->Load("libStEpdUtil.so");
+	/*******************************************************************************************/
+
+
 }

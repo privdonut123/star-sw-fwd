@@ -10,10 +10,10 @@
         echo "JOBID = ${JOBID}"
         ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
 
-        set SEED = `od -An -N4 -tu4 /dev/urandom | tr -d ' '`
+        set SEED = `od -An -N3 -tu4 /dev/urandom | tr -d ' '`
         echo "RNG Seed: $SEED"
 
-        starver dev
+        starver SL24a
         echo root4star -b -q -l 'sim/jpsi.C( 1000, '"$SEED"' )'
         root4star -b -q -l 'sim/jpsi.C( 1000, '"$SEED"' )' 
         mv jpsi.fzd job_${JOBID}_fwd_jpsi.fzd

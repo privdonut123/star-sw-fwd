@@ -8,7 +8,7 @@ bool runFcsChain = true;
 bool runFwdChain = true;
 bool refillMuDst = false;
 bool runFwdQa = false;
-bool runFitQa = true;
+bool runFitQa = false;
 
 // For EPD QA only
 // bool runDb = false;
@@ -119,6 +119,17 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		fwdTrack->setSeedFindingWithFst();
 		fwdTrack->setTrackRefit( false );
 
+		// Fitter Options
+		fwdTrack->setFitDebugLvl( 0 );
+		fwdTrack->setFitMinIterations( 10 );
+		fwdTrack->setFitMaxIterations( 50 );
+		
+		fwdTrack->setDeltaPval( 1e-3 );
+		fwdTrack->setRelChi2Change( 1e-3 );
+
+		fwdTrack->setSeedFindingOff();
+		fwdTrack->setTrackFittingOff();
+
 
 
 		if (runFcsChain){
@@ -144,14 +155,15 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 			fwdAna->setMuDstInput();
 		}
 
-		// The PicoDst
-		gSystem->Load("libStPicoEvent");
-		gSystem->Load("libStPicoDstMaker");
-		StPicoDstMaker *picoMk = (StMaker*) (new StPicoDstMaker(StPicoDstMaker::IoWrite, inMuDstFile, "picoDst"));
-		cout << "picoMk = " << picoMk << endl;
-		picoMk->setVtxMode(StPicoDstMaker::Vtxless);
-	}
-	if ( runFitQa ){
+
+	// The PicoDst
+	gSystem->Load("libStPicoEvent");
+	gSystem->Load("libStPicoDstMaker");
+	StPicoDstMaker *picoMk = (StMaker*) (new StPicoDstMaker(StPicoDstMaker::IoWrite, inMuDstFile, "picoDst"));
+	cout << "picoMk = " << picoMk << endl;
+	picoMk->setVtxMode(StPicoDstMaker::Vtxless);
+
+	if ( runFitQa && runFwdChain){
 		StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
 		fwdFitQA->SetDebug();
 		TString fitqaoutname(gSystem->BaseName(inMuDstFile));

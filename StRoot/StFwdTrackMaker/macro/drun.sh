@@ -1,0 +1,1 @@
+gdb --command=dbg.gdb --args root4star -b -q -l StRoot/StFwdTrackMaker/macro/sim/fast.C

@@ -384,6 +384,13 @@ class ForwardTrackMaker {
             mSeedSource = kSeqSeed;
         else if (hitmapSource == "sim")
             mSeedSource = kSimSeed;
+        else if (hitmapSource == "NONE"){
+            LOG_INFO << "Seed finding has been disabled, source=NONE!" << endl;
+            return;
+        } else {
+            LOG_WARN << "Unknown TrackFinder:source = " << hitmapSource << ", using defalt (fst)" << endl;
+            hitmapSource = "fst";
+        }
         LOG_INFO << "Performing Fwd Seed finding with mode: " << hitmapSource << " = " << endm;
         FwdDataSource::McTrackMap_t &mcTrackMap = mDataSource->getMcTracks();
 

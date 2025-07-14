@@ -1029,6 +1029,8 @@ void StPicoDstMaker::fillMcTracks() {
 //_________________
 void StPicoDstMaker::fillTracks() {
 
+  // Skip filling tracks for Vtxless mode made for Fwd tracks
+  if ( mVtxMode == PicoVtxMode::Vtxless ) return;
 #if defined (__TFG__VERSION__)
   if ( !mMuDst->primaryVertex()) return;
 #endif 
@@ -1852,7 +1854,11 @@ void StPicoDstMaker::fillEvent() {
 
   picoEvent->setGRefMult( ev->grefmult() );
   picoEvent->setNumberOfGlobalTracks( mMuDst->numberOfGlobalTracks() );
-  picoEvent->setNumberOfPrimaryTracks( mMuDst->numberOfPrimaryTracks() );
+  if (mMuDst->primaryTracks()){ // Vtxless mode may not have a valid primaryTracks array
+    picoEvent->setNumberOfPrimaryTracks( mMuDst->numberOfPrimaryTracks() );
+  } else {
+    picoEvent->setNumberOfPrimaryTracks( 0 );
+  }
   picoEvent->setbTofTrayMultiplicity( ev->btofTrayMultiplicity() );
   picoEvent->setETofHitMultiplicity( ev->etofHitMultiplicity() );
   StMuETofHeader *header = mMuDst->etofHeader();

@@ -164,7 +164,7 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             if ( useConstBz )
                 fwdTrack->setConstBz( true );
 
-            bool doFitQA = true;
+            bool doFitQA = false;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
                 fwdFitQA->SetDebug();
@@ -176,12 +176,12 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             cout << "fwd tracker setup" << endl;
         }
 
-        bool doFwdAna = true;
-        if (!useFCS && doFwdAna ){
-            StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
-            fwdAna->SetDebug();
-            chain->AddAfter("fwdTrack", fwdAna);
-        }
+    bool doFwdAna = false;
+    if (!useFCS && doFwdAna ){
+        StFwdAnalysisMaker *fwdAna = new StFwdAnalysisMaker();
+        fwdAna->SetDebug();
+        chain->AddAfter("fwdTrack", fwdAna);
+    }
 
 
     StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
@@ -208,21 +208,21 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
             chain->AddAfter( "fwdAna", muDstMaker );
     }
 
-    if (muDstMaker){
-        StFwdQAMaker *fwdQA = new StFwdQAMaker();
-        fwdQA->SetDebug(2);
-        TString fwdqaname(gSystem->BaseName(inFile));
-        fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
-        fwdQA->setTreeFilename(fwdqaname);
-        chain->AddAfter("MuDst", fwdQA);
-    }
+    // if (muDstMaker){
+    //     // StFwdQAMaker *fwdQA = new StFwdQAMaker();
+    //     fwdQA->SetDebug(2);
+    //     TString fwdqaname(gSystem->BaseName(inFile));
+    //     fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
+    //     fwdQA->setTreeFilename(fwdqaname);
+    //     chain->AddAfter("MuDst", fwdQA);
+    // }
 
     // The PicoDst
     gSystem->Load("libStPicoEvent");
     gSystem->Load("libStPicoDstMaker");
     StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
     cout << "picoMk = " << picoMk << endl;
-    picoMk->setVtxMode(StPicoDstMaker::Default);
+    picoMk->setVtxMode(StPicoDstMaker::Vtxless);
 
 
 chain_loop:

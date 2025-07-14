@@ -1,0 +1,38 @@
+<job  name="FwdJPSI"  simulateSubmission="false" maxFilesPerProcess="1" filesPerHour="1000" fileListSyntax="paths">
+
+    <input URL="filelist:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/input.lis" nFiles="100" />
+
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/log/err_$JOBID.err" />
+
+    <output fromScratch="*.FwdFitQA.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/" />
+    <output fromScratch="*.MuDst.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/" />
+    <output fromScratch="*.picoDst.root" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/" />
+
+    <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
+    <command>
+        echo "JOBINDEX = ${JOBINDEX}"
+        echo "JOBID = ${JOBID}"
+        
+        ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
+        ls -lah
+
+        starver SL24a
+        setup 64b
+        echo "START"
+        ./sim/sim.C $INPUTFILE0 1000
+    </command>
+
+    <SandBox>
+        <Package>
+            <File>file:./StRoot</File>
+            <File>file:./.sl73_gcc485/</File>
+            <File>file:./.sl73_x8664_gcc485/</File>
+            <File>file:./fGeom.root</File>
+        </Package>
+    </SandBox>
+
+    <Generator>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/PROD/JPsiGun/gen</Location>
+    </Generator>
+</job>

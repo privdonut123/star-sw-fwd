@@ -71,8 +71,14 @@
 #include "StMuDSTMaker/COMMON/StMuPrimaryVertex.h"
 
 #include "sys/sysinfo.h"
-
+#include "StMemStat.h"
+#include <malloc.h>
 FwdSystem* FwdSystem::sInstance = nullptr;
+
+StMemStat stm;
+void printMEM(){
+    stm.PrintMem();
+}
 
 //_______________________________________________________________________________________
 class GenfitUtils{
@@ -609,6 +615,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         fwdTrack->setDidFitConvergeFully( false );
         fwdTrack->setNumberOfFailedPoints( 0 );
         fwdTrack->setNumberOfFitPoints( 0 );
+        fwdTrack->setVtxIndexAndTrackType( gtr.mVertexIndex, gtr.mTrackType );
         LOG_WARN << "Genfit track is null, has no points, or has no status" << endm;
         return fwdTrack;
     }
@@ -634,6 +641,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     if ( !gtr.mStatus->isFitConvergedFully() ){
         gtr.Clear();
         LOG_WARN << "Genfit track did not converge fully, skipping projections" << endm;
+        fwdTrack->setCharge( 0 );
         return fwdTrack;
     }
 
@@ -751,65 +759,28 @@ void StFwdTrackMaker::FillEvent() {
     // if we have a PicoDst maker in the chain, we need to add a primary vertex
     // when one does not exist to get a "FWD" picoDst
     // auto mk = GetMaker("PicoDst");
+    // LOG_INFO << "stEvent->numberOfPrimaryVertices() = " << stEvent->numberOfPrimaryVertices() << endm;
     // if ( mk && stEvent->numberOfPrimaryVertices() == 0 ){
     //     LOG_INFO << "Adding a primary vertex to StEvent since PicoDst maker was found in chain, but no vertices found" << endm;
     //     stEvent->addPrimaryVertex( new StPrimaryVertex() );
     //     LOG_INFO << "StPrimaryVertex::numberOfPrimaryVertices = " << stEvent->numberOfPrimaryVertices() << endm;
     // }
 
-    // ProcessFwdTracks();
+
+
     LOG_INFO << "StFwdTrackCollection has " << ftc->numberOfTracks() << " tracks now" << endm;
 }
 
-
-
-void StFwdTrackMaker::FitVertex(){
-    vector<genfit::Track *> genfitTracks;
-
-    const auto &trackResults = mForwardTracker -> getTrackResults();
-    if ( genfitTracks.size() >= 2 ){
-        genfit::GFRaveVertexFactory gfrvf;
-
-        TMatrixDSym bscm(3);
-        const double bssXY = 2.0;
-        bscm(0, 0) = bssXY*bssXY;
-        bscm(1, 1) = bssXY*bssXY;
-        bscm(2, 2) = 50.5 * 50.5;
-        gfrvf.setBeamspot( TVector3( 0, 0, 0 ), bscm );
-
-        mRaveVertices.clear();
-        gfrvf.findVertices( &mRaveVertices, genfitTracks, false );
-
-        LOG_DEBUG << "mRaveVertices.size() = " << mRaveVertices.size() << endm;
-        for ( auto vert : mRaveVertices ){
-            LOG_DEBUG << TString::Format( "RAVE vertex @(%f, %f, %f)\n\n", vert->getPos().X(), vert->getPos().Y(), vert->getPos().Z() ) << endm;
-        }
-    }
-} // FitVertex
 
 //________________________________________________________________________
 void StFwdTrackMaker::Clear(const Option_t *opts) {
     LOG_DEBUG << "StFwdTrackMaker::CLEAR" << endm;
     mForwardData->clear();
     mForwardTracker->Clear();
-
+    mFwdHitLoader.clear();
     mFcsPreHits.clear();
     mFcsClusters.clear();
 }
-//________________________________________________________________________
-void StFwdTrackMaker::ProcessFwdTracks(  ){
-    // This is an example of how to process fwd track collection
-    LOG_DEBUG << "StFwdTrackMaker::ProcessFwdTracks" << endm;
-    StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
-    StFwdTrackCollection * ftc = stEvent->fwdTrackCollection();
-    for ( auto fwdTrack : ftc->tracks() ){
-        LOG_DEBUG << TString::Format("StFwdTrack[ nProjections=%lu, nFTTSeeds=%lu, nFSTSeeds=%lu, mPt=%f ]", fwdTrack->mProjections.size(), fwdTrack->mFTTPoints.size(), fwdTrack->mFSTPoints.size(), fwdTrack->momentum().perp()) << endm;
-        for ( auto proj : fwdTrack->mProjections ) {
-            LOG_DEBUG << TString::Format("Proj[ %d, %f, %f, %f ]", proj.mDetId, proj.mXYZ.x(), proj.mXYZ.y(), proj.mXYZ.z() ) << endm;
-        }
-    }
-}
-
 
 std::string StFwdTrackMaker::defaultConfig = R"(
 <?xml version="1.0" encoding="UTF-8"?>

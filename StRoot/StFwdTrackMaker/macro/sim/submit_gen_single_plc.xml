@@ -1,21 +1,20 @@
-<job  name="FwdPlcGun"  simulateSubmission="false" nProcesses="100">
-    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_pion/log/log_$JOBID.log" />
-    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_pion/log/err_$JOBID.err" />
+<job  name="FwdPlcGun"  simulateSubmission="false" nProcesses="500">
+    <stdout URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_electron_plus/log/log_$JOBID.log" />
+    <stderr URL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_electron_plus/log/err_$JOBID.err" />
 
-    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_pion/" />
+    <output fromScratch="*.fzd" toURL="file:/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_electron_plus/" />
     <!-- MUST be submitted from ALMA nodes -->
-    <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell>
+    <!-- <shell>singularity exec -e -B /direct -B /star -B /afs -B /gpfs -B /sdcc/lustre02 /cvmfs/star.sdcc.bnl.gov/containers/rhic_sl7.sif</shell> -->
     <command>
         echo "JOBINDEX = ${JOBINDEX}"
         echo "JOBID = ${JOBID}"
         ln -s StRoot/StFwdTrackMaker/macro/sim/ sim
 
-        set SEED = `od -An -N4 -tu4 /dev/urandom | tr -d ' '`
+        set SEED = `od -An -N3 -tu4 /dev/urandom | tr -d ' '`
         echo "RNG Seed: $SEED"
 
-        starver dev
-        root4star -b -q -l 'sim/single_particle_gun.C( 1000, '"$SEED"', 0, 10.0, 2.5, 4.0 )' 
-        mv fwd_lambda.fzd job_${JOBID}_fwd_lambda.fzd
+        starver SL24a
+        root4star -b -q -l 'sim/single_particle_gun.C( 2000, '"$SEED"', "e+", 1, 0, 5.0, 2.0, 4.5 )' 
     </command>
 
     <SandBox>
@@ -26,6 +25,6 @@
     </SandBox>
 
     <Generator>
-        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_pion/gen</Location>
+        <Location>/gpfs01/star/pwg_tasks/FwdCalib/FZD/single_electron_plus/gen</Location>
     </Generator>
 </job>
