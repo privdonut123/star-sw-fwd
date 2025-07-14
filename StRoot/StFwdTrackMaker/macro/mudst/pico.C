@@ -125,7 +125,7 @@ void loadLibsFwd()
   gSystem->Load("StEventMaker");
 
   // Fwd
-  gSystem->Load("StFwdUtils");
+  
   gSystem->Load("libStarGeneratorUtil.so");
   gSystem->Load("libXMLIO");
   gSystem->Load("libgenfit2");
@@ -134,8 +134,7 @@ void loadLibsFwd()
   gSystem->Load("libMathMore");
   gSystem->Load("StEventUtilities");
   gSystem->Load("StEpdUtil");
-  gSystem->Load("StFwdTrackMaker");
-  gSystem->Load("StFwdUtils");
+  
   //Ftt
   gSystem->Load("StFttDbMaker");
   gSystem->Load("StFttRawHitMaker");
@@ -157,6 +156,9 @@ void loadLibsFwd()
   gSystem->Load("StFstRawHitMaker");
   gSystem->Load("StFstClusterMaker");
   gSystem->Load("StFstHitMaker");
+
+  gSystem->Load("StFwdTrackMaker");
+  gSystem->Load("StFwdUtils");
 }
 
 void procGeoTag(TObjArray* optionTokens)
@@ -321,11 +323,11 @@ void genDst(unsigned int First,
     // StFcsPointMaker * fcsPoint = new StFcsPointMaker();
 
     // FTT chain
-    StFttDbMaker * fttDbMk = new StFttDbMaker();
-    StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
-    StFttClusterMaker * fttclu = new StFttClusterMaker();
-    fttclu->SetTimeCut(1, -40, 40);
-    StFttPointMaker * fttpoint = new StFttPointMaker();
+    // StFttDbMaker * fttDbMk = new StFttDbMaker();
+    // StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
+    // StFttClusterMaker * fttclu = new StFttClusterMaker();
+    // fttclu->SetTimeCut(1, -40, 40);
+    // StFttPointMaker * fttpoint = new StFttPointMaker();
 
 
     // StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
@@ -553,7 +555,7 @@ void genDst(unsigned int Last,
 }
 
 void pico(){
-  genDst(500, "y2024a picodst PicoVtxMode:PicoVtxDefault", "st_physics_25121014_raw_0000001.MuDst.root", "PROD.root");
+  genDst(500, "y2024a picodst PicoVtxMode:PicoVtxDefault", "st_physics_23055058_raw_1500001.MuDst.root", "PROD.root");
 }
 
 void pico( TString f, int n = 500){

@@ -281,10 +281,6 @@ void genDst(unsigned int First,
     muDstMaker.SetStatus("Epd*", 1);
     muDstMaker.SetStatus("Fms*", 1);
     muDstMaker.SetStatus("MCAll", 1);
-    muDstMaker.SetStatus("Fwd*", 1);
-    muDstMaker.SetStatus("Fcs*", 1);
-    muDstMaker.SetStatus("Ftt*", 1);
-    muDstMaker.SetStatus("Fst*", 1);
 
     // EMCs
     // StEEmcDbMaker* eemcDb = new StEEmcDbMaker;
@@ -304,7 +300,7 @@ void genDst(unsigned int First,
     // trigSimu->useOfflineDB();
     // trigSimu->bemc->setConfig(StBemcTriggerSimu::kOffline);
 
-    loadLibsFwd();
+    // loadLibsFwd();
 
     // If you need the geometry you can load it with this:
     // gROOT->LoadMacro("/star-sw/StarVMC/Geometry/macros/loadStarGeometry.C");
@@ -315,17 +311,17 @@ void genDst(unsigned int First,
     StMuDst2StEventMaker * mu2ev = new StMuDst2StEventMaker();
 
     // Re-run the FCS chain
-    StFcsDbMaker * fcsDbMk = new StFcsDbMaker();
+    // StFcsDbMaker * fcsDbMk = new StFcsDbMaker();
     // StFcsWaveformFitMaker * fcsWFF = new StFcsWaveformFitMaker();
     // StFcsClusterMaker * fcsClu = new StFcsClusterMaker();
     // StFcsPointMaker * fcsPoint = new StFcsPointMaker();
 
     // FTT chain
-    StFttDbMaker * fttDbMk = new StFttDbMaker();
-    StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
-    StFttClusterMaker * fttclu = new StFttClusterMaker();
-    fttclu->SetTimeCut(1, -40, 40);
-    StFttPointMaker * fttpoint = new StFttPointMaker();
+    // StFttDbMaker * fttDbMk = new StFttDbMaker();
+    // StFttHitCalibMaker * ftthcm = new StFttHitCalibMaker();
+    // StFttClusterMaker * fttclu = new StFttClusterMaker();
+    // fttclu->SetTimeCut(1, -40, 40);
+    // StFttPointMaker * fttpoint = new StFttPointMaker();
 
 
     // StFwdTrackMaker * fwdTrack = new StFwdTrackMaker();
