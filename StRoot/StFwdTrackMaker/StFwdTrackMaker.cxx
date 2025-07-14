@@ -578,10 +578,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     /*******************************************************************************/
     // store the seed points for the track
     int nSeedPoints = 0;
+    float cov[9]; // reused covariance matrix for seed points
     for ( auto s : gtr.mSeed ){
         FwdHit * fh = static_cast<FwdHit*>( s );
         if (!fh) continue;
-        float cov[9];
         cov[0] = fh->_covmat(0,0); cov[3] = fh->_covmat(1,0); cov[6] = fh->_covmat(2,0);
         cov[1] = fh->_covmat(0,1); cov[4] = fh->_covmat(1,1); cov[7] = fh->_covmat(2,1);
         cov[2] = fh->_covmat(0,2); cov[5] = fh->_covmat(1,2); cov[8] = fh->_covmat(2,2);
@@ -611,7 +611,6 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     // Fit failed beyond use
     if ( gtr.mTrack == nullptr || gtr.mStatus == nullptr || gtr.mTrack->getNumPoints() == 0 ){
         // if num points == 0 then calling PVal seg faults :/
-        gtr.Clear();
         fwdTrack->setDidFitConverge( false );
         fwdTrack->setDidFitConvergeFully( false );
         fwdTrack->setNumberOfFailedPoints( 0 );
@@ -621,6 +620,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         fwdTrack->setPval( 0 );
         fwdTrack->setCharge( 0 );
         fwdTrack->setVtxIndexAndTrackType( gtr.mVertexIndex, gtr.mTrackType );
+        gtr.Clear();
         LOG_WARN << "Genfit track is null, has no points, or has no status" << endm;
         return fwdTrack;
     }
@@ -669,12 +669,12 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     size_t zIndex = 0;
     TVector3 mom(0, 0, 0);
-    float cov[9];
     TVector3 tv3(0, 0, 0);
     for ( auto zp : mapDetectorToZPlane ){
         int detIndex = zp.first;
         float z = zp.second;
         tv3.SetXYZ(0, 0, 0);
+        std::fill(std::begin(cov), std::end(cov), 0.0f);
         LOG_INFO << "Projecting to: " << detIndex << " at z=" << z << endm;
         if ( detIndex != kFcsHcalId && detIndex != kFcsWcalId ){
             float detpos[3] = {0,0,z};
