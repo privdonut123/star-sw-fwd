@@ -41,7 +41,7 @@ class TrackFitter {
 
     // this is used rarely for debugging purposes, especially to check/compare plane misalignment
     static const bool kUseSpacePoints = true; // use spacepoints instead of planar measurements
-    static const int kVerbose = 1; // verbosity level for debugging
+    static const int kVerbose = 0; // verbosity level for debugging
 
     void clear(){
         LOG_DEBUG << "TrackFitter::clear() called" << endm;
@@ -49,7 +49,7 @@ class TrackFitter {
         for (auto &track : mFitTracks) {
             if (track) {
                 track->Clear();
-                LOG_INFO << "Track Shared Pointer use count: " << track.use_count() << endm;
+                track.reset();
             }
         }
     }

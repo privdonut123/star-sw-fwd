@@ -454,7 +454,7 @@ int StFwdTrackMaker::Make() {
     StEvent *stEvent = static_cast<StEvent *>(GetInputDS("StEvent"));
     if (!stEvent) return kStOk;
 
-
+    
 
     /**********************************************************************/
     // Access forward track and hit maps
@@ -528,24 +528,34 @@ int StFwdTrackMaker::Make() {
         nFstMcTracks[ kv.second->mFstHits.size() ]++;
         nFttMcTracks[ kv.second->mFttHits.size() ]++;
     }
-    LOG_INFO << "There are: " << Form( "%d with 0 FST, %d with 1 FST, %d with 2 FST, %d with 3 FST", nFstMcTracks[0], nFstMcTracks[1], nFstMcTracks[2], nFstMcTracks[3] ) << endm;
-    LOG_INFO << "There are: " << Form( "%d with 0 FTT, %d with 1 FTT, %d with 2 FTT, %d with 3 FTT, %d with 4 FTT", nFttMcTracks[0], nFttMcTracks[1], nFttMcTracks[2], nFttMcTracks[3], nFttMcTracks[3] ) << endm;
     int idealNumberOfSeeds = (nFstMcTracks[3]);
-    LOG_INFO << "There are " << Form( "%d McTracks with > 2 FST hits (#of possible seeds)", idealNumberOfSeeds  ) << endm;
+    if (!mcTrackMap.empty()) {
+        // Only print this if we have MC tracks
+        LOG_INFO << "There are: " << Form( "%d with 0 FST, %d with 1 FST, %d with 2 FST, %d with 3 FST", nFstMcTracks[0], nFstMcTracks[1], nFstMcTracks[2], nFstMcTracks[3] ) << endm;
+        LOG_INFO << "There are: " << Form( "%d with 0 FTT, %d with 1 FTT, %d with 2 FTT, %d with 3 FTT, %d with 4 FTT", nFttMcTracks[0], nFttMcTracks[1], nFttMcTracks[2], nFttMcTracks[3], nFttMcTracks[3] ) << endm;
+        LOG_INFO << "There are " << Form( "%d McTracks with > 2 FST hits (#of possible seeds)", idealNumberOfSeeds  ) << endm;
+    }
 
     /**********************************************************************/
     // Run Track finding + fitting
     LOG_DEBUG << ">>START Event Forward Tracking" << endm;
     LOG_INFO << "\tFinding FWD Track Seeds" << endm;
     mForwardTracker->findTrackSeeds();
-    float seedFindingEff = ( mForwardTracker -> getTrackSeeds().size() + 1e-5 ) / ( idealNumberOfSeeds + 1e-5 );
-    LOG_INFO << "<<Fwd Tracking Found : " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds (vs. " << idealNumberOfSeeds << " McTracks with FST>=2, eff = " << seedFindingEff << ")" << endm;
-    LOG_INFO << "\tFitting FWD Track Seeds" << endm;
-    // in principle we could filter the track seeds further if we wanted
-    mForwardTracker->doTrackFitting( mForwardTracker->getTrackSeeds() );
-    LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
     
+    // Report the results of the seed finding, in the future we could provide more info about #hits etc.
+    LOG_INFO << "<<Fwd Tracking Found : " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds from " << fsiHitMap.size() << " FST hits and " << hitMap.size() << " sTGC hits"  << endm;
+    if ( idealNumberOfSeeds > 0 ){
+        float seedFindingEff = ( mForwardTracker -> getTrackSeeds().size() + 1e-5 ) / ( idealNumberOfSeeds + 1e-5 );
+        LOG_INFO << "    (vs. " << idealNumberOfSeeds << " McTracks with FST>2, eff = " << seedFindingEff << ")" << endm;
+    } 
+    /**********************************************************************/
+    
+    /**********************************************************************/
+    // Run Track fitting on the seeds we found
+    LOG_INFO << "\tFitting FWD Track Seeds" << endm;
+    mForwardTracker->doTrackFitting( mForwardTracker->getTrackSeeds() );
     LOG_INFO << "<<Fwd Tracking Fit :" << mForwardTracker -> getTrackResults().size() << " GenFit Tracks" << endm;
+    LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
     /**********************************************************************/
 
     LOG_DEBUG << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;

@@ -433,6 +433,24 @@ class ForwardTrackMaker {
         if (kProfile) mEventStats.mNumSeeds = mTrackSeeds.size();
         long long duration2 = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         if (kProfile) mEventStats.mSeedFindingDuration.push_back( duration2 );
+
+        if (verbose) {
+            LOG_INFO << "Found " << mTrackSeeds.size() << " seeds in " << nIterations << " iterations" << endm;
+            LOG_INFO << "Total Hits removed: " << mTotalHitsRemoved << endm;
+
+            int sCount = 0;
+            for ( auto &seed : mTrackSeeds ) {
+                string hitSummary = "";
+                for ( auto &hit : seed ) {
+                    auto fwdHit = dynamic_cast<FwdHit*>(hit);
+                    if (fwdHit == nullptr) continue;
+                    hitSummary += TString::Format( "id=%d@%d", fwdHit->_id, hit->getSector() ).Data();
+                }
+                LOG_INFO << "Seed [" << sCount << "] with " << seed.size() << " hits : " << hitSummary <<  endm;
+                sCount++;
+            } 
+
+        }
     } // FindTrackSeeds
 
 
@@ -1786,6 +1804,7 @@ class ForwardTrackMaker {
 
   protected:
     static constexpr bool kProfile = false; // set to true to profile the tracking steps
+    static constexpr int verbose = 1; // Extra logging at INFO level
     unsigned long long int nEvents;
 
     bool mDoTrackFitting = true;
@@ -1822,8 +1841,6 @@ class ForwardTrackMaker {
 
     // histograms of the raw input data
     TString mGeoCache;
-
-    const static int verbose = 1;
 };
 
 #endif
