@@ -12,7 +12,6 @@ StMemStat stmem;
 
 void fast(       char *inFile =  "sim.fzd",
                 int n = 100, // nEvents to run
-                int n = 100, // nEvents to run
                 bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
                 bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
@@ -85,20 +84,19 @@ void fast(       char *inFile =  "sim.fzd",
             fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 
+            fwdTrack->setCrit2( "Crit2_DeltaPhi", 0, 2.0 );
+
             fwdTrack->setTrackFittingOff();
             
-            fwdTrack->setConfigKeyValue( "TrackFitter:doGlobalTrackFitting", false ); 
-            fwdTrack->setConfigKeyValue( "TrackFitter:findFwdVertices", false ); 
-            fwdTrack->setConfigKeyValue( "TrackFitter:doBeamlineTrackFitting", false ); 
-            fwdTrack->setConfigKeyValue( "TrackFitter:doPrimaryTrackFitting", false ); 
-            fwdTrack->setConfigKeyValue( "TrackFitter:doSecondaryTrackFitting", false );
-            fwdTrack->setConfigKeyValue( "TrackFitter:refit", false );
-            
-            
+            // fwdTrack->setConfigKeyValue( "TrackFitter:doGlobalTrackFitting", false ); 
+            // fwdTrack->setConfigKeyValue( "TrackFitter:findFwdVertices", false ); 
+            // fwdTrack->setConfigKeyValue( "TrackFitter:doBeamlineTrackFitting", false ); 
+            // fwdTrack->setConfigKeyValue( "TrackFitter:doPrimaryTrackFitting", false ); 
+            // fwdTrack->setConfigKeyValue( "TrackFitter:doSecondaryTrackFitting", false );
+            // fwdTrack->setConfigKeyValue( "TrackFitter:refit", false );
             
             // fwdTrack->setEpdHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             
-            bool doFitQA = false;
             bool doFitQA = false;
             if ( doFitQA ){
                 StFwdFitQAMaker *fwdFitQA = new StFwdFitQAMaker();
@@ -112,17 +110,8 @@ void fast(       char *inFile =  "sim.fzd",
         }
 
     // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
-    // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
 
     // The PicoDst
-    // gSystem->Load("libStPicoEvent");
-    // gSystem->Load("libStPicoDstMaker");
-    // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
-    // cout << "picoMk = " << picoMk << endl;
-    // picoMk->setVtxMode(StPicoDstMaker::Default);
-
-    
-    
     // gSystem->Load("libStPicoEvent");
     // gSystem->Load("libStPicoDstMaker");
     // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
@@ -147,13 +136,7 @@ chain_loop:
         stmem.Start();
         if (kStOK != chain->Make())
             break;
-        
-        if ( true || i % 2 == 0 ) {
-            // stmem.PM();
-            stmem.PrintMem();
-        }
-        
-            break;        
+    
         cout << "<---------- END EVENT" << endl;
         stmem.Stop();
     } // event loop
