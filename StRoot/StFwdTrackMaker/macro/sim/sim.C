@@ -205,18 +205,9 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
         if ( muDstMaker )
             chain->AddAfter( "FcsTrkMatch", muDstMaker );
     } else {
-        if ( muDstMaker )
+        if ( muDstMaker && doFwdAna )
             chain->AddAfter( "fwdAna", muDstMaker );
     }
-
-    // if (muDstMaker){
-    //     StFwdQAMaker *fwdQA = new StFwdQAMaker();
-    //     fwdQA->SetDebug(2);
-    //     TString fwdqaname(gSystem->BaseName(inFile));
-    //     fwdqaname.ReplaceAll(".fzd", ".FwdTree.root");
-    //     fwdQA->setTreeFilename(fwdqaname);
-    //     chain->AddAfter("MuDst", fwdQA);
-    // }
 
     // The PicoDst
     gSystem->Load("libStPicoEvent");
