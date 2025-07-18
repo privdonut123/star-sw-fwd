@@ -12,7 +12,6 @@
 #include <TObject.h>
 #include <vector>
 #include "TVector3.h"
-#include "TRefArray.h"
 #include <climits>
 
 
@@ -94,7 +93,7 @@ public:
     void setStatus( UChar_t status ) { mStatus = status;}
     void setNumberOfSeedPoints( Int_t lNumberOfSeedPoints ) { mNumberOfSeedPoints = (UChar_t)lNumberOfSeedPoints;}
     void setNumberOfFitPoints( Int_t lNumberOfFitPoints ) { mNumberOfFitPoints = (Char_t)lNumberOfFitPoints;}
-    void setChi2(Float_t chi2) {mChi2 = chi2;}
+    void setChi2(Float_t chi2) { mChi2 = chi2; }
     void setPVal(Float_t pval);
     void addEcalCluster( UChar_t index ) { mEcalMatchIndex.push_back(index); }
     void addHcalCluster( UChar_t index ) { mHcalMatchIndex.push_back(index); }

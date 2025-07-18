@@ -1,11 +1,4 @@
 #include "StPicoFcsCluster.h"
-#include <vector>
-#include "StPicoMessMgr.h"
-
-// ROOT headers
-#include "TMath.h"
-
-ClassImp(StPicoFcsCluster)
 
 StPicoFcsCluster::StPicoFcsCluster() : TObject(), mIndex(0), mId(0), 
                                        mDetectorId(0), mCategory(0), 
@@ -16,9 +9,7 @@ StPicoFcsCluster::StPicoFcsCluster() : TObject(), mIndex(0), mId(0),
                                        mFourMomentumX(0.0), 
                                        mFourMomentumY(0.0), 
                                        mFourMomentumZ(0.0), 
-                                       mFourMomentumT(0.0) {
-    mFwdTrackMatchIndex.clear(); // Initialize the vector
-}
+                                       mFourMomentumT(0.0) {}
 
 StPicoFcsCluster::StPicoFcsCluster(const StPicoFcsCluster &clu){
     mIndex = clu.mIndex; // Copy the index

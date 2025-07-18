@@ -1,17 +1,8 @@
 #include "StPicoFcsHit.h"
-#include <vector>
-#include "StPicoMessMgr.h"
-
-// ROOT headers
-#include "TMath.h"
-
-ClassImp(StPicoFcsHit)
 
 StPicoFcsHit::StPicoFcsHit() : TObject(), mDetectorId(0), mId(0), 
                                mFourMomentumX(0.0), mFourMomentumY(0.0), 
-                               mFourMomentumZ(0.0), mFourMomentumT(0.0) {
-    // Default constructor
-}
+                               mFourMomentumZ(0.0), mFourMomentumT(0.0) {}
 
 StPicoFcsHit::StPicoFcsHit(const StPicoFcsHit &hit){
     mDetectorId=hit.mDetectorId;
