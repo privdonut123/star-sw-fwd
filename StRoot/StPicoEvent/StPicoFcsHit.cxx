@@ -7,7 +7,10 @@
 
 ClassImp(StPicoFcsHit)
 
-StPicoFcsHit::StPicoFcsHit() : TObject() {
+StPicoFcsHit::StPicoFcsHit() : TObject(), mDetectorId(0), mId(0), 
+                               mFourMomentumX(0.0), mFourMomentumY(0.0), 
+                               mFourMomentumZ(0.0), mFourMomentumT(0.0) {
+    // Default constructor
 }
 
 StPicoFcsHit::StPicoFcsHit(const StPicoFcsHit &hit){
