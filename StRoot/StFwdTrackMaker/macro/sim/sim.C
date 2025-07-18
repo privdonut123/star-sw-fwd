@@ -216,9 +216,11 @@ void sim(       char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/sta
     cout << "picoMk = " << picoMk << endl;
     picoMk->setVtxMode(StPicoDstMaker::Vtxless);
 
-
+    StMemStat stmem;
+    stmem.PrintMem("MEM before Chain::Init");
 chain_loop:
 	chain->Init();
+    stmem.PrintMem("MEM after Chain::Init");
 
     //_____________________________________________________________________________
     //
@@ -228,10 +230,14 @@ chain_loop:
 
         cout << "--------->START EVENT: " << i << endl;
 
+        if (i > 1)
+            stmem.PrintMem("MEM before Chain::Clear + Make");
         chain->Clear();
         if (kStOK != chain->Make())
             break;
 
+        if (i > 1)
+            stmem.PrintMem("MEM after Chain::Clear + Make");
 
         // StMuDst * mds = muDstMaker->muDst();
         // StMuFwdTrackCollection * ftc = mds->muFwdTrackCollection();
@@ -243,4 +249,8 @@ chain_loop:
         // }
         cout << "<---------- END EVENT" << endl;
     } // event loop
+
+    stmem.PrintMem("MEM after event loop");
+    delete chain;
+    stmem.PrintMem("MEM after delete chain");
 }
