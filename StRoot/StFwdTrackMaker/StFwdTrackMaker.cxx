@@ -83,6 +83,51 @@ void printMEM(){
     stm.PrintMem();
 }
 
+
+
+
+#include <fstream>
+
+#include <iomanip>
+#include "StMemStat.h"  // Ensure this is available and correctly included
+
+#ifndef __CINT__
+#include <chrono>
+class MemoryLogger {
+    public:
+        MemoryLogger(const std::string& filename)
+            : start_time_(std::chrono::steady_clock::now()), log_file_(filename, std::ios::app) {
+            if (log_file_.tellp() == 0) {
+                log_file_ << "# Time(s)\tProgSize(MB)\n";
+            }
+        }
+    
+        void log(const std::string& comment = "") {
+            auto now = std::chrono::steady_clock::now();
+            std::chrono::duration<double> elapsed = now - start_time_;
+            double progSizeMB = StMemStat::ProgSize();  // assuming kB
+    
+            log_file_ << std::fixed << std::setprecision(6)
+                      << elapsed.count() << "\t" << progSizeMB;
+    
+            if (!comment.empty()) {
+                log_file_ << "\t# " << comment;
+            }
+    
+            log_file_ << "\n";
+        }
+    
+    private:
+        std::chrono::steady_clock::time_point start_time_;
+        std::ofstream log_file_;
+    };
+
+    MemoryLogger MemLogger("mem_log.txt");
+
+    #endif // CINT
+
+
+
 //_______________________________________________________________________________________
 class GenfitUtils{
     public:
@@ -188,6 +233,7 @@ class ForwardTracker : public ForwardTrackMaker {
 //________________________________________________________________________
 StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), mForwardTracker(nullptr), mForwardData(nullptr), mGeoCache(""){
     LOG_DEBUG << "StFwdTrackMaker::StFwdTrackMaker()" << endm;
+    MemLogger.log("StFwdTrackMaker::StFwdTrackMaker()");
     mEventVertexCov.ResizeTo(3, 3);
     mEventVertexCov.Zero();
     
@@ -204,12 +250,14 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
 
     // set additional default configuration values
     setOutputFilename( "stfwdtrackmaker_data.root" );
-
+    MemLogger.log("StFwdTrackMaker::StFwdTrackMaker()");
     LOG_DEBUG << "Done with StFwdTrackMaker::StFwdTrackMaker()" << endm;  
 };
 
 int StFwdTrackMaker::Finish() {
+    MemLogger.log("StFwdTrackMaker::Finish() [");
     mForwardTracker->finish();
+    MemLogger.log("] StFwdTrackMaker::Finish()");
     return kStOk;
 }
 
@@ -228,6 +276,7 @@ void StFwdTrackMaker::LoadConfiguration() {
 
 //________________________________________________________________________
 int StFwdTrackMaker::Init() {
+    MemLogger.log("StFwdTrackMaker::Init() [");
     if ( mGeoCache == "" ){
         /// Instantiate and cache the geometry
         GetDataBase("VmcGeometry");
@@ -267,6 +316,7 @@ int StFwdTrackMaker::Init() {
         auto fttZ = fwdGeoUtils.fttZ( {280.904999, 303.704987, 326.605011, 349.404999} );
         mFttZFromGeom.assign( fttZ.begin(), fttZ.end() );
     }
+    MemLogger.log("] StFwdTrackMaker::Init()");
     return kStOK;
 };
 
@@ -448,6 +498,8 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
 
 //________________________________________________________________________
 int StFwdTrackMaker::Make() {
+    MemLogger.log("StFwdTrackMaker::Make() [");
+    // return kStOk;
     // START time for measuring tracking
     long long itStart = FwdTrackerUtils::nowNanoSecond();
 
@@ -536,11 +588,14 @@ int StFwdTrackMaker::Make() {
         LOG_INFO << "There are " << Form( "%d McTracks with > 2 FST hits (#of possible seeds)", idealNumberOfSeeds  ) << endm;
     }
 
+    MemLogger.log("StFwdTrackMaker::Make() after setup");
     /**********************************************************************/
     // Run Track finding + fitting
     LOG_DEBUG << ">>START Event Forward Tracking" << endm;
     LOG_INFO << "\tFinding FWD Track Seeds" << endm;
     mForwardTracker->findTrackSeeds();
+
+    MemLogger.log("StFwdTrackMaker::Make() after seed finding");
     
     // Report the results of the seed finding, in the future we could provide more info about #hits etc.
     LOG_INFO << "<<Fwd Tracking Found : " << mForwardTracker -> getTrackSeeds().size() << " Track Seeds from " << fsiHitMap.size() << " FST hits and " << hitMap.size() << " sTGC hits"  << endm;
@@ -558,6 +613,8 @@ int StFwdTrackMaker::Make() {
     LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
     /**********************************************************************/
 
+    MemLogger.log("StFwdTrackMaker::Make() after track fitting");
+
     LOG_DEBUG << "Forward tracking on this event took " << (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6 << " ms" << endm;
     if ( IAttr("fillEvent") ) {
         if (!stEvent) {
@@ -567,6 +624,7 @@ int StFwdTrackMaker::Make() {
         FillEvent();
     } // IAttr FillEvent
 
+    MemLogger.log("] StFwdTrackMaker::Make() after FillEvent");
     return kStOK;
 } // Make
 
@@ -792,9 +850,11 @@ void StFwdTrackMaker::FillEvent() {
 //________________________________________________________________________
 void StFwdTrackMaker::Clear(const Option_t *opts) {
     LOG_DEBUG << "StFwdTrackMaker::Clear" << endm;
+    MemLogger.log("StFwdTrackMaker::Clear() [");
     mForwardData->clear();
     mFwdHitLoader.clear();
     mForwardTracker->Clear();
+    MemLogger.log("] StFwdTrackMaker::Clear() done");
 }
 
 
