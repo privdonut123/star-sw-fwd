@@ -525,12 +525,12 @@ class ForwardTrackMaker {
             LOG_DEBUG << "--FitTrack is valid, setting seed and track" << endm;
             gtr.set( seed, mTrackFitter->getTrack() );
 
-            LOG_DEBUG << "--isFitConvergedPartially() = " << gtr.mStatus->isFitConvergedPartially() << endm;
-            LOG_DEBUG << "--isFitConverged() = " << gtr.mStatus->isFitConverged() << endm;
-            LOG_DEBUG << "--isFitConvergedFully() = " << gtr.mStatus->isFitConvergedFully() << endm;
+            LOG_DEBUG << "--isFitConvergedPartially() = " << gtr.mIsFitConvergedPartially << endm;
+            LOG_DEBUG << "--isFitConverged() = " << gtr.mIsFitConverged << endm;
+            LOG_DEBUG << "--isFitConvergedFully() = " << gtr.mIsFitConvergedFully << endm;
 
             if (kProfile){
-                if (gtr.mStatus && gtr.mStatus->isFitConvergedFully()) {
+                if (gtr.mIsFitConvergedFully) {
                     mEventStats.mGoodFits++;
                 } else {
                     mEventStats.mFailedFits++;
@@ -1183,9 +1183,6 @@ class ForwardTrackMaker {
 
             if (uvid.size() == track.size()) { // only add tracks that have one hit per volume
                 mTrackSeedsThisIteration.push_back(track);
-                int idt = 0;
-                double qual = 0;
-                idt = MCTruthUtils::dominantContribution(track, qual);
             } else {
                 //Skipping track that doesnt have hits on all layers
             }
@@ -1349,7 +1346,7 @@ class ForwardTrackMaker {
             subset.setTStart(Ti);
             subset.setTInf(Tf);
 
-            SeedCompare comparer;
+            SeedCompatible comparer;
             SeedQual quality;
 
             subset.calculateBestSet(comparer, quality);
@@ -1468,7 +1465,7 @@ class ForwardTrackMaker {
      */
     void addFstHitsMc( GenfitTrackResult &gtr ) {
         FwdDataSource::HitMap_t hitmap = mDataSource->getFstHits();
-        if ( gtr.mStatus->isFitConverged() == false || gtr.mMomentum.Perp() < 1e-3) {
+        if ( gtr.mIsFitConverged == false || gtr.mMomentum.Perp() < 1e-3) {
             LOG_DEBUG << "Skipping addFstHitsMc, fit failed" << endm;
             return;
         }
@@ -1546,7 +1543,7 @@ class ForwardTrackMaker {
         LOG_DEBUG << "Looking for FTT hits on this track (MC lookup)" << endm;
         LOG_DEBUG << "Track TruthId = " << gtr.mIdTruth << " vs. " << gtr.mTrack->getMcTrackId() << endm;
         FwdDataSource::HitMap_t hitmap = mDataSource->getFttHits();
-        if ( gtr.mStatus->isFitConverged() == false || gtr.mMomentum.Perp() < 1e-6) {
+        if ( gtr.mIsFitConverged == false || gtr.mMomentum.Perp() < 1e-6) {
             LOG_DEBUG << "Skipping addFttHitsMc on this track, fit failed" << endm;
             return;
         }

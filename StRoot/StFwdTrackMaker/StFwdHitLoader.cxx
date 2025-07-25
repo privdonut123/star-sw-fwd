@@ -1,3 +1,7 @@
+
+#define LOG_DEBUG if (false) std::cerr
+#define LOG_INFO if (false) std::cerr
+
 #include "StFwdTrackMaker/StFwdTrackMaker.h"
 #include "StFwdTrackMaker/StFwdHitLoader.h"
 
@@ -13,6 +17,7 @@
 #include "StFcsDbMaker/StFcsDb.h"
 
 // For GEANT
+#include "include/Tracker/FwdHit.h"
 #include "tables/St_g2t_fts_hit_Table.h"
 
 // For MuDst
@@ -135,7 +140,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
                 hitCov3, // covariance matrix
                 mcTrack) // mcTrack
                 );
-            mFttSpacepoints.push_back( TVector3( xcm, ycm, zcm)  );
+            mSpacepointsFtt.push_back( TVector3( xcm, ycm, zcm)  );
         } // end of loop over points
     } else {
         LOG_DEBUG << "The Ftt Collection is EMPTY points" << endm;
@@ -184,8 +189,8 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     for (int i = 0; i < nstg; i++) {
 
         g2t_fts_hit_st *git = (g2t_fts_hit_st *)mGeantFtt->At(i);
-        if (0 == git)
-            continue; // geant hit
+        if (!git)
+            continue; // invalid geant hit
         int track_id = git->track_p;
         int volume_id = git->volume_id;
         int plane_id = (volume_id - 1) / 100;           // from 1 - 16. four chambers per station
@@ -201,6 +206,12 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
         if (plane_id < 0 || plane_id >= 4) {
             continue;
         }
+        
+        std::shared_ptr<McTrack> mcTrack = nullptr;
+        if ( mcTrackMap.count(track_id) ) {
+            mcTrack = mcTrackMap[track_id];
+            LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;
+        } 
         mFwdHitsFtt.push_back(
             FwdHit(
                 count++, // id
@@ -209,10 +220,10 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
                 kFttId, // detid
                 track_id, // track id
                 hitCov3, // covariance matrix
-                mcTrackMap[track_id] // mcTrack
+                mcTrack
                 )
             );
-        mFttSpacepoints.push_back( TVector3( x, y, z )  );
+        mSpacepointsFtt.push_back( TVector3( x, y, z )  );
     } // loop on hits
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
@@ -248,7 +259,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
  * @param count  : number of hits loaded
  */
 int StFwdHitLoader::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
-    if ( mFttDataSource == StFwdHitLoader::DataSource::IGNORE ){
+    if ( mFstDataSource == StFwdHitLoader::DataSource::IGNORE ){
         // this is a warning because it should not be set during production
         // but it is useful for testing
         LOG_WARN << "FST Data Source is set to IGNORE, not loading FST hits" << endm;
@@ -305,7 +316,7 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
         float x0 = vR * cos( vPhi );
         float y0 = vR * sin( vPhi );
         hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
-        mFstSpacepoints.push_back( TVector3( x0, y0, vZ)  );
+        mSpacepointsFst.push_back( TVector3( x0, y0, vZ)  );
 
         // we use d+4 so that both FTT and FST start at 4
         mFwdHitsFst.push_back(
@@ -377,7 +388,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
 
                        
-                    mFstSpacepoints.push_back( TVector3( x0, y0, vZ)  );
+                    mSpacepointsFst.push_back( TVector3( x0, y0, vZ)  );
                     int track_id = fsthits[ih]->idTruth();
                     shared_ptr<McTrack> mcTrack = nullptr;
                     if ( mcTrackMap.count(track_id) ) {
@@ -404,7 +415,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                 }
             } // loop is
         } // loop iw
-        LOG_DEBUG << " FOUND " << mFstSpacepoints.size() << " FST HITS in StFstHitCollection" << endm;
+        LOG_DEBUG << " FOUND " << mSpacepointsFst.size() << " FST HITS in StFstHitCollection" << endm;
     } // fstHitCollection
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
     size_t numFwdHitsPost = mFwdHitsFst.size();
@@ -469,6 +480,11 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
         }
 
         hitCov3 = makeFstCovMat( TVector3( x, y, z ) );
+        std::shared_ptr<McTrack> mcTrack = nullptr;
+        if ( mcTrackMap.count(track_id) ) {
+            mcTrack = mcTrackMap[track_id];
+            LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;
+        } 
         mFwdHitsFst.push_back(
             FwdHit(
                 count++, // id
@@ -477,10 +493,10 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
                 kFstId, // detid
                 track_id, // mc track id
                 hitCov3, // covariance matrix
-                mcTrackMap[track_id] // mcTrack
+                mcTrack // mcTrack
             )
         );
-        mFstSpacepoints.push_back( TVector3( x, y, z )  );
+        mSpacepointsFst.push_back( TVector3( x, y, z )  );
     }
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
@@ -555,7 +571,7 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
             epdgeo.GetCorners(100*pp+tt,&n,x,y);
             double x0 = (x[0] + x[1] + x[2] + x[3]) / 4.0;
             double y0 = (y[0] + y[1] + y[2] + y[3]) / 4.0;
-            mEpdSpacepoints.push_back( TVector3( x0, y0, zepd ) );
+            mSpacepointsEpd.push_back( TVector3( x0, y0, zepd ) );
 
             // make the covariance matrix based on max x and y distance
             TMatrixDSym hitCov3(3);
@@ -592,7 +608,7 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
     } // for det
 
     for ( size_t iFwdHit = 0; iFwdHit < mFwdHitsEpd.size(); iFwdHit++){
-        FwdHit *hit = &(mFwdHitsFst[ iFwdHit ]);
+        FwdHit *hit = &(mFwdHitsEpd[ iFwdHit ]);
         // EPD is 7 (3 FST, 4 FTT, starting at 0)
         hitMap[7].push_back(hit);
 

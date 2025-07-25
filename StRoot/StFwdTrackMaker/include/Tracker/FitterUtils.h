@@ -118,8 +118,8 @@ class GenericFitSeeder : public FitSeedMaker {
             // posSeed.SetXYZ(seed[0]->getX(), seed[0]->getY(), seed[0]->getZ());
             momSeed.SetXYZ(0,0,10);
         
-            const double BStrength = 0.5; // 0.5 T
-            const double C = 0.3 * BStrength; //C depends on the units used for momentum and Bfield (here GeV and Tesla)
+            // const double BStrength = 0.5; // 0.5 T = 5 Gauss
+            // const double C = 0.3 * BStrength; //C depends on the units used for momentum and Bfield (here GeV and Tesla)
             const double K = 0.00029979; // K depends on the units used for Bfield and momentum (here Gauss and GeV)
             double pt = fabs((K*5)/qc); // pT from average measured curv
             LOG_INFO << "GenericFitSeeder::makeSeed::pt = " << pt << endm;

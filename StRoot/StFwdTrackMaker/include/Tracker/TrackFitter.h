@@ -40,8 +40,8 @@ class TrackFitter {
     std::shared_ptr<genfit::Track> getTrack() { return mFitTrack; }
 
     // this is used rarely for debugging purposes, especially to check/compare plane misalignment
-    static const bool kUseSpacePoints = true; // use spacepoints instead of planar measurements
-    static const int kVerbose = 0; // verbosity level for debugging
+    static constexpr bool kUseSpacePoints = true; // use spacepoints instead of planar measurements
+    static constexpr int kVerbose = 0; // verbosity level for debugging
 
     void clear(){
         LOG_DEBUG << "TrackFitter::clear() called" << endm;
@@ -299,7 +299,7 @@ class TrackFitter {
             for ( size_t i = 0; i < n; i++ ) {
                 // generate a random seed by sampling the hits
                 Seed_t seed;
-                for ( size_t j = 0; j < rand() % 7 + 3; j++ ) { // 2 - 9 hits per seed
+                for ( int j = 0; j < rand() % 7 + 3; j++ ) { // 2 - 9 hits per seed
                     size_t hitIndex = rand() % stressHits.size();
                     seed.push_back( &stressHits[hitIndex] );    
 
@@ -405,7 +405,7 @@ class TrackFitter {
 
     void summarizeTrackReps() {
         LOG_INFO << "Track Reps: " << mFitTrack->getNumReps() << endm;
-        for (int i = 0; i < mFitTrack->getNumReps(); i++) {
+        for (size_t i = 0; i < mFitTrack->getNumReps(); i++) {
             auto tr = mFitTrack->getTrackRep(i);
             // LOG_INFO << "Track Rep " << i << ": " << tr->getName() << endm;
             LOG_INFO << "Track Rep " << i << " " << endm;
@@ -547,15 +547,13 @@ class TrackFitter {
                 LOG_INFO << "-Fit Chi2:   " << status->getChi2() << endm;
             }
 
-            if ( status->isFitConverged() ){
+            if ( status->isFitConverged() && kVerbose > 0 ){
              
                 auto cr = trackPointer->getCardinalRep();
                 auto p = cr->getMom( trackPointer->getFittedState( 0, cr ));
-                int rcQ = status->getCharge(); 
-                if ( kVerbose > 0 ) { 
-                    LOG_INFO << "Fit momentum: " << p.X() << ", " << p.Y() << ", " << p.Z() << endm;
-                    LOG_INFO << "\tFit Pt: " << p.Pt() << ", eta: " << p.Eta() << ", phi: " << p.Phi() << endm;
-                }
+                
+                LOG_INFO << "Fit momentum: " << p.X() << ", " << p.Y() << ", " << p.Z() << endm;
+                LOG_INFO << "\tFit Pt: " << p.Pt() << ", eta: " << p.Eta() << ", phi: " << p.Phi() << endm;
             }
 
 

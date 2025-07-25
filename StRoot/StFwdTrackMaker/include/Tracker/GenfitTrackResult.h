@@ -177,7 +177,7 @@ public:
         if (track == nullptr) {
             LOG_ERROR << "GenfitTrackResult::setTrack called with nullptr track" << endm;
             this->mTrack                    = nullptr;
-            this->mTrackRep                 = nullptr;
+            // this->mTrackRep                 = nullptr;
 
             this->mIsFitConverged           = false;
             this->mIsFitConvergedFully      = false;
@@ -191,25 +191,26 @@ public:
             // this->track = new genfit::Track(*track);
             mTrack      = track;
             mTrack      ->setMcTrackId(mIdTruth);
-            mStatus     = mTrack->getFitStatus();
-            mTrackRep   = mTrack->getCardinalRep();
+            // mStatus     = mTrack->getFitStatus();
+            // mTrackRep   = mTrack->getCardinalRep();
+            mNumFitPoints = mTrack->getNumPoints();
 
-            mIsFitConverged          = mStatus->isFitConverged();
-            mIsFitConvergedFully     = mStatus->isFitConvergedFully();
-            mIsFitConvergedPartially = mStatus->isFitConvergedPartially();
-            mNFailedPoints           = mStatus->getNFailedPoints();
-            mCharge                  = mStatus->getCharge();
-            mChi2                    = mStatus->getChi2();
+            mIsFitConverged          = mTrack->getFitStatus()->isFitConverged();
+            mIsFitConvergedFully     = mTrack->getFitStatus()->isFitConvergedFully();
+            mIsFitConvergedPartially = mTrack->getFitStatus()->isFitConvergedPartially();
+            mNFailedPoints           = mTrack->getFitStatus()->getNFailedPoints();
+            mCharge                  = mTrack->getFitStatus()->getCharge();
+            mChi2                    = mTrack->getFitStatus()->getChi2();
 
             if ( mIsFitConverged ){
                 LOG_INFO << "GTR Setting momentum from track" << endm;
-                mMomentum = mTrackRep->getMom( mTrack->getFittedState(0, mTrackRep) );
+                mMomentum = mTrack->getCardinalRep()->getMom( mTrack->getFittedState(0, mTrack->getCardinalRep()) );
             }
             LOG_DEBUG << "GenfitTrackResult::set Track successful" << endm;
         } catch ( genfit::Exception &e ) {
             LOG_ERROR << "Unable to set track -> GenfitException: " << e.what() << endm;
             this->mTrack                    = nullptr;
-            this->mTrackRep                 = nullptr;
+            // this->mTrackRep                 = nullptr;
 
             this->mIsFitConverged           = false;
             this->mIsFitConvergedFully      = false;
@@ -230,7 +231,7 @@ public:
                 auto dcaState = mTrack->getFittedState( 0 );
                 // this->mTrackRep->extrapolateToPoint( dcaState, mPV );
                 TVector3 beamDirection = TVector3(0,0,1);
-                this->mTrackRep->extrapolateToLine( dcaState, mPV, beamDirection );
+                mTrack->getCardinalRep()->extrapolateToLine( dcaState, mPV, beamDirection );
                 this->mDCA = dcaState.getPos();
             } catch ( genfit::Exception &e ) {
                 LOG_ERROR << "CANNOT GET DCA : GenfitException: " << e.what() << endm;
@@ -279,18 +280,21 @@ public:
     Seed_t                          mSeed;
     TVector3                        mPV; // as a TVector3
     TVector3                        mMomentum;
-    float                           mCharge = 0;
+    short                           mCharge = 0;
     float                           mChi2 = -1;
-    genfit::FitStatus               *mStatus = nullptr;
-    genfit::AbsTrackRep             *mTrackRep = nullptr;
+    short                           mNdf = 0;
+    float                           mPval = 0.0;  
+    // genfit::FitStatus               *mStatus = nullptr;
+    // genfit::AbsTrackRep             *mTrackRep = nullptr;
     std::shared_ptr<genfit::Track>  mTrack = nullptr;
     bool                            mIsFitConverged = false;
     bool                            mIsFitConvergedFully = false;
     bool                            mIsFitConvergedPartially = false;
-    size_t                          mNFailedPoints = 0;
+    short                           mNFailedPoints = 0;
+    short                           mNumFitPoints = 0; 
     TVector3                        mDCA;
     int                             mIdTruth = -1;
-    double                          mQaTruth = 0;
+    double                           mQaTruth = 0;
 
     int                             mIndex = 0;
     int                             mTrackType = 0;

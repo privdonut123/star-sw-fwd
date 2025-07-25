@@ -1,3 +1,6 @@
+#define LOG_DEBUG if (false) std::cerr
+#define LOG_INFO if (false) std::cerr
+
 #include "StFwdTrackMaker/StFwdTrackMaker.h"
 #include "StFwdTrackMaker.h"
 #include "StFwdTrackMaker/include/Tracker/FwdHit.h"
@@ -354,7 +357,6 @@ size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
     if (!g2t_track)
         return 0;
 
-    size_t nShowers = 0;
     LOG_DEBUG << g2t_track->GetNRows() << " mc tracks in geant/g2t_track " << endm;
 
     for (int irow = 0; irow < g2t_track->GetNRows(); irow++) {
@@ -364,11 +366,7 @@ size_t StFwdTrackMaker::loadMcTracks( FwdDataSource::McTrackMap_t &mcTrackMap ){
             continue;
 
         int track_id = track->id;
-        float pt2 = track->p[0] * track->p[0] + track->p[1] * track->p[1];
-        float pt = std::sqrt(pt2);
-        float eta = track->eta;
         TVector3 pp( track->p[0], track->p[1], track->p[2] );
-        float phi = std::atan2(track->p[1], track->p[0]); //track->phi;
         int q = track->charge;
         // sometimes the track->eta is wrong, pt, phi
         if (!mcTrackMap[track_id] )
@@ -474,10 +472,6 @@ TVector3 StFwdTrackMaker::GetEventPrimaryVertex(){
         LOG_WARN << "Cannot get BTOF Header, Cannot use VPD vertex" << endm;
         return mEventVertex;
     }
-
-    int nEast = btofHeader->numberOfVpdHits( east );
-    int nWest = btofHeader->numberOfVpdHits( west );
-    int nTof = btofC->tofHits().size();
 
     if ( btofHeader->vpdVz() && fabs(btofHeader->vpdVz()) < 100 ){
         // default event vertex
@@ -677,7 +671,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
     LOG_DEBUG << "Dominant contribution: " << idt << " with quality " << qual << endm;
 
     // Fit failed beyond use
-    if ( gtr.mTrack == nullptr || gtr.mStatus == nullptr || gtr.mTrack->getNumPoints() == 0 ){
+    if ( !gtr.mIsFitConvergedPartially|| gtr.mNumFitPoints == 0 ){
         // if num points == 0 then calling PVal seg faults :/
         fwdTrack->setDidFitConverge( false );
         fwdTrack->setDidFitConvergeFully( false );
@@ -693,14 +687,14 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         return fwdTrack;
     }
     // Fill charge and quality info
-    fwdTrack->setDidFitConverge( gtr.mStatus->isFitConverged() );
-    fwdTrack->setDidFitConvergeFully( gtr.mStatus->isFitConvergedFully() );
-    fwdTrack->setNumberOfFailedPoints( gtr.mStatus->getNFailedPoints() );
+    fwdTrack->setDidFitConverge( gtr.mIsFitConverged );
+    fwdTrack->setDidFitConvergeFully( gtr.mIsFitConvergedFully );
+    fwdTrack->setNumberOfFailedPoints( gtr.mNFailedPoints );
 
-    fwdTrack->setNumberOfFitPoints( gtr.mTrack->getNumPoints() );
-    fwdTrack->setChi2( gtr.mStatus->getChi2() );
-    fwdTrack->setNDF( gtr.mStatus->getNdf() );
-    fwdTrack->setPval( gtr.mStatus->getPVal() );
+    fwdTrack->setNumberOfFitPoints( gtr.mNumFitPoints );
+    fwdTrack->setChi2( gtr.mChi2 );
+    fwdTrack->setNDF( gtr.mNdf );
+    fwdTrack->setPval( gtr.mPval );
 
     // charge at first point
     fwdTrack->setCharge( gtr.mCharge );
@@ -711,7 +705,7 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     /*******************************************************************************/
     // if the track did not converged, do not try to project it
-    if ( !gtr.mStatus->isFitConvergedFully() ){
+    if ( !gtr.mIsFitConvergedFully ){
         gtr.Clear();
         LOG_WARN << "Genfit track did not converge fully, skipping projections" << endm;
         fwdTrack->setCharge( 0 ); // set charge to 0 if track did not converge
