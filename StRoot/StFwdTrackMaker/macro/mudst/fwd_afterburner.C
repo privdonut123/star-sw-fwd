@@ -141,7 +141,8 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		fwdTrack->setRelChi2Change( 1e-3 );
 
 		// fwdTrack->setSeedFindingOff();
-		fwdTrack->setTrackFittingOff();
+		// fwdTrack->setTrackFittingOff();
+		fwdTrack->setFttHitSource( 3 /* = IGNORE */);
 	}
 
 
