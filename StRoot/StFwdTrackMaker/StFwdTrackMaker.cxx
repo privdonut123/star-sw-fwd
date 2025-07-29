@@ -78,7 +78,6 @@
 #include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
 #include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
 #include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
-#include "include/Tracker/GenfitTrackResult.h"
 
 FwdSystem* FwdSystem::sInstance = nullptr;
 
@@ -88,11 +87,8 @@ void printMEM(){
 }
 
 
-
-
 #include <fstream>
 
-#include <iomanip>
 #include "StMemStat.h"  // Ensure this is available and correctly included
 
 #ifndef __CINT__
