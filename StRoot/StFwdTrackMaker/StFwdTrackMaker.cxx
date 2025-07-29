@@ -1,13 +1,3 @@
-#define LOG_DEBUG if (false) std::cerr
-#define LOG_INFO if (false) std::cerr
-
-#include "StFwdTrackMaker/StFwdTrackMaker.h"
-#include "StFwdTrackMaker.h"
-#include "StFwdTrackMaker/include/Tracker/FwdHit.h"
-#include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
-#include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
-#include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
-#include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
 
 #include "KiTrack/IHit.h"
 #include "GenFit/Track.h"
@@ -45,7 +35,7 @@
 #include "StMcEvent/StMcEvent.hh"
 #include "StMcEvent/StMcVertex.hh"
 
-#include "include/Tracker/GenfitTrackResult.h"
+
 #include "tables/St_g2t_fts_hit_Table.h"
 #include "tables/St_g2t_track_Table.h"
 #include "tables/St_g2t_vertex_Table.h"
@@ -78,6 +68,17 @@
 #include "sys/sysinfo.h"
 #include "StMemStat.h"
 #include <malloc.h>
+
+#define LOG_DEBUG if(false) std::cerr
+#define LOG_INFO if(false) std::cerr
+
+#include "StFwdTrackMaker/StFwdTrackMaker.h"
+#include "StFwdTrackMaker/include/Tracker/FwdHit.h"
+#include "StFwdTrackMaker/include/Tracker/FwdTracker.h"
+#include "StFwdTrackMaker/include/Tracker/TrackFitter.h"
+#include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
+#include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
+#include "include/Tracker/GenfitTrackResult.h"
 
 FwdSystem* FwdSystem::sInstance = nullptr;
 
@@ -683,7 +684,6 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
         fwdTrack->setCharge( 0 );
         fwdTrack->setVtxIndexAndTrackType( gtr.mVertexIndex, gtr.mTrackType );
         gtr.Clear();
-        LOG_WARN << "Genfit track is null, has no points, or has no status" << endm;
         return fwdTrack;
     }
     // Fill charge and quality info

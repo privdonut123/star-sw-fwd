@@ -1,7 +1,3 @@
-
-#define LOG_DEBUG if (false) std::cerr
-#define LOG_INFO if (false) std::cerr
-
 #include "StFwdTrackMaker/StFwdTrackMaker.h"
 #include "StFwdTrackMaker/StFwdHitLoader.h"
 
@@ -86,15 +82,17 @@ int StFwdHitLoader::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDat
         LOG_WARN << "FTT Data Source is set to IGNORE, not loading FTT hits" << endm;
         return 0;
     }
-    LOG_DEBUG << "Loading FTT Hits" << endm;
-    LOG_DEBUG << "Ftt From Source: " << mFttDataSource << endm;
+    if ( kLogLevel >= kLogVerbose ) {
+        LOG_DEBUG << "Loading FTT Hits" << endm;
+        LOG_DEBUG << "Ftt From Source: " << mFttDataSource << endm;
+    }
     if ( StFwdHitLoader::DataSource::GEANT == mFttDataSource ){
-        LOG_DEBUG << "Loading FTT Hits from GEANT" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "Loading FTT Hits from GEANT" << endm;}
         return loadFttPointsFromGEANT( mcTrackMap, hitMap );
     } else if ( StFwdHitLoader::DataSource::STEVENT == mFttDataSource ){
         return loadFttPointsFromStEvent( mcTrackMap, hitMap );
     } else if ( StFwdHitLoader::DataSource::MUDST == mFttDataSource ){
-        LOG_DEBUG << "Loading FTT Hits from MuDst (Not Yet Implemented)" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "Loading FTT Hits from MuDst (Not Yet Implemented)" << endm;}
         // loadFttHitsFromMuDst( mcTrackMap, hitMap, count );
         return 0;
     }
@@ -102,7 +100,7 @@ int StFwdHitLoader::loadFttHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDat
 } // loadFttHits
 
 int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
-    LOG_DEBUG << "Loading FTT Hits from StEvent" << endm;
+    if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "Loading FTT Hits from StEvent" << endm;}
     if ( !mStEvent ) {
         LOG_ERROR << "StEvent is NULL, cannot load Ftt hits" << endm;
         return 0;
@@ -111,7 +109,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     size_t numFwdHitsPrior = mFwdHitsFtt.size();
     int count = 0;
     if ( col && col->numberOfPoints() > 0 ){
-        LOG_DEBUG << "The Ftt Collection has " << col->numberOfPoints() << " points" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "The Ftt Collection has " << col->numberOfPoints() << " points" << endm;}
         TMatrixDSym hitCov3(3);
         const double sigXY = 0.2; //
         hitCov3(0, 0) = sigXY * sigXY;
@@ -129,7 +127,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             shared_ptr<McTrack> mcTrack = nullptr;
             if ( mcTrackMap.count(track_id) ) {
                 mcTrack = mcTrackMap[track_id];
-                LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;
+                if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;}
             }
 
             mFwdHitsFtt.push_back(FwdHit(count++, // id
@@ -143,7 +141,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             mSpacepointsFtt.push_back( TVector3( xcm, ycm, zcm)  );
         } // end of loop over points
     } else {
-        LOG_DEBUG << "The Ftt Collection is EMPTY points" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "The Ftt Collection is EMPTY points" << endm;}
     }
 
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
@@ -160,7 +158,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
     }
 
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from StEvent" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from StEvent" << endm;}
     }
     return count;
 }
@@ -169,7 +167,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     /************************************************************/
     // STGC Hits
     // St_g2t_fts_hit *mGeantFtt = (St_g2t_fts_hit *)GetDataSet("geant/g2t_stg_hit");
-    LOG_INFO << "Loading FTT Hits from GEANT" << endm;
+    if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loading FTT Hits from GEANT" << endm;}
     size_t numFwdHitsPrior = mFwdHitsFtt.size();
     if (!mGeantFtt){
         LOG_WARN << "geant/g2t_stg_hit is empty" << endm;
@@ -184,7 +182,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     hitCov3(2, 2) = 0.1; // unused since they are loaded as points on plane
 
     int nstg = mGeantFtt->GetNRows();
-    LOG_DEBUG << "This event has " << nstg << " stg hits in geant/g2t_stg_hit " << endm;
+    if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "This event has " << nstg << " stg hits in geant/g2t_stg_hit " << endm;}
 
     for (int i = 0; i < nstg; i++) {
 
@@ -240,7 +238,7 @@ int StFwdHitLoader::loadFttPointsFromGEANT( FwdDataSource::McTrackMap_t &mcTrack
     }
 
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from GEANT" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FTT hits from GEANT" << endm;}
     }
     return count;
 } // loadFttHits
@@ -265,16 +263,18 @@ int StFwdHitLoader::loadFstHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDat
         LOG_WARN << "FST Data Source is set to IGNORE, not loading FST hits" << endm;
         return 0;
     }
-    LOG_DEBUG << "Loading FST Hits" << endm;
-    LOG_DEBUG << "Fst From Source: " << mFstDataSource << endm;
+    if ( kLogLevel >= kLogVerbose ){
+        LOG_DEBUG << "Loading FST Hits" << endm;
+        LOG_DEBUG << "Fst From Source: " << mFstDataSource << endm;
+    }
     if ( StFwdHitLoader::DataSource::GEANT == mFstDataSource ){
-        LOG_DEBUG << "Loading FST Hits from GEANT" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading FST Hits from GEANT" << endm;}
         return loadFstHitsFromGEANT( mcTrackMap, hitMap );
     } else if ( StFwdHitLoader::DataSource::STEVENT == mFstDataSource ){
-        LOG_DEBUG << "Loading FST Hits from StEvent" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading FST Hits from StEvent" << endm;}
         return loadFstHitsFromStEvent( mcTrackMap, hitMap );
     } else if ( StFwdHitLoader::DataSource::MUDST == mFstDataSource ){
-        LOG_DEBUG << "Loading FST Hits from MuDst" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading FST Hits from MuDst" << endm;}
         return loadFstHitsFromMuDst( mcTrackMap, hitMap );
     }
     return 0;
@@ -299,7 +299,7 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
     }
 
     size_t numFwdHitsPrior = mFwdHitsFst.size();
-    LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
+    if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;}
     TMatrixDSym hitCov3(3);
     for ( unsigned int index = 0; index < fst->numberOfHits(); index++){
         StMuFstHit * muFstHit = fst->getHit( index );
@@ -343,7 +343,7 @@ int StFwdHitLoader::loadFstHitsFromMuDst( FwdDataSource::McTrackMap_t &mcTrackMa
     }
 
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from MuDst" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from MuDst" << endm;}
     }
 
     // TODO add to hitmap
@@ -356,14 +356,14 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
         LOG_WARN << "No StEvent, cannot load FST hits from StEvent StFstHitCollection" << endm;
         return 0;
     }
-    LOG_DEBUG << "Got StEvent, loading Fst Hits" << endm;
+    if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Got StEvent, loading Fst Hits" << endm;}
     StFstHitCollection *fstHitCollection = mStEvent->fstHitCollection();
     size_t numFwdHitsPrior = mFwdHitsFst.size();
 
     if ( fstHitCollection && fstHitCollection->numberOfHits() > 0){
         // reuse this to store cov mat
         TMatrixDSym hitCov3(3);
-        LOG_DEBUG << "StFstHitCollection is NOT NULL, loading hits" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "StFstHitCollection is NOT NULL, loading hits" << endm;}
         for ( unsigned int iw = 0; iw < kFstNumWedges; iw++ ){
             StFstWedgeHitCollection * wc = fstHitCollection->wedge( iw );
             if ( !wc ) continue;
@@ -375,14 +375,14 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     float vR   = fsthits[ih]->localPosition(0);
                     float vPhi = fsthits[ih]->localPosition(1);
                     float vZ   = fsthits[ih]->localPosition(2);
-                    LOG_INFO << TString::Format("FST local position: %f %f %f", vR, vPhi, vZ) << endm;
+                    if ( kLogLevel >= kLogInfo ){LOG_INFO << TString::Format("FST local position: %f %f %f", vR, vPhi, vZ) << endm;}
                     
                     int wedgeIndex  = iw % kFstNumWedgePerDisk;
                     int sensorIndex = is % kFstNumSensorsPerWedge;
                     int diskIndex   = iw / kFstNumWedgePerDisk;
                     int globalIndex = FwdHit::fstGlobalSensorIndex( diskIndex, wedgeIndex, sensorIndex );
 
-                    LOG_DEBUG << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;
+                    if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << "diskIndex = " << diskIndex << ", wedgeIndex = " << wedgeIndex << ", sensorIndex = " << sensorIndex << ", globalIndex = " << globalIndex << endm;}
                     float x0 = vR * cos( vPhi );
                     float y0 = vR * sin( vPhi );
                     hitCov3 = makeFstCovMat( TVector3( x0, y0, vZ ) );
@@ -393,8 +393,10 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     shared_ptr<McTrack> mcTrack = nullptr;
                     if ( mcTrackMap.count(track_id) ) {
                         mcTrack = mcTrackMap[track_id];
-                        LOG_DEBUG << "FST Hit: idTruth = " << track_id << endm;
-                        LOG_DEBUG << "Adding McTrack to FST hit" << endm;
+                        if ( kLogLevel >= kLogVerbose ) {
+                            LOG_DEBUG << "FST Hit: idTruth = " << track_id << endm;
+                            LOG_DEBUG << "Adding McTrack to FST hit" << endm;
+                        }
                     }
 
                     // we use d+4 so that both FTT and FST start at 4 for historical reasons
@@ -415,7 +417,7 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                 }
             } // loop is
         } // loop iw
-        LOG_DEBUG << " FOUND " << mSpacepointsFst.size() << " FST HITS in StFstHitCollection" << endm;
+        if ( kLogLevel >= kLogVerbose ) {LOG_DEBUG << " FOUND " << mSpacepointsFst.size() << " FST HITS in StFstHitCollection" << endm;}
     } // fstHitCollection
     // this has to be done AFTER because the vector reallocates mem when expanding, changing addresses
     size_t numFwdHitsPost = mFwdHitsFst.size();
@@ -430,20 +432,20 @@ int StFwdHitLoader::loadFstHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
         }
     }
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from StEvent" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from StEvent" << endm;}
     }
     return count;
 } //loadFstHitsFromStEvent
 
 int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap ){
     int count = 0;
-    LOG_DEBUG << "Looking for FST hits in geant struct" << endm;
+    if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Looking for FST hits in geant struct" << endm;}
     /************************************************************/
     // Load FSI Hits from GEANT
     // St_g2t_fts_hit *mGeantFst = (St_g2t_fts_hit *)GetDataSet("geant/g2t_fsi_hit");
 
     if ( !mGeantFst ){
-        LOG_DEBUG << "No g2t_fts_hits, cannot load FST hits from GEANT" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "No g2t_fts_hits, cannot load FST hits from GEANT" << endm;}
         return 0;
     }
 
@@ -470,7 +472,7 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
         float z = git->x[2];
 
         TVector3 rastered = mFstRasterizer.raster(TVector3(git->x[0], git->x[1], git->x[2]));
-        LOG_INFO << TString::Format("Rastered: %f %f %f -> %f %f %f", git->x[0], git->x[1], git->x[2], rastered.X(), rastered.Y(), rastered.Z()) << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << TString::Format("Rastered: %f %f %f -> %f %f %f", git->x[0], git->x[1], git->x[2], rastered.X(), rastered.Y(), rastered.Z()) << endm;}
         x = rastered.X();
         y = rastered.Y();
         
@@ -483,7 +485,7 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
         std::shared_ptr<McTrack> mcTrack = nullptr;
         if ( mcTrackMap.count(track_id) ) {
             mcTrack = mcTrackMap[track_id];
-            LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;
+            if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Adding McTrack to FTT hit: " << track_id << endm;}
         } 
         mFwdHitsFst.push_back(
             FwdHit(
@@ -512,7 +514,7 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
             hit->getMcTrack()->addFstHit(hit);
     }
     if ( numFwdHitsPost != numFwdHitsPrior ){
-        LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from GEANT" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "Loaded " << numFwdHitsPost - numFwdHitsPrior << " FST hits from GEANT" << endm;}
     }
 
     return count;
@@ -521,13 +523,13 @@ int StFwdHitLoader::loadFstHitsFromGEANT( FwdDataSource::McTrackMap_t &mcTrackMa
 int StFwdHitLoader::loadEpdHits( FwdDataSource::McTrackMap_t &mcTrackMap, FwdDataSource::HitMap_t &hitMap, StFcsDb *fcsDb  ){
 
     if ( mEpdDataSource == StFwdHitLoader::DataSource::GEANT ){
-        LOG_DEBUG << "Loading EPD Hits from GEANT (Not Yet Implemented)" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading EPD Hits from GEANT (Not Yet Implemented)" << endm;}
         // return loadEpdHitsFromGEANT( mcTrackMap, hitMap );
     } else if ( mEpdDataSource == StFwdHitLoader::DataSource::STEVENT ){
-        LOG_DEBUG << "Loading EPD Hits from StEvent" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading EPD Hits from StEvent" << endm;}
         return loadEpdHitsFromStEvent( mcTrackMap, hitMap, fcsDb );
     } else if ( mEpdDataSource == StFwdHitLoader::DataSource::MUDST ){
-        LOG_DEBUG << "Loading EPD Hits from MuDst (Not Yet Implemented)" << endm;
+        if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << "Loading EPD Hits from MuDst (Not Yet Implemented)" << endm;}
         // loadEpdHitsFromMuDst( mcTrackMap, hitMap, count );
         return 0;
     }
@@ -547,7 +549,7 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
     StFcsCollection *fcsCol = mStEvent->fcsCollection();
 
     if (!fcsCol) {
-        LOG_INFO << "StFcsCollection is NULL, cannot load EPD hits" << endm;
+        if ( kLogLevel >= kLogInfo ){LOG_INFO << "StFcsCollection is NULL, cannot load EPD hits" << endm;}
         return 0;
     }
 
@@ -603,7 +605,7 @@ int StFwdHitLoader::loadEpdHitsFromStEvent( FwdDataSource::McTrackMap_t &mcTrack
                     mcTrack // mcTrack
                 )
             );
-            LOG_DEBUG << TString::Format("Adding Epd as FwdHit: %f %f %f", x0, y0, zepd) << endm;
+            if ( kLogLevel >= kLogVerbose ){LOG_DEBUG << TString::Format("Adding Epd as FwdHit: %f %f %f", x0, y0, zepd) << endm;}
         } // for i
     } // for det
 

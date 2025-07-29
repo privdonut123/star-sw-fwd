@@ -4,12 +4,15 @@
 #ifndef __CINT__
 #include "StFwdTrackMaker/include/Tracker/FwdHit.h"
 #include "StFwdTrackMaker/include/Tracker/FwdDataSource.h"
+#elif 
+class FwdHit;
 #endif
 
 class StEvent;
 class StMuDstMaker;
 class St_g2t_fts_hit;
 class StFcsDb;
+
 
 class FstRasterizer {
   public:
@@ -45,9 +48,11 @@ class StFwdHitLoader {
     {}
     ~StFwdHitLoader() {}
     void clear() {
+      #if !defined (__CINT__)
         mFwdHitsFtt.clear();
         mFwdHitsFst.clear();
         mFwdHitsEpd.clear();
+      #endif
 
         // clear vectors for visualization OBJ hits
         mSpacepointsFtt.clear();
@@ -113,9 +118,17 @@ class StFwdHitLoader {
     float mEpdThreshold = 0.2;
 
     // Pointers to these are used by StFwdTrackMaker, clear the vectors after each event
+    #if !defined (__CINT__)
     vector<FwdHit> mFwdHitsFtt;
     vector<FwdHit> mFwdHitsFst;
     vector<FwdHit> mFwdHitsEpd;
+
+    // this disables logging at compile time
+    constexpr static int kLogVerbose = 10;
+    constexpr static int kLogInfo = 1;
+    constexpr static int kLogSilent = 0;
+    constexpr static int kLogLevel = kLogSilent;
+    #endif
 
     vector<TVector3> mSpacepointsFtt;
     vector<TVector3> mSpacepointsFst;
