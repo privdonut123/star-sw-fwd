@@ -1,4 +1,5 @@
 //usr/bin/env root4star -l root -l -q  $0; exit $?
+//usr/bin/env root4star -l -b -q $0'("'${1:-st_physics_23055058_raw_1500001.MuDst.root}'",'${2:-100}')'; exit $?
 // that is a valid shebang to run script as executable, but with only one arg
 
 // For fast fwd tracking run with Db=false, fcs=false, FwdQa=false
@@ -21,9 +22,9 @@ bool runPico = true;
 // bool runFitQa = true;
 
 // Minimal
-bool runDb = true;
+bool runDb = false;
 bool runFttChain = false;
-bool runFcsChain = true;
+bool runFcsChain = false;
 bool runFwdChain = true;
 bool refillMuDst = false;
 bool runFwdQa = false;
@@ -34,10 +35,9 @@ bool runPico = true;
 
 
 void loadLibs();
-void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossSection_2022/ReversedFullField/P25ia/2022/055/23055059/st_physics_23055059_raw_2000001.MuDst.root", int firstEvent = 0, int nEvents = 1000 ){
+void fwd_afterburner( 	const Char_t * fileList = "st_physics_23055058_raw_1500001.MuDst.root", 
+						size_t nEvents = 1000 ){
 	cout << "FileList: " << fileList << endl;
-	
-	cout << "firstEvent: " << firstEvent << endl;
 	cout << "nEvents: " << nEvents << endl;
 
 	// First load some shared libraries we need
@@ -68,19 +68,6 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 		}
 	/*******************************************************************************************/
 	
-
-	/*******************************************************************************************/
-	// Create a TEventList to specify the events to process
-		TEventList* eventList = new TEventList("selectedEvents");
-
-		// Add event indices from firstEvent to firstEvent + nEvents - 1
-		for (int i = firstEvent; i < firstEvent + nEvents; i++) {
-			eventList->Enter(i);
-		}
-
-		// Set the event list in StMuDstMaker
-		muDstMaker->SetEventList(eventList);
-	/*******************************************************************************************/
 
 	/*******************************************************************************************/
 	// Create the StMuDst2StEventMaker
@@ -210,11 +197,13 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
     // MAIN EVENT LOOP
     /*******************************************************************************************/
 	size_t nEntries = muDstChain.GetEntries();
+	if (nEntries > nEvents && nEvents > 0) {
+		nEntries = nEvents;
+		cout << "Limiting to " << nEntries << " events." << endl;
+	}
 	size_t numProcessed = 0;
 	for (int i = 0; i < nEntries; i++) {
 		printf("Processing event %d of %d\n", i, nEntries);
-		if ( fwdTrack )
-			fwdTrack->SetDebug(1);
 		if (i > 0) // skip first event to make it consistent
 			stmem.Start();
 		chain->Clear();
@@ -250,17 +239,10 @@ void fwd_afterburner( const Char_t * fileList = "/star/data19/reco/forwardCrossS
 
 
 void loadLibs(){	
-	// if (gClassTable->GetID("TTable") < 0) {
-	// 	gSystem->Load("libStar");
-	// 	gSystem->Load("libPhysics");
-	// }  
-	cout << "LL0" << endl;
 	gSystem->Load("libStarClassLibrary.so");
 	gSystem->Load("libStarRoot.so");
-	cout << "LL1" << endl;
 	gROOT->LoadMacro("$STAR/StRoot/StMuDSTMaker/COMMON/macros/loadSharedLibraries.C");
 	loadSharedLibraries();
-	cout << "LL2" << endl;
 	
 	gSystem->Load("StarMagField");
 	gSystem->Load("StMagF");
