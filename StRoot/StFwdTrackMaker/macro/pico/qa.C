@@ -29,7 +29,11 @@ void format_eff_plot(TH1* hNum, TH1 * hDen, TString name, TString title, int col
     hEff->SetLineWidth(4);
 }
 
-void qa( TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/", int tt = -1, TString label = "" ){
+void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/", 
+            int tt = -1, // track type
+            TString label = "",
+            int maxEntries = 50000  // limit the number of entries to process, -1 for all
+         ){
     
     TChain *chain = new TChain("PicoDst");
     chain->Add(TString::Format("%s*.picoDst.root", dataDir.Data()));
@@ -107,6 +111,10 @@ void qa( TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/", in
     size_t nEntries = chain->GetEntries();
     // nEntries = 500000; // Limit to 10,000 entries for testing
     cout << "Number of events: " << nEntries << endl;
+    if (maxEntries > 0 && maxEntries < nEntries) {
+        nEntries = maxEntries; // Limit the number of entries to process
+    }
+    cout << "Processing " << nEntries << " entries." << endl;
     for (size_t i = 0; i < nEntries; ++i) {
         mcTracks->Clear(); // Clear the TClonesArray for each entry
         mcVertices->Clear(); // Clear the TClonesArray for each entry
@@ -163,8 +171,8 @@ void qa( TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/", in
 
 
             // get matched Mc Track
-            if ( fwdTrack->idTruth() < 1 ) {
-                printf("FwdTrack with idTruth < 1: %d\n", fwdTrack->idTruth());
+            if ( fwdTrack->idTruth() < 1  || fwdTrack->idTruth() > mcTracks->GetEntriesFast() ) {
+                // printf("FwdTrack with idTruth < 1 || idTruth > len(mcTracks): %d -> status = %d, chi2 = %f \n", fwdTrack->idTruth(), (int)fwdTrack->status(), fwdTrack->chi2());
                 continue;
             }
 
