@@ -51,13 +51,14 @@ void fast(       char *inFile =  "sim.fzd",
     stmem.PrintMem("CHAIN SETUP");
 
     gSystem->Load( "libStFttSimMaker" );
-    gSystem->Load( "libStFttClusterPointMaker" );
+    
     gSystem->Load( "libStFcsTrackMatchMaker" );
     gSystem->Load( "libMathMore.so" );
     gSystem->Load( "libStarGeneratorUtil" );
     gSystem->Load("StFwdUtils.so");
 
 
+    gSystem->Load( "libStFttClusterPointMaker" );
     // make an StFttClusterPointMaker
     StFttClusterPointMaker * fttClusterPointMaker = new StFttClusterPointMaker("fttClusterPointMaker");
     fttClusterPointMaker->SetDebug(1);

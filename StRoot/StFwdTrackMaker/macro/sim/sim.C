@@ -125,6 +125,15 @@ void sim(   char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw
             fstFastSim->SetQAFileName(qaoutname);
         }
     }
+
+    gSystem->Load( "StFttDbMaker" );
+    gSystem->Load( "libStFttSimMaker" );
+    gSystem->Load( "libStFttClusterPointMaker" );
+    // make an StFttClusterPointMaker
+    StFttClusterPointMaker * fttClusterPointMaker = new StFttClusterPointMaker("fttClusterPointMaker");
+    fttClusterPointMaker->SetDebug(1);
+    fttClusterPointMaker->setUseGeantData( true );
+    chain->AddBefore("fwdTrack", fttClusterPointMaker);
         
     // Configure the Forward Tracker
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
@@ -146,13 +155,13 @@ void sim(   char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw
             fwdTrack->setRelChi2Change( 1e-6 );
             
             // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
-            fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
+            fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::IGNORE*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 
             // DisableTrackFitting();
             // DoOnlyGlobalTrackFitting();
-
-            fwdTrack->setTrackFittingOff();
+            // fwdTrack->setTrackFittingOff();
+            fwdTrack->setConfigKeyValue( "TrackFitter:refit", true );
             
             if ( UseZeroB ){
                 cout << "Setting B = 0" << endl;
