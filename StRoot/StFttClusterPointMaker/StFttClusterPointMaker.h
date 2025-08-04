@@ -15,7 +15,7 @@ class StFttPoint;
 class StFttClusterPointMaker: public StMaker {
 
 public:
-    StFttClusterPointMaker( const char* name = "stgcPoint" );
+    StFttClusterPointMaker( const char* name = "stgcClusterPoint" );
 
     ~StFttClusterPointMaker();
 
@@ -26,16 +26,20 @@ public:
     Int_t  Finish();
     Int_t  Make();
 
+    void setUseGeantData( bool useGeantData ) { mUseGeantData = useGeantData; }
+
 private:
     void InjectTestData();
     void MakeLocalPoints(UChar_t Rob);
     void MakeGlobalPoints();
+    void MakeGeantPoints(); // act as a slow-sim
     //in the ClusterPointMaker there no ghost hit rejection since all the clusters will be saved
 
     StEvent*             mEvent;
     StFttCollection*     mFttCollection;
     Bool_t               mDebug;
     Bool_t               mUseTestData;
+    Bool_t               mUseGeantData; // if true, use the geant hits to make points
     StFttDb*             mFttDb;
     std::vector<StFttPoint*> mFttPoint;
     std::vector<StFttCluster *> clustersPerRob[StFttDb::nRob][StFttDb::nStripOrientations]; //save the cluster for per quadrant

@@ -1,3 +1,4 @@
+#include <utility>
 #include <vector>
 #include <map>
 #include <array>
@@ -15,6 +16,10 @@
 #include "StEvent/StFttCollection.h"
 
 #include "StFttDbMaker/StFttDb.h"
+
+#include "tables/St_g2t_fts_hit_Table.h"
+
+#include "TRandom.h"
 
 StFttClusterPointMaker::StFttClusterPointMaker( const char* name )
 : StMaker( name ),
@@ -65,8 +70,27 @@ Int_t StFttClusterPointMaker::Make() {
     if(mEvent) {
         if(mDebug){ LOG_DEBUG<<"Found StEvent"<<endm; }
     } else {
+        LOG_WARN << "StFttClusterPointMaker::Make() - No StEvent found, cannot continue" << endm;
         return kStOk;
     }
+
+    // if set to use as a fast sim, bypass real data mode
+    if (mUseGeantData) {
+
+        if ( mEvent->fttCollection() == nullptr ){
+            LOG_INFO << "Creating FttCollection" << endm;
+            StFttCollection *fttcollection = new StFttCollection();
+            mEvent->setFttCollection(fttcollection);
+        }
+
+        mFttCollection=mEvent->fttCollection(); //get the ftt collection from the event and make sure it exists
+
+        MakeGeantPoints(); // act as a slow-sim
+
+        return kStOk;
+    }
+
+    
 
     mFttCollection=mEvent->fttCollection(); //get the ftt collection from the event and make sure it exists
     if(!mFttCollection) { return kStOk; }
@@ -306,4 +330,95 @@ void StFttClusterPointMaker::MakeGlobalPoints() {
             LOG_INFO << "Point x: " << p->xyz().x() << " y: " << p->xyz().y() << " z: " << p->xyz().z() << endm;
             }
     }
+}
+
+
+
+void StFttClusterPointMaker::MakeGeantPoints() {
+    LOG_INFO << "Making Geant points" << endm;
+
+    // Aug 1, 2025
+    // Note: this function does not do exactly the same thing as in the data
+    // instead of looking up the complex detector layout, it just randomizes the hit location within
+    // the strip length and assigns uncertainty. This simulates the effect of long strips.
+    
+    // Get the Geant hits
+    St_g2t_fts_hit *geantFtt = (St_g2t_fts_hit *)GetDataSet("geant/g2t_stg_hit");
+    if (!geantFtt) {
+        LOG_WARN << "geant/g2t_stg_hit is empty" << endm;
+        return;
+    }
+
+    std::map<std::pair<int, int>, int> track_vol_count;
+    std::vector<std::vector<float>> covMatrix(2,std::vector<float>(2,0));
+    for (int i = 0; i < geantFtt->GetNRows(); i++) {
+        g2t_fts_hit_st *git = (g2t_fts_hit_st *)geantFtt->At(i);
+        if (!git)
+            continue; // invalid geant hit
+
+
+        int track_id = git->track_p;
+        int volume_id = git->volume_id;
+        track_vol_count[ std::make_pair(track_id, volume_id) ] += 1;
+
+        if ( track_vol_count[ std::make_pair(track_id, volume_id) ] > 1 ) {
+            printf( "Skipping hit on same track/vol \n" );
+        }
+        int plane_id = (volume_id - 1) / 100;           // from 1 - 16. four chambers per station
+        // extract tens (10, 20, 30, 40) and units (0-9) from volume_id
+        // volume_id = 10*plane_id + quadrant_id + 1
+        // where plane_id is 0-3 and quadrant_id is 0-9
+        int quadrant_id = ((volume_id - (100 * plane_id)) / 10) - 1; // 0 - 3
+        int orientation = volume_id % 2;
+        // only use the hits on the front modules
+        // we will use front as vertical strips and back as horizontal strips, but need to check if this is correct
+        
+        // printf("Track ID: %d, Volume ID: %d, Plane ID: %d, Quad ID: %d, Orientation: %d\n", track_id, volume_id, plane_id, quadrant_id, (orientation));
+
+        float x = git->x[0];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float y = git->x[1];// + gRandom->Gaus(0, sigXY); // 100 micron blur according to approx sTGC reso
+        float z = git->x[2];
+
+        
+        auto point = new StFttPoint();
+        point->setPlane(plane_id);
+        point->setQuadrant(quadrant_id); // 0-3 for 4 quadrants
+        point->setIdTruth(track_id);
+        // point->setXYZ(StThreeVectorD(x, y, z));
+        const double sigXY = 0.01; // 100 microns in cm, this is sigma in cluster measurement direction
+        const double stripLength = 15.0; // cm, approximate length of the strip
+        if ( orientation == 0 ) { // vertical strips
+            // 100 microns in cms = 0.01 cm
+            covMatrix[0][0] = sigXY * sigXY; // sigma^2 for x
+            covMatrix[1][1] = (stripLength*stripLength)/12.; // along strips
+            covMatrix[0][1] = 0;
+            covMatrix[1][0] = 0;
+            point->setX( x + gRandom->Gaus(0, sigXY) ); // add some noise
+            point->setY( gRandom->Uniform(y - stripLength/2.0, y + stripLength/2.0) ); // randomize y within strip length
+            // printf("Vertical Strip: x = %f, y = %f (geant x=%f, y=%f)\n", point->x(), point->y(), x, y);
+        } else if ( orientation == 1 ) { // horizontal strips
+            covMatrix[0][0] = (stripLength*stripLength)/12.; // along strips
+            covMatrix[1][1] = sigXY * sigXY; // sigma^2 for y
+            covMatrix[0][1] = 0;
+            covMatrix[1][0] = 0;
+            point->setX( gRandom->Uniform(x - stripLength/2.0, x + stripLength/2.0) ); // randomize x within strip length
+            point->setY( y + gRandom->Gaus(0, sigXY) ); // add some noise
+            // printf("Horizontal Strip: x = %f, y = %f (geant x=%f, y=%f)\n", point->x(), point->y(), x, y);
+        } else {
+            LOG_WARN << "Unknown orientation: " << orientation << endm;
+            continue;
+        }
+
+        point->setCov(covMatrix);
+        point->setXYZ(StThreeVectorD(point->x(), point->y(), z));
+
+        mFttCollection->addPoint(point);
+
+    } // loop on hits
+    std::pair<int, int> p;
+    
+    // for ( auto kv : track_vol_count ){
+    //     printf( "track=%d, vol=%d => count = %d\n", kv.first.first, kv.first.second, kv.second);
+    // }
+
 }
