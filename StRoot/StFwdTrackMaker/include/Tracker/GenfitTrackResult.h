@@ -15,6 +15,8 @@ struct MCTruthUtils {
         std::unordered_map<int,int> truth;
         for ( auto hit : hits ) {
             FwdHit* fhit = dynamic_cast<FwdHit*>(hit);
+            if ( fhit == nullptr ) continue; // protect against nullptr hits
+            if ( fhit->isPV() ) continue; // skip primary vertex hits, since they are always counted as on the track
             truth[ fhit->_tid ]++;
         }
 
@@ -168,10 +170,26 @@ public:
         setSeed( seeds );
         setTrack( track );
     }
-    void setSeed( Seed_t &seed ){
+    void setSeed( Seed_t &seed, TVector3 seedP = TVector3(0,0,0), double seedQ = 0 ) {
         mSeed = seed;
         mIdTruth = MCTruthUtils::dominantContribution( seed, mQaTruth );
         LOG_INFO << "GenFitTrackResult::mIdTruth = " << mIdTruth << ", QaTruth = " << mQaTruth << endm;
+
+        this->mIsFitConverged           = false;
+        this->mIsFitConvergedFully      = false;
+        this->mIsFitConvergedPartially  = false;
+        this->mNFailedPoints            = 99; 
+        this->mNumFitPoints             = 0;
+        this->mChi2                     = -1;
+        this->mDCA                      = TVector3(99, 99, 99); // default DCA
+        this->mPV                       = TVector3(0, 0, 0); // default primary vertex
+        this->mPval                     = 0.0; // default p-value
+        this->mTrackType                = 0; // default track type = StFwdTrack::kGlobal
+        this->mGlobalTrackIndex         = -1; // default global track index
+
+
+        this->mCharge                   = seedQ;
+        this->mMomentum                 = seedP;
     }
     void setTrack( std::shared_ptr<genfit::Track> track ){
         if (track == nullptr) {
@@ -294,7 +312,7 @@ public:
     short                           mNumFitPoints = 0; 
     TVector3                        mDCA;
     int                             mIdTruth = -1;
-    double                           mQaTruth = 0;
+    double                          mQaTruth = 0;
 
     int                             mIndex = 0;
     int                             mTrackType = 0;
