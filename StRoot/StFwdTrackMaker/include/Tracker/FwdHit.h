@@ -189,7 +189,7 @@ class FwdConnector : public KiTrack::ISectorConnector {
 };                           // FwdConnector
 
 struct SeedQual {
-    inline double operator()(Seed_t s) { return double(s.size()) / FwdSystem::sNFttLayers ; } // seeds only use the 4 hits from Ftt
+    inline double operator()(Seed_t s) { return double(s.size()) / FwdSystem::sNFstLayers ; } // seeds only use the 3 hits from Fst
 };
 
 struct SeedCompatible {
