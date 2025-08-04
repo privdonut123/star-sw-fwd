@@ -93,6 +93,13 @@ class GenericFitSeeder : public FitSeedMaker {
                         Point p1 = {points[j]->getX(), points[j]->getY()};
                         Point p2 = {points[k]->getX(), points[k]->getY()};
                         double curvature = computeSignedCurvature(p0, p1, p2);
+                        // printf("Curvature for points (%d, %d, %d): %f\n", i, j, k, curvature);
+                        if ( i != 0 || k != numPoints - 1 ) { // skip if not using the first and last point
+                            // This improves the seed charge estimate substantially for the beamline / primary tracks
+                            // momentum resolution also benefits somewhat
+                            // printf("Skipping non extreme points \n");
+                            continue;
+                        }
                         if (curvature != -1) {  // Exclude invalid (collinear) combinations
                             totalCurvature += curvature;
                             ++validCombinations;
