@@ -51,12 +51,19 @@ void fast(       char *inFile =  "sim.fzd",
     stmem.PrintMem("CHAIN SETUP");
 
     gSystem->Load( "libStFttSimMaker" );
+    gSystem->Load( "libStFttClusterPointMaker" );
     gSystem->Load( "libStFcsTrackMatchMaker" );
     gSystem->Load( "libMathMore.so" );
     gSystem->Load( "libStarGeneratorUtil" );
     gSystem->Load("StFwdUtils.so");
 
 
+    // make an StFttClusterPointMaker
+    StFttClusterPointMaker * fttClusterPointMaker = new StFttClusterPointMaker("fttClusterPointMaker");
+    fttClusterPointMaker->SetDebug(1);
+    fttClusterPointMaker->setUseGeantData( true );
+
+    chain->AddBefore("fwdTrack", fttClusterPointMaker);
 
     // Configure the Forward Tracker
         StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
@@ -70,30 +77,39 @@ void fast(       char *inFile =  "sim.fzd",
             }
 
             fwdTrack->setOutputFilename( TString::Format( "%s.output.root", inFile ).Data() );
-            fwdTrack->SetDebug(1);
-            fwdTrack->SetDebug(1);
 
             // Fitter
             fwdTrack->setFitDebugLvl( 0 );
             fwdTrack->setFitMinIterations( 10 );
-            fwdTrack->setFitMaxIterations( 50 );
+            fwdTrack->setFitMaxIterations( 20 );
             
             fwdTrack->setDeltaPval( 1e-1 );
-            fwdTrack->setRelChi2Change( 1e-1 );
+            fwdTrack->setRelChi2Change( 1e-6 );
             
-            fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+            // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
+            fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::STEVENT*/ );
+            // fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
+
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 
-            fwdTrack->setCrit2( "Crit2_DeltaPhi", 0, 2.0 );
+            // fwdTrack->setCrit2( "Crit2_DeltaPhi", 0, 2.0 );
 
-            fwdTrack->setTrackFittingOff();
+            // fwdTrack->setTrackFittingOff();
             
             // fwdTrack->setConfigKeyValue( "TrackFitter:doGlobalTrackFitting", false ); 
             // fwdTrack->setConfigKeyValue( "TrackFitter:findFwdVertices", false ); 
             // fwdTrack->setConfigKeyValue( "TrackFitter:doBeamlineTrackFitting", false ); 
             // fwdTrack->setConfigKeyValue( "TrackFitter:doPrimaryTrackFitting", false ); 
             // fwdTrack->setConfigKeyValue( "TrackFitter:doSecondaryTrackFitting", false );
-            // fwdTrack->setConfigKeyValue( "TrackFitter:refit", false );
+            fwdTrack->setConfigKeyValue( "TrackFitter:refit", true );
+
+
+            // float omega = mConfig.get<float>(subsetPath + ".Omega", 0.75);
+            // float stableThreshold = mConfig.get<float>(subsetPath + ".StableThreshold", 0.1);
+            // float Ti = mConfig.get<float>(subsetPath + ".InitialTemp", 2.1);
+            // float Tf = mConfig.get<float>(subsetPath + ".InfTemp", 0.1);
+
+            // fwdTrack->setConfigKeyValue( "TrackFinder.SubsetNN.StableThreshold", 0.01 );
             
             // fwdTrack->setEpdHitSource( 0 /*StFwdHitLoader::GEANT*/ );
             
@@ -112,11 +128,11 @@ void fast(       char *inFile =  "sim.fzd",
     // StMuDstMaker * muDstMaker = (StMuDstMaker*)chain->GetMaker( "MuDst" );
 
     // The PicoDst
-    // gSystem->Load("libStPicoEvent");
-    // gSystem->Load("libStPicoDstMaker");
-    // StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
-    // cout << "picoMk = " << picoMk << endl;
-    // picoMk->setVtxMode(StPicoDstMaker::Default);
+    gSystem->Load("libStPicoEvent");
+    gSystem->Load("libStPicoDstMaker");
+    StPicoDstMaker *picoMk = new StPicoDstMaker(StPicoDstMaker::IoWrite);
+    cout << "picoMk = " << picoMk << endl;
+    picoMk->setVtxMode(StPicoDstMaker::Vtxless);
 
     StMemStat stmem;
     stmem.Start();

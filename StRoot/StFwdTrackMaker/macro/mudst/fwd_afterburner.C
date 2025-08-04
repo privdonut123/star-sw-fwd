@@ -117,19 +117,25 @@ void fwd_afterburner( 	const Char_t * fileList = "st_physics_23055058_raw_150000
 		fwdTrack->SetDebug(1);
 		fwdTrack->setGeoCache( "fGeom.root" );
 		fwdTrack->setSeedFindingWithFst();
-		fwdTrack->setTrackRefit( false );
+		// fwdTrack->setTrackRefit( false );
 
 		// Fitter Options
 		fwdTrack->setFitDebugLvl( 0 );
-		fwdTrack->setFitMinIterations( 1 );
-		fwdTrack->setFitMaxIterations( 3 );
+		fwdTrack->setFitMinIterations( 40 );
+		fwdTrack->setFitMaxIterations( 100 );
 		
-		fwdTrack->setDeltaPval( 1e-3 );
-		fwdTrack->setRelChi2Change( 1e-3 );
+		// fwdTrack->setDeltaPval( 1e-9 );
+		// fwdTrack->setRelChi2Change( 1e-9 );
 
 		// fwdTrack->setSeedFindingOff();
 		// fwdTrack->setTrackFittingOff();
 		fwdTrack->setFttHitSource( 3 /* = IGNORE */);
+
+
+		// fwdTrack->setConfigKeyValue("TrackFitter:doBeamlineTrackFitting", false);
+        // fwdTrack->setConfigKeyValue("TrackFitter:doPrimaryTrackFitting", false);
+        // fwdTrack->setConfigKeyValue("TrackFitter:doSecondaryTrackFitting", false);
+        // skip finding fwd vertices
 	}
 
 
@@ -207,6 +213,7 @@ void fwd_afterburner( 	const Char_t * fileList = "st_physics_23055058_raw_150000
 		if (i > 0) // skip first event to make it consistent
 			stmem.Start();
 		chain->Clear();
+		fwdTrack->SetDebug(1);
 		
         if (kStOK != chain->Make())
             break;

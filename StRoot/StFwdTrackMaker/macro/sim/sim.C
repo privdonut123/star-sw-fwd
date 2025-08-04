@@ -26,8 +26,6 @@ void DisableTrackFitting() {
     StFwdTrackMaker * fwdTrack = (StFwdTrackMaker*) chain->GetMaker( "fwdTrack" );
     assert( fwdTrack );
     fwdTrack->setTrackFittingOff();
-    fwdTrack->setConfigKeyValue("TrackFitter:refit", "false");
-    
 }
 
 void DoOnlyGlobalTrackFitting() {
@@ -74,7 +72,7 @@ void sim(   char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw
     }
     
     // Form the complete chain
-    _chain = Form("fzin %s sdt20211016 %s %s %s %s MakeEvent StEvent McEvent ReverseField bigbig evout cmudst tree ", _geom.Data(), _fttChain.Data(), _fcsChain.Data(), _fstChain.Data(), _fwdTrackChain.Data()); 
+    _chain = Form("fzin %s sdt20211016 %s %s %s %s MakeEvent StEvent McEvent ReverseField bigbig evout cmudst tree", _geom.Data(), _fttChain.Data(), _fcsChain.Data(), _fstChain.Data(), _fwdTrackChain.Data()); 
     // Note, I dont include the PicoWrite and PicoVtxless in chain because they load a bunch of things I dont want (and somehow cannot remove with -options)
     printf("Chain: \n%s\n", _chain.Data());
     
@@ -142,17 +140,19 @@ void sim(   char *inFile =  "/gpfs01/star/pwg/mrosales/jetFinderTest2024/star-sw
             // Fitter
             fwdTrack->setFitDebugLvl( 0 );
             fwdTrack->setFitMinIterations( 10 );
-            fwdTrack->setFitMaxIterations( 50 );
+            fwdTrack->setFitMaxIterations( 20 );
             
-            fwdTrack->setDeltaPval( 1e-3 );
-            fwdTrack->setRelChi2Change( 1e-3 );
+            fwdTrack->setDeltaPval( 1e-1 );
+            fwdTrack->setRelChi2Change( 1e-6 );
             
             // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
-            fwdTrack->setFttHitSource( 3 /* = IGNORE */);
+            fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 
             // DisableTrackFitting();
             // DoOnlyGlobalTrackFitting();
+
+            fwdTrack->setTrackFittingOff();
             
             if ( UseZeroB ){
                 cout << "Setting B = 0" << endl;
