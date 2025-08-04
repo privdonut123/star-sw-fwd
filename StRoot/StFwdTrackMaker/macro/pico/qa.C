@@ -7,7 +7,7 @@
 
 bool inAcc(StPicoMcTrack *track) {
     // Example acceptance criteria
-    return (track->nHitsFts() > 2 || track->nHitsStg() > 4);
+    return (track->nHitsFts() > 2);
 }
 
 int testTrackType = 2; // 0=Global, 1=BLC, 2=Primary, 3=FwdVertex
@@ -108,6 +108,9 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
 
     TH1 * hFwdTrackType = new TH1F("hFwdTrackType", "Forward Track Type", 4, -0.5, 3.5);
 
+    size_t fwdPerfect = 0;
+    size_t fwdGoodFits = 0;
+
     size_t nEntries = chain->GetEntries();
     // nEntries = 500000; // Limit to 10,000 entries for testing
     cout << "Number of events: " << nEntries << endl;
@@ -160,6 +163,7 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
         }
 
         size_t fwdMultReco = 0; // Reconstructed forward multiplicity counter
+        
         // Loop over the FwdTracks
         for (int j = 0; j < fwdTracks->GetEntriesFast(); ++j) {
             StPicoFwdTrack *fwdTrack = static_cast<StPicoFwdTrack*>(fwdTracks->At(j));
@@ -178,7 +182,7 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
 
             hQATruth->Fill(fwdTrack->qaTruth());
 
-            // if ( fwdTrack->chi2() < 0.01 ) continue; // Skip tracks with chi2 < 0.01
+            // if ( fwdTrack->chi2() < 0.001 ) continue; // Skip tracks with chi2 < 0.01
             hQATruthGoodChi2->Fill(fwdTrack->qaTruth());
 
             auto mcTrack = static_cast<StPicoMcTrack*>(mcTracks->At(fwdTrack->idTruth() - 1));
@@ -192,7 +196,7 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
             hMatchedMcPt->Fill(lvMc.Pt());
             hMatchedMcPhi->Fill(lvMc.Phi());
 
-            if ( mcTrack->idVtxStart() == 1 ){
+            if ( mcTrack->idVtxStart() == 1 && fwdTrack->numberOfFitPoints() < 50 ){
                 hMatchedMcPrimaryEta->Fill(lvMc.PseudoRapidity());
                 hMatchedMcPrimaryPt->Fill(lvMc.Pt());
                 hMatchedMcPrimaryPhi->Fill(lvMc.Phi());
@@ -212,6 +216,13 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
                 hCurveResolutionPhi->Fill(lvMc.Phi(), curveRes);
 
                 fwdMultReco++;
+
+                if(fwdTrack->qaTruth()>= 99){
+                    fwdPerfect++;
+                }
+                if ( fwdTrack->chi2() > 0.0001 ){
+                    fwdGoodFits++;
+                }
             }
         } // end of FwdTracks loop
 
@@ -222,6 +233,15 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
             hMatchedMcPrimaryMult->Fill(fwdMult, (float)(fwdMultReco/(float)fwdMult));
         }
     } // end of event loop
+
+    printf( "Processed %zu entries, found %0.1f MC Primary tracks (%0.1f in FWD Acc), %0.1f Fwd tracks (%zu perfect seeds, %lu good fits) of type %d\n", 
+            nEntries, 
+            hMcPrimaryEta->GetEntries(), 
+            hMcPrimaryEtaInAcc->GetEntries(),
+            hMatchedMcPrimaryEta->GetEntries(), 
+            fwdPerfect,
+            fwdGoodFits,
+            testTrackType );
 
     // Matched over McPrimary
     format_eff_plot(hMatchedMcEta, hMcPrimaryEta, "Eta_Matched_McPrimary", "Efficiency vs #eta; #eta; Efficiency", kRed);
