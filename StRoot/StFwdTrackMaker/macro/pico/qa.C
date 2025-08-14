@@ -59,9 +59,9 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
     float etaMin = -5.0;
     float etaMax = 5.0;
 
-    int nPtBins = 100;
+    int nPtBins = 40;
     float ptMin = 0.0;
-    float ptMax = 5.0;
+    float ptMax = 2.0;
 
     int nPhiBins = 100;
     float phiMin = -3.24;
@@ -196,7 +196,7 @@ void qa(    TString dataDir = "/Users/brandenburg.89/star/ssw/data/muon_minus/",
             hMatchedMcPt->Fill(lvMc.Pt());
             hMatchedMcPhi->Fill(lvMc.Phi());
 
-            if ( mcTrack->idVtxStart() == 1 && fwdTrack->numberOfFitPoints() < 50 ){
+            if ( mcTrack->idVtxStart() == 1 && fwdTrack->chi2() > 0.0001 && fabs(fwdTrack->numberOfFitPoints()) > 1 ){
                 hMatchedMcPrimaryEta->Fill(lvMc.PseudoRapidity());
                 hMatchedMcPrimaryPt->Fill(lvMc.Pt());
                 hMatchedMcPrimaryPhi->Fill(lvMc.Phi());
