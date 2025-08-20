@@ -88,8 +88,8 @@ void fast(       char *inFile =  "sim.fzd",
             fwdTrack->setRelChi2Change( 1e-6 );
             
             // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
-            fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::STEVENT*/ );
-            // fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
+            // fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::STEVENT*/ );
+            fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
 
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 

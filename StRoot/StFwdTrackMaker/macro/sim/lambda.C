@@ -71,12 +71,22 @@ void trig( Int_t n=1 )
       pion->SetPz(lvPion.Pz());
       pion->SetMass( masses[0] );
 
+      // doesnt seem to do anything!
+      // pion->SetVx(1.0);
+      // pion->SetVy(1.0);
+      // pion->SetVz(10.0);
+
       StarGenParticle *proton;
       proton = kinematics->AddParticle( "p" );
       proton->SetPx(lvProton.Px());
       proton->SetPy(lvProton.Py());
       proton->SetPz(lvProton.Pz());
       proton->SetMass( masses[1] );
+
+      // doesnt seem to do anything!
+      // proton->SetVx(1.0);
+      // proton->SetVy(1.0);
+      // proton->SetVz(10.0);
 
       hM->Fill( lv.M() );
 
@@ -154,8 +164,8 @@ void lambda( Int_t nevents=10000, Int_t rngSeed=0 )
   // Initialize primary event generator and all sub makers
   //
   _primary -> Init();
-  _primary->SetSigma( 0.1, 0.1, 0.1 ); // 1mm x 1mm x 1mm smearing at the vertex
-  _primary->SetVertex(0.0, 0.0, 0.0 );
+  _primary->SetSigma( 0.001, 0.001, 0.001 );
+  _primary->SetVertex(1.0, 1.0, 50.0 );
 
   //
   // Setup geometry and set starsim to use agusread for input

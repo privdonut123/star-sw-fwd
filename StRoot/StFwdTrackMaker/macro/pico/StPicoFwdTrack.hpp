@@ -34,7 +34,7 @@ public:
     /// Return unique Id of the track
     Int_t   id() const              { return mId; }
     /// Return chi2 of the track
-    Float_t chi2() const            { return mChi2 / 1000.f; }
+    Float_t chi2() const            { return mChi2; }
     /// Return p-value of the track
     Float_t pVal() const            { return mPVal / 10000.f; }
     /// Return momentum (GeV/c)
