@@ -10,7 +10,7 @@ bool inAcc(StPicoMcTrack *track) {
     return (track->nHitsFts() > 2);
 }
 
-int testTrackType = 2; // 0=Global, 1=BLC, 2=Primary, 3=FwdVertex
+int testTrackType = 1; // 0=Global, 1=BLC, 2=Primary, 3=FwdVertex
 
 // make a TClonesArray for McTrack
 TClonesArray *mcTracks = new TClonesArray("StPicoMcTrack", 1000);

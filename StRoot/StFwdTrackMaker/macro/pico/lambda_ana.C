@@ -42,7 +42,7 @@ void lambda_ana(){
 
 
     TChain *chain = new TChain("PicoDst");
-    chain->Add("*.picoDst.root");
+    chain->Add("/Users/brandenburg.89/star/ssw/data/forwardCrossSection_2022/*.picoDst.root");
 
     chain->SetBranchAddress("McTrack", &mcTracks);
     chain->SetBranchAddress("McVertex", &mcVertices);

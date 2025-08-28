@@ -11,7 +11,7 @@ TFile *output = 0;
 StMemStat stmem;
 
 void fast(       char *inFile =  "sim.fzd",
-                int n = 100, // nEvents to run
+                int n = 5000, // nEvents to run
                 bool useFstForSeedFinding = true, // use FTT (default) or FST for track finding
                 bool enableTrackRefit = true, // Enable track refit (default off)
                 bool realisticSim = true, // enables data-like mode, real track finding and fitting without MC seed
@@ -88,8 +88,8 @@ void fast(       char *inFile =  "sim.fzd",
             fwdTrack->setRelChi2Change( 1e-6 );
             
             // fwdTrack->setFttHitSource( 0 /*StFwdHitLoader::GEANT*/ );
-            // fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::STEVENT*/ );
-            fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
+            fwdTrack->setFttHitSource( 1 /*StFwdHitLoader::STEVENT*/ );
+            // fwdTrack->setFttHitSource( 3 /*StFwdHitLoader::IGNORE*/ );
 
             fwdTrack->setFstHitSource( 0 /*StFwdHitLoader::GEANT*/ );
 

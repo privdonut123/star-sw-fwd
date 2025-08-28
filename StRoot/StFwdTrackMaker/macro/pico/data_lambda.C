@@ -11,7 +11,7 @@ bool inAcc(StPicoMcTrack *track) {
     return (track->nHitsFts() > 2 );
 }
 
-int testTrackType = 1; // 0=Global, 1=BLC, 2=Primary, 3=FwdVertex
+int testTrackType = 2; // 0=Global, 1=BLC, 2=Primary, 3=FwdVertex
 
 // make a TClonesArray for McTrack
 TClonesArray *mcTracks    = new TClonesArray("StPicoMcTrack", 1000);
@@ -123,7 +123,7 @@ void data_lambda(){
                     if ( fwdlvA.Eta() > 2.5 && fwdlvA.Eta() < 4.0 ) {hFwdM1->Fill(fwdlvA.M());}
                     if ( fwdlvB.Eta() > 2.5 && fwdlvB.Eta() < 4.0 ) {hFwdM1->Fill(fwdlvB.M());}
 
-                    if ( fwdTrack->chi2() > 1 && fwdTrack->chi2() < 200 && fwdTrack2->chi2() > 1 && fwdTrack2->chi2() < 200 ) {
+                    if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 200 && fwdTrack2->chi2() > 0.001 && fwdTrack2->chi2() < 200 ) {
                         if ( fwdlvA.Eta() > 2.5 && fwdlvA.Eta() < 4.0 ) {hFwdM2->Fill(fwdlvA.M());}
                         if ( fwdlvB.Eta() > 2.5 && fwdlvB.Eta() < 4.0 ) {hFwdM2->Fill(fwdlvB.M());}
 
@@ -133,10 +133,10 @@ void data_lambda(){
                         }
                     }
                 } else {
-                    if ( fwdTrack->chi2() > 1 && fwdTrack->chi2() < 200 && fwdTrack2->chi2() > 1 && fwdTrack2->chi2() < 200 ) {
+                    if ( fwdTrack->chi2() > 0.001 && fwdTrack->chi2() < 200 && fwdTrack2->chi2() > 0.001 && fwdTrack2->chi2() < 200 ) {
                         
 
-                        if ( fwdTrack->momentum().Perp() > 0.1 && fwdTrack2->momentum().Perp() > 0.1 ) {
+                        if ( fwdTrack->momentum().Perp() > 0.01 && fwdTrack2->momentum().Perp() > 0.01 ) {
                             if ( fwdlvA.Eta() > 2.5 && fwdlvA.Eta() < 4.0 ) {hFwdM3ls->Fill(fwdlvA.M());}
                             if ( fwdlvB.Eta() > 2.5 && fwdlvB.Eta() < 4.0 ) {hFwdM3ls->Fill(fwdlvB.M());}
                         }
