@@ -26,7 +26,7 @@
 // Tracking without FCS (but with DB)
 bool runDb = true;
 bool runFttChain = true;
-bool runFcsChain = false; 
+bool runFcsChain = true;
 bool runFwdChain = true;
 bool refillMuDst = false;
 bool runFwdQa = false;
@@ -48,7 +48,7 @@ bool runPico = true;
 
 
 void loadLibs();
-void fwd_afterburner( 	const Char_t * fileList = "st_physics_23037002_raw_1000064.MuDst.root", 
+void fwd_afterburner( 	const Char_t * fileList = "pp500.MuDst.root",
 						size_t nEvents = 100 ){
 	cout << "FileList: " << fileList << endl;
 	cout << "nEvents: " << nEvents << endl;
