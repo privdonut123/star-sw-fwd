@@ -155,9 +155,21 @@ class StFwdTrackMaker : public StMaker {
     float mAlignResBiased0 = 0;
     float mAlignResBiased1 = 0;
     float mAlignResBiased2 = 0;
+    float mAlignResBiasedSigma0 = 0;
+    float mAlignResBiasedSigma1 = 0;
+    float mAlignResBiasedSigma2 = 0;
+    float mAlignPullBiased0 = 0;
+    float mAlignPullBiased1 = 0;
+    float mAlignPullBiased2 = 0;
     float mAlignResUnbiased0 = 0;
     float mAlignResUnbiased1 = 0;
     float mAlignResUnbiased2 = 0;
+    float mAlignResUnbiasedSigma0 = 0;
+    float mAlignResUnbiasedSigma1 = 0;
+    float mAlignResUnbiasedSigma2 = 0;
+    float mAlignPullUnbiased0 = 0;
+    float mAlignPullUnbiased1 = 0;
+    float mAlignPullUnbiased2 = 0;
 
     // Helper functions for modifying configuration
     public:

@@ -81,6 +81,8 @@
 #include "StFwdTrackMaker/include/Tracker/FwdGeomUtils.h"
 #include "StFwdTrackMaker/include/Tracker/ObjExporter.h"
 
+#include <cmath>
+
 FwdSystem* FwdSystem::sInstance = nullptr;
 
 namespace {
@@ -90,6 +92,35 @@ namespace {
         x0 = source.GetNrows() > 0 ? source[0] : kInvalidAlignValue;
         x1 = source.GetNrows() > 1 ? source[1] : kInvalidAlignValue;
         x2 = source.GetNrows() > 2 ? source[2] : kInvalidAlignValue;
+    }
+
+    void setAlignmentPulls(
+        const genfit::MeasurementOnPlane &residual,
+        float &sigma0, float &sigma1, float &sigma2,
+        float &pull0, float &pull1, float &pull2
+    ) {
+        sigma0 = kInvalidAlignValue;
+        sigma1 = kInvalidAlignValue;
+        sigma2 = kInvalidAlignValue;
+        pull0 = kInvalidAlignValue;
+        pull1 = kInvalidAlignValue;
+        pull2 = kInvalidAlignValue;
+
+        const TVectorD &state = residual.getState();
+        const TMatrixDSym &cov = residual.getCov();
+        const int nState = state.GetNrows();
+        const int nCov = cov.GetNrows();
+
+        float *sigmas[] = {&sigma0, &sigma1, &sigma2};
+        float *pulls[] = {&pull0, &pull1, &pull2};
+        for (int i = 0; i < 3 && i < nState && i < nCov; ++i) {
+            const double variance = cov(i, i);
+            if (variance > 0 && std::isfinite(variance)) {
+                const double sigma = std::sqrt(variance);
+                *sigmas[i] = sigma;
+                *pulls[i] = state[i] / sigma;
+            }
+        }
     }
 }
 
@@ -316,9 +347,21 @@ int StFwdTrackMaker::Init() {
         mAlignmentTree->Branch("resBiased0", &mAlignResBiased0, "resBiased0/F");
         mAlignmentTree->Branch("resBiased1", &mAlignResBiased1, "resBiased1/F");
         mAlignmentTree->Branch("resBiased2", &mAlignResBiased2, "resBiased2/F");
+        mAlignmentTree->Branch("resBiasedSigma0", &mAlignResBiasedSigma0, "resBiasedSigma0/F");
+        mAlignmentTree->Branch("resBiasedSigma1", &mAlignResBiasedSigma1, "resBiasedSigma1/F");
+        mAlignmentTree->Branch("resBiasedSigma2", &mAlignResBiasedSigma2, "resBiasedSigma2/F");
+        mAlignmentTree->Branch("pullBiased0", &mAlignPullBiased0, "pullBiased0/F");
+        mAlignmentTree->Branch("pullBiased1", &mAlignPullBiased1, "pullBiased1/F");
+        mAlignmentTree->Branch("pullBiased2", &mAlignPullBiased2, "pullBiased2/F");
         mAlignmentTree->Branch("resUnbiased0", &mAlignResUnbiased0, "resUnbiased0/F");
         mAlignmentTree->Branch("resUnbiased1", &mAlignResUnbiased1, "resUnbiased1/F");
         mAlignmentTree->Branch("resUnbiased2", &mAlignResUnbiased2, "resUnbiased2/F");
+        mAlignmentTree->Branch("resUnbiasedSigma0", &mAlignResUnbiasedSigma0, "resUnbiasedSigma0/F");
+        mAlignmentTree->Branch("resUnbiasedSigma1", &mAlignResUnbiasedSigma1, "resUnbiasedSigma1/F");
+        mAlignmentTree->Branch("resUnbiasedSigma2", &mAlignResUnbiasedSigma2, "resUnbiasedSigma2/F");
+        mAlignmentTree->Branch("pullUnbiased0", &mAlignPullUnbiased0, "pullUnbiased0/F");
+        mAlignmentTree->Branch("pullUnbiased1", &mAlignPullUnbiased1, "pullUnbiased1/F");
+        mAlignmentTree->Branch("pullUnbiased2", &mAlignPullUnbiased2, "pullUnbiased2/F");
     }
 
     // Setup the mFwdHitLoader
@@ -870,9 +913,21 @@ void StFwdTrackMaker::FillAlignment() {
                 mAlignResBiased0 = kInvalidAlignValue;
                 mAlignResBiased1 = kInvalidAlignValue;
                 mAlignResBiased2 = kInvalidAlignValue;
+                mAlignResBiasedSigma0 = kInvalidAlignValue;
+                mAlignResBiasedSigma1 = kInvalidAlignValue;
+                mAlignResBiasedSigma2 = kInvalidAlignValue;
+                mAlignPullBiased0 = kInvalidAlignValue;
+                mAlignPullBiased1 = kInvalidAlignValue;
+                mAlignPullBiased2 = kInvalidAlignValue;
                 mAlignResUnbiased0 = kInvalidAlignValue;
                 mAlignResUnbiased1 = kInvalidAlignValue;
                 mAlignResUnbiased2 = kInvalidAlignValue;
+                mAlignResUnbiasedSigma0 = kInvalidAlignValue;
+                mAlignResUnbiasedSigma1 = kInvalidAlignValue;
+                mAlignResUnbiasedSigma2 = kInvalidAlignValue;
+                mAlignPullUnbiased0 = kInvalidAlignValue;
+                mAlignPullUnbiased1 = kInvalidAlignValue;
+                mAlignPullUnbiased2 = kInvalidAlignValue;
 
                 setAlignmentVector(rawMeasurement->getRawHitCoords(), mAlignMeas0, mAlignMeas1, mAlignMeas2);
 
@@ -883,6 +938,16 @@ void StFwdTrackMaker::FillAlignment() {
                         mAlignResidualDim = static_cast<int>(unbiasedResidual.getState().GetNrows());
                         setAlignmentVector(biasedResidual.getState(), mAlignResBiased0, mAlignResBiased1, mAlignResBiased2);
                         setAlignmentVector(unbiasedResidual.getState(), mAlignResUnbiased0, mAlignResUnbiased1, mAlignResUnbiased2);
+                        setAlignmentPulls(
+                            biasedResidual,
+                            mAlignResBiasedSigma0, mAlignResBiasedSigma1, mAlignResBiasedSigma2,
+                            mAlignPullBiased0, mAlignPullBiased1, mAlignPullBiased2
+                        );
+                        setAlignmentPulls(
+                            unbiasedResidual,
+                            mAlignResUnbiasedSigma0, mAlignResUnbiasedSigma1, mAlignResUnbiasedSigma2,
+                            mAlignPullUnbiased0, mAlignPullUnbiased1, mAlignPullUnbiased2
+                        );
                         mAlignHasResidual = 1;
                     } catch (...) {
                         mAlignHasResidual = 0;
