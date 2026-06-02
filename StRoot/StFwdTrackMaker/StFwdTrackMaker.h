@@ -38,6 +38,7 @@ class SiRasterizer;
 class McTrack;
 
 class StFcsDb;
+class TFile;
 
 // ROOT includes
 #include "TNtuple.h"
@@ -99,6 +100,7 @@ class StFwdTrackMaker : public StMaker {
     void ProcessFwdTracks();
     void FillEvent();
     void FillTrackDeltas();
+    void FillAlignment();
     bool SkipEvent();
 
     StFwdTrack * makeStFwdTrack( GenfitTrackResult &gtr, size_t indexTrack );
@@ -120,6 +122,9 @@ class StFwdTrackMaker : public StMaker {
     static std::string defaultConfig;
     bool configLoaded = false;
     TString mGeoCache;
+    TFile *mAlignmentFile = nullptr;
+    TTree *mAlignmentTree = nullptr;
+    std::string mAlignmentOutputFilename = "StFwdAlignment.root";
 
     // Helper functions for modifying configuration
     public:
@@ -127,6 +132,8 @@ class StFwdTrackMaker : public StMaker {
      * @param fn : filename of output ROOT file
     */
     void setOutputFilename( std::string fn ) { mFwdConfig.set( "Output:url", fn ); }
+    void setFillAlignment( bool fill = true ) { SetAttr("fillAlignment", fill ? 1 : 0); }
+    void setAlignmentOutputFilename( std::string fn ) { mAlignmentOutputFilename = fn; }
     
     /** @brief Set the data source for FTT hits
      *

@@ -50,6 +50,7 @@
 #include <SystemOfUnits.h>
 
 #include "TROOT.h"
+#include "TFile.h"
 #include "TLorentzVector.h"
 
 #include "StRoot/StEpdUtil/StEpdGeom.h"
@@ -200,6 +201,7 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
     SetAttr("useEpd",1);                 // Default Epd on
     SetAttr("config", "config.xml");     // Default configuration file (user may override before Init())
     SetAttr("fillEvent",1); // fill StEvent
+    SetAttr("fillAlignment",0); // Optional alignment diagnostics, off by default
 
     // Load the default configuration
     configLoaded = false;
@@ -211,6 +213,17 @@ StFwdTrackMaker::StFwdTrackMaker() : StMaker("fwdTrack"), mEventVertex(0,0,0), m
 };
 
 int StFwdTrackMaker::Finish() {
+    if (mAlignmentFile) {
+        mAlignmentFile->cd();
+        if (mAlignmentTree) {
+            mAlignmentTree->Write();
+        }
+        mAlignmentFile->Close();
+        delete mAlignmentFile;
+        mAlignmentFile = nullptr;
+        mAlignmentTree = nullptr;
+    }
+
     mForwardTracker->finish();
     return kStOk;
 }
@@ -257,6 +270,12 @@ int StFwdTrackMaker::Init() {
     mForwardData = std::shared_ptr<FwdDataSource>(new FwdDataSource());
     mForwardTracker->setData(mForwardData);
     mForwardTracker->initialize( mGeoCache, false );
+
+    if ( IAttr("fillAlignment") ) {
+        mAlignmentFile = new TFile(mAlignmentOutputFilename.c_str(), "RECREATE");
+        mAlignmentTree = new TTree("fwdAlign", "Forward alignment diagnostics");
+    }
+
     // Setup the mFwdHitLoader
 
 
@@ -549,6 +568,9 @@ int StFwdTrackMaker::Make() {
     // Run Track fitting on the seeds we found
     LOG_INFO << "\tFitting FWD Track Seeds" << endm;
     mForwardTracker->doTrackFitting( mForwardTracker->getTrackSeeds() );
+    if ( IAttr("fillAlignment") ) {
+        FillAlignment();
+    }
     LOG_INFO << "<<Fwd Tracking Fit :" << mForwardTracker -> getTrackResults().size() << " GenFit Tracks" << endm;
     LOG_DEBUG << "<<FINISH Event Forward Tracking" << endm;
     /**********************************************************************/
@@ -738,6 +760,10 @@ StFwdTrack * StFwdTrackMaker::makeStFwdTrack( GenfitTrackResult &gtr, size_t ind
 
     // return the StFwdTrack we made
     return fwdTrack;
+}
+
+void StFwdTrackMaker::FillAlignment() {
+    // Alignment diagnostics will be filled here after forward track fits are available.
 }
 
 void StFwdTrackMaker::FillEvent() {
