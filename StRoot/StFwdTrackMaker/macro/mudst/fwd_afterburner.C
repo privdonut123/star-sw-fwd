@@ -49,7 +49,7 @@ bool runPico = true;
 
 void loadLibs();
 void fwd_afterburner( 	const Char_t * fileList = "pp500.MuDst.root",
-						size_t nEvents = 100 ){
+						size_t nEvents = 999999999 ){
 	cout << "FileList: " << fileList << endl;
 	cout << "nEvents: " << nEvents << endl;
 

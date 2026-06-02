@@ -154,7 +154,7 @@ void fwd_alignment_residual_qa(
     TH1D *hDetId = new TH1D("hDetId", "Alignment rows by detector;detId;rows", 80, 0, 80);
     TH2D *hDim = new TH2D("hDim", "FST measurement and residual dimensions;measurementDim;residualDim", 6, -0.5, 5.5, 6, -0.5, 5.5);
     TH1D *hHasResidual = new TH1D("hHasResidual", "FST hasResidual flag;hasResidual;rows", 3, -0.5, 2.5);
-    TH1D *hSortMinusSensor = new TH1D("hSortMinusSensor", "FST sorting - fstGlobalSensor;sorting - fstGlobalSensor;rows", 21, -10.5, 10.5);
+    TH1D *hSortMinusSensor = new TH1D("hSortMinusSensor", "FST sorting - fstGlobalSensor, expect 1;sorting - fstGlobalSensor;rows", 21, -9.5, 11.5);
     tree->Draw("detId>>hDetId", "", "goff");
     tree->Draw("residualDim:measurementDim>>hDim", fstAllCut, "goff");
     tree->Draw("hasResidual>>hHasResidual", fstAllCut, "goff");

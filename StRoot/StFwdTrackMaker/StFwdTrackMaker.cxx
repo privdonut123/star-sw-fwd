@@ -52,6 +52,7 @@
 #include "TROOT.h"
 #include "TFile.h"
 #include "TVectorD.h"
+#include "TVector3.h"
 #include "TLorentzVector.h"
 
 #include "StRoot/StEpdUtil/StEpdGeom.h"
@@ -92,6 +93,24 @@ namespace {
         x0 = source.GetNrows() > 0 ? source[0] : kInvalidAlignValue;
         x1 = source.GetNrows() > 1 ? source[1] : kInvalidAlignValue;
         x2 = source.GetNrows() > 2 ? source[2] : kInvalidAlignValue;
+    }
+
+    void setAlignmentTrackKinematics(
+        const TVector3 &momentum,
+        float &px, float &py, float &pz,
+        float &p, float &pt,
+        float &eta
+    ) {
+        px = momentum.X();
+        py = momentum.Y();
+        pz = momentum.Z();
+        pt = momentum.Perp();
+        p = momentum.Mag();
+        eta = kInvalidAlignValue;
+
+        if (p > std::abs(static_cast<double>(pz))) {
+            eta = 0.5 * std::log((p + pz) / (p - pz));
+        }
     }
 
     void setAlignmentPulls(
@@ -340,6 +359,13 @@ int StFwdTrackMaker::Init() {
         mAlignmentTree->Branch("fitConverged", &mAlignFitConverged, "fitConverged/I");
         mAlignmentTree->Branch("fitConvergedFully", &mAlignFitConvergedFully, "fitConvergedFully/I");
         mAlignmentTree->Branch("fitConvergedPartially", &mAlignFitConvergedPartially, "fitConvergedPartially/I");
+        mAlignmentTree->Branch("trackNHitsFit", &mAlignTrackNHitsFit, "trackNHitsFit/I");
+        mAlignmentTree->Branch("trackPx", &mAlignTrackPx, "trackPx/F");
+        mAlignmentTree->Branch("trackPy", &mAlignTrackPy, "trackPy/F");
+        mAlignmentTree->Branch("trackPz", &mAlignTrackPz, "trackPz/F");
+        mAlignmentTree->Branch("trackP", &mAlignTrackP, "trackP/F");
+        mAlignmentTree->Branch("trackPt", &mAlignTrackPt, "trackPt/F");
+        mAlignmentTree->Branch("trackEta", &mAlignTrackEta, "trackEta/F");
         mAlignmentTree->Branch("sorting", &mAlignSorting, "sorting/F");
         mAlignmentTree->Branch("meas0", &mAlignMeas0, "meas0/F");
         mAlignmentTree->Branch("meas1", &mAlignMeas1, "meas1/F");
@@ -869,6 +895,13 @@ void StFwdTrackMaker::FillAlignment() {
         mAlignFitConverged = gtr.mIsFitConverged ? 1 : 0;
         mAlignFitConvergedFully = gtr.mIsFitConvergedFully ? 1 : 0;
         mAlignFitConvergedPartially = gtr.mIsFitConvergedPartially ? 1 : 0;
+        mAlignTrackNHitsFit = gtr.mNumFitPoints;
+        setAlignmentTrackKinematics(
+            gtr.mMomentum,
+            mAlignTrackPx, mAlignTrackPy, mAlignTrackPz,
+            mAlignTrackP, mAlignTrackPt,
+            mAlignTrackEta
+        );
 
         if (!gtr.mTrack)
             continue;
@@ -904,7 +937,7 @@ void StFwdTrackMaker::FillAlignment() {
                 mAlignFstWedge = -1;
                 mAlignFstSensor = -1;
                 if (mAlignDetId == kFstId) {
-                    int globalSensor = static_cast<int>(sortingParameter);
+                    int globalSensor = static_cast<int>(sortingParameter) - 1;
                     if (globalSensor >= 0 && globalSensor < kFstNumSensors) {
                         mAlignFstGlobalSensor = globalSensor;
                         FwdHit::fstSensorWedgeDiskFromGlobalIndex(globalSensor, mAlignFstDisk, mAlignFstWedge, mAlignFstSensor);

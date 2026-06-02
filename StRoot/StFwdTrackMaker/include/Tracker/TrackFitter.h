@@ -500,15 +500,17 @@ class TrackFitter {
         auto tp = new genfit::TrackPoint();
         genfit::PlanarMeasurement *measurement = new genfit::PlanarMeasurement(hitOnPlane, CovMatPlaneLocal(fh, plane), fh->_detid, ++hitId, tp);
         int planeId = fh->_genfit_plane_index;
+        int sortingParameter = planeId + 1; // reserve sorting=0 for PV
         // Offset FTT plane ids to keep them unique from FST plane ids
         if (fh->isFtt()) {
             planeId = kFstNumSensors + fh->_genfit_plane_index;
+            sortingParameter = kFstNumSensors + 1 + fh->_genfit_plane_index;
         }          
         measurement->setPlane(plane, planeId);
 
         tp->addRawMeasurement(measurement);
         tp->setTrack(fitTrack.get());
-        tp->setSortingParameter(planeId); // or use the hitId?
+        tp->setSortingParameter(sortingParameter); // or use the hitId?
         if (fitTrack)
             fitTrack->insertPoint( tp );
         return tp;
