@@ -126,6 +126,39 @@ class StFwdTrackMaker : public StMaker {
     TTree *mAlignmentTree = nullptr;
     std::string mAlignmentOutputFilename = "StFwdAlignment.root";
 
+    int mAlignRun = 0;
+    int mAlignEvent = 0;
+    int mAlignTrackIndex = 0;
+    int mAlignPointIndex = 0;
+    int mAlignMeasurementIndex = 0;
+    int mAlignDetId = 0;
+    int mAlignHitId = 0;
+    int mAlignFstGlobalSensor = -1;
+    int mAlignFstDisk = -1;
+    int mAlignFstWedge = -1;
+    int mAlignFstSensor = -1;
+    int mAlignMeasurementDim = 0;
+    int mAlignResidualDim = 0;
+    int mAlignHasResidual = 0;
+    int mAlignNSeeds = 0;
+    int mAlignNFitTracks = 0;
+    int mAlignNdf = 0;
+    int mAlignFitConverged = 0;
+    int mAlignFitConvergedFully = 0;
+    int mAlignFitConvergedPartially = 0;
+    float mAlignChi2 = 0;
+    float mAlignPval = 0;
+    float mAlignSorting = 0;
+    float mAlignMeas0 = 0;
+    float mAlignMeas1 = 0;
+    float mAlignMeas2 = 0;
+    float mAlignResBiased0 = 0;
+    float mAlignResBiased1 = 0;
+    float mAlignResBiased2 = 0;
+    float mAlignResUnbiased0 = 0;
+    float mAlignResUnbiased1 = 0;
+    float mAlignResUnbiased2 = 0;
+
     // Helper functions for modifying configuration
     public:
     /** @brief Set the filename for output ROOT file
