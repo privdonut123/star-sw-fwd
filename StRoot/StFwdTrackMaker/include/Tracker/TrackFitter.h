@@ -459,26 +459,51 @@ class TrackFitter {
         }
 
         // Compute the hit position in the plane's local (u,v) Cartesian frame.
-        // FST planes have U pointing radially and V pointing counterclockwise (increasing
-        // global phi), so with dphi = signed angular offset of the hit from the sensor centre:
-        //   hitOnPlane[0] = r·cos(dphi) − r_origin   (displacement along U, radial)
-        //   hitOnPlane[1] = r·sin(dphi)               (displacement along V, azimuthal CCW)
-        // _localPosition stores strip-native (r, phi_from_strip0_edge) with no embedded
-        // global rotation.  kFstzDirct[e] = +1 if strips count counterclockwise, -1 if
-        // clockwise, so dphi = kFstzDirct[e] * (strip_phi - phi_half) gives the correct
-        // signed angular offset in global phi.
-        // V is normalised to counterclockwise in getFstSensorOrigin, so no sign flip needed
-        // here for even vs odd GEANT wedges.
+        // FST _localPosition stores strip-native polar coordinates:
+        //   r        = radial strip center
+        //   stripPhi = meanPhiStrip * pitch
+        // Convert those directly to the FTUS sensor-local Cartesian frame.  In the
+        // GenFit DetPlane from FwdGeomUtils, U is radial at the wedge center and V is
+        // the counterclockwise phi-like direction.  The measurement coordinates are
+        // therefore independent of the plane's current global placement:
+        //   hitOnPlane[0] = r*cos(dphi) - centerU
+        //   hitOnPlane[1] = r*sin(dphi) - centerV
+        // where dphi is the hit angle relative to the wedge-center radial axis.
         // For FTT, the stored global position is projected directly onto the plane.
         TVectorD hitOnPlane(2);
         if (fh->isFst() && fh->_localPosition[0] >= 0.f) {
-            const float phi_half = 0.5f * kFstNumPhiSegPerWedge * kFstStripPitchPhi;
-            int   electronicWedge = (fh->_genfit_plane_index / 3) % 12;
-            float r        = fh->_localPosition[0];
-            float dphi     = kFstzDirct[electronicWedge] * (fh->_localPosition[1] - phi_half);
-            float r_origin = plane->getO().Perp();              // radial distance of plane origin
-            hitOnPlane[0]  = r * TMath::Cos(dphi) - r_origin;
-            hitOnPlane[1]  = r * TMath::Sin(dphi);
+            const int globalSensor = static_cast<int>(fh->_genfit_plane_index);
+            const int disk = globalSensor / (kFstNumWedgePerDisk * kFstNumSensorsPerWedge);
+            const int electronicWedge = (globalSensor / kFstNumSensorsPerWedge) % kFstNumWedgePerDisk;
+            const int sensor = globalSensor % kFstNumSensorsPerWedge;
+
+            const double r = fh->_localPosition[0];
+            const double stripPhi = fh->_localPosition[1];
+            const double stripSign = kFstzFilp[disk] * kFstzDirct[electronicWedge];
+            const double halfWedgePhi = 0.5 * kFstNumPhiSegPerWedge * kFstStripPitchPhi;
+            const double edgeToCenterPhi = halfWedgePhi - 0.5 * kFstStripPitchPhi;
+
+            double dphi = stripSign * (stripPhi - edgeToCenterPhi);
+            if (sensor == 1) {
+                dphi = stripSign * (edgeToCenterPhi - stripPhi + 0.5 * kFstStripGapPhi);
+            } else if (sensor == 2) {
+                dphi = stripSign * (edgeToCenterPhi - stripPhi - 0.5 * kFstStripGapPhi);
+            }
+
+            const double sensorRSpan = 0.5 * kFstNumRStripsPerWedge * kFstStripPitchR;
+            const double centerR = (sensor == 0)
+                ? kFstrStart[0] + 0.5 * sensorRSpan
+                : kFstrStart[kFstNumRStripsPerWedge / 2] + 0.5 * sensorRSpan;
+            const double outerCenterDphi = 0.5 * (halfWedgePhi + kFstStripGapPhi);
+            double centerDphi = 0.0;
+            if (sensor == 1) {
+                centerDphi = stripSign * outerCenterDphi;
+            } else if (sensor == 2) {
+                centerDphi = -stripSign * outerCenterDphi;
+            }
+
+            hitOnPlane[0] = r * TMath::Cos(dphi) - centerR * TMath::Cos(centerDphi);
+            hitOnPlane[1] = r * TMath::Sin(dphi) - centerR * TMath::Sin(centerDphi);
         } else {
             TVector3 diff = TVector3(fh->getX(), fh->getY(), fh->getZ()) - plane->getO();
             hitOnPlane[0] = diff.Dot(plane->getU());

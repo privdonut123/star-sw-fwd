@@ -26,6 +26,13 @@
 #include <iostream>
 #include <vector>
 
+const int kFwdAlignLocalMeas0Bins = 12;
+const double kFwdAlignLocalMeas0Min = -6.0;
+const double kFwdAlignLocalMeas0Max = 6.0;
+const int kFwdAlignLocalMeas1Bins = 24;
+const double kFwdAlignLocalMeas1Min = -12.0;
+const double kFwdAlignLocalMeas1Max = 12.0;
+
 bool fwdAlignHasBranch(TTree *tree, const char *name) {
     return tree && tree->GetBranch(name);
 }
@@ -39,6 +46,26 @@ void fwdAlignDrawLine(double x1, double y1, double x2, double y2, int color = kR
 
 void fwdAlignSavePage(TCanvas *canvas, const TString &pdf) {
     canvas->Print(pdf);
+}
+
+TH2D *fwdAlignMakeMeasurementMap(const TString &name, const TString &title) {
+    TString fullTitle = title + ";meas0 [cm];meas1 [cm];rows";
+    TH2D *hist = new TH2D(
+        name.Data(),
+        fullTitle.Data(),
+        kFwdAlignLocalMeas0Bins,
+        kFwdAlignLocalMeas0Min,
+        kFwdAlignLocalMeas0Max,
+        kFwdAlignLocalMeas1Bins,
+        kFwdAlignLocalMeas1Min,
+        kFwdAlignLocalMeas1Max
+    );
+    hist->SetStats(false);
+    return hist;
+}
+
+void fwdAlignFillMeasurementMap(TTree *tree, TH2D *hist, const TCut &cut) {
+    tree->Draw(TString::Format("meas1:meas0>>%s", hist->GetName()), cut, "goff");
 }
 
 void fwd_alignment_residual_qa(
@@ -70,7 +97,8 @@ void fwd_alignment_residual_qa(
         "fstGlobalSensor", "fstDisk", "fstWedge", "fstSensor",
         "measurementDim", "residualDim", "hasResidual", "fitConverged",
         "fitConvergedFully", "sorting", "meas0", "meas1",
-        "resBiased0", "resBiased1", "resUnbiased0", "resUnbiased1"
+        "resBiased0", "resBiased1", "resUnbiased0", "resUnbiased1",
+        "trackP", "trackEta"
     };
     const int nRequiredBranches = sizeof(requiredBranches) / sizeof(requiredBranches[0]);
     bool missingBranch = false;
@@ -104,26 +132,40 @@ void fwd_alignment_residual_qa(
     }
 
     TString fitCut = requireFullyConverged ? "fitConvergedFully>0" : "fitConverged>0";
-    TCut fstResidualCut = TString::Format(
-        "detId==45&&hasResidual>0&&residualDim==2&&fstGlobalSensor>=0&&%s",
-        fitCut.Data()
-    ).Data();
+    TString trackCut = "trackEta>=2.5&&trackEta<=4&&trackP>0.5";
+    TString residualBaseCut = TString::Format(
+        "detId==45&&hasResidual>0&&residualDim==2&&fstGlobalSensor>=0&&%s&&%s",
+        fitCut.Data(),
+        trackCut.Data()
+    );
+    TCut fstResidualCut = residualBaseCut.Data();
     TCut fstPullCut = TString::Format(
-        "detId==45&&hasResidual>0&&residualDim==2&&fstGlobalSensor>=0&&%s"
+        "%s"
         "&&pullBiased0>-90000&&pullBiased1>-90000&&pullUnbiased0>-90000&&pullUnbiased1>-90000",
-        fitCut.Data()
+        residualBaseCut.Data()
     ).Data();
+    TCut fstMeasurementCut = "detId==45&&measurementDim==2&&fstGlobalSensor>=0&&meas0>-90000&&meas1>-90000";
     TCut fstAllCut = "detId==45&&fstGlobalSensor>=0";
 
     Long64_t nEntries = tree->GetEntries();
     Long64_t nFstRows = tree->GetEntries(fstAllCut);
+    Long64_t nFstMeasurementRows = tree->GetEntries(fstMeasurementCut);
     Long64_t nFstResidualRows = tree->GetEntries(fstResidualCut);
 
     std::cout << "Input file: " << inputFilename << std::endl;
     std::cout << "fwdAlign entries: " << nEntries << std::endl;
     std::cout << "FST rows: " << nFstRows << std::endl;
+    std::cout << "FST measurement rows after cuts: " << nFstMeasurementRows << std::endl;
     std::cout << "FST residual rows after cuts: " << nFstResidualRows << std::endl;
-    std::cout << "Base cut: " << TString(fstResidualCut).Data() << std::endl;
+    std::cout << "Residual/pull track cut: " << trackCut.Data() << std::endl;
+    std::cout << "Residual/pull base cut: " << TString(fstResidualCut).Data() << std::endl;
+    std::cout << TString::Format(
+        "Residual/pull vs local-meas binning: meas0 %.1f..%.1f cm, meas1 %.1f..%.1f cm, 1 cm bins",
+        kFwdAlignLocalMeas0Min,
+        kFwdAlignLocalMeas0Max,
+        kFwdAlignLocalMeas1Min,
+        kFwdAlignLocalMeas1Max
+    ).Data() << std::endl;
     std::cout << "Residual units in plots: microns (tree stores cm)" << std::endl;
     std::cout << "Pull branches available: " << (hasPullBranches ? "yes" : "no") << std::endl;
 
@@ -141,8 +183,18 @@ void fwd_alignment_residual_qa(
     summary->AddText(TString::Format("Output PDF: %s", pdfOutput.Data()));
     summary->AddText(TString::Format("Total fwdAlign rows: %lld", nEntries));
     summary->AddText(TString::Format("FST rows: %lld", nFstRows));
+    summary->AddText(TString::Format("FST measurement rows after cuts: %lld", nFstMeasurementRows));
     summary->AddText(TString::Format("FST residual rows after cuts: %lld", nFstResidualRows));
     summary->AddText(TString::Format("Fit cut: %s", fitCut.Data()));
+    summary->AddText(TString::Format("Residual/pull track cut: %s", trackCut.Data()));
+    summary->AddText(TString::Format(
+        "Residual/pull vs local-meas bins: meas0 %.1f..%.1f cm, meas1 %.1f..%.1f cm, 1 cm bins.",
+        kFwdAlignLocalMeas0Min,
+        kFwdAlignLocalMeas0Max,
+        kFwdAlignLocalMeas1Min,
+        kFwdAlignLocalMeas1Max
+    ));
+    summary->AddText("Measurement maps do not apply the trackP/trackEta cut.");
     summary->AddText("Residual plots use resUnbiased/resBiased * 10000, so units are microns.");
     summary->AddText(hasPullBranches ? "Pull plots are true GenFit residual/sigma pulls." : "Pull branches are not present in this input; rerun afterburner with updated maker.");
     summary->AddText("FST local coordinates are the GenFit planar-measurement coordinates.");
@@ -167,6 +219,79 @@ void fwd_alignment_residual_qa(
     canvas->cd(3); hHasResidual->Draw();
     canvas->cd(4); hSortMinusSensor->Draw();
     fwdAlignSavePage(canvas, pdfOutput);
+
+    // Local measurement map. This verifies whether meas0/meas1 behave like local planar coordinates.
+    TH2D *hMeas1VsMeas0 = fwdAlignMakeMeasurementMap("hMeas1VsMeas0", "FST local measurement map, all sensors");
+    fwdAlignFillMeasurementMap(tree, hMeas1VsMeas0, fstMeasurementCut);
+
+    canvas->Clear();
+    hMeas1VsMeas0->Draw("COLZ");
+    fwdAlignSavePage(canvas, pdfOutput);
+
+    canvas->Clear();
+    canvas->Divide(3, 1);
+    for (int disk = 0; disk < 3; ++disk) {
+        TH2D *hist = fwdAlignMakeMeasurementMap(
+            TString::Format("hMeas1VsMeas0Disk%d", disk),
+            TString::Format("FST local measurement map, disk %d", disk)
+        );
+        fwdAlignFillMeasurementMap(tree, hist, fstMeasurementCut && TCut(TString::Format("fstDisk==%d", disk).Data()));
+        canvas->cd(disk + 1);
+        hist->Draw("COLZ");
+    }
+    fwdAlignSavePage(canvas, pdfOutput);
+
+    canvas->Clear();
+    canvas->Divide(4, 3);
+    for (int wedge = 0; wedge < 12; ++wedge) {
+        TH2D *hist = fwdAlignMakeMeasurementMap(
+            TString::Format("hMeas1VsMeas0Wedge%d", wedge),
+            TString::Format("FST local measurement map, wedge %d", wedge)
+        );
+        fwdAlignFillMeasurementMap(tree, hist, fstMeasurementCut && TCut(TString::Format("fstWedge==%d", wedge).Data()));
+        canvas->cd(wedge + 1);
+        hist->Draw("COLZ");
+    }
+    fwdAlignSavePage(canvas, pdfOutput);
+
+    canvas->Clear();
+    canvas->Divide(3, 1);
+    for (int sensor = 0; sensor < 3; ++sensor) {
+        TH2D *hist = fwdAlignMakeMeasurementMap(
+            TString::Format("hMeas1VsMeas0Sensor%d", sensor),
+            TString::Format("FST local measurement map, sensor-in-wedge %d", sensor)
+        );
+        fwdAlignFillMeasurementMap(tree, hist, fstMeasurementCut && TCut(TString::Format("fstSensor==%d", sensor).Data()));
+        canvas->cd(sensor + 1);
+        hist->Draw("COLZ");
+    }
+    fwdAlignSavePage(canvas, pdfOutput);
+
+    for (int firstGlobalSensor = 0; firstGlobalSensor < 108; firstGlobalSensor += 12) {
+        canvas->Clear();
+        canvas->Divide(4, 3);
+        for (int offset = 0; offset < 12; ++offset) {
+            int globalSensor = firstGlobalSensor + offset;
+            int disk = globalSensor / 36;
+            int wedge = (globalSensor / 3) % 12;
+            int sensor = globalSensor % 3;
+            TH2D *hist = fwdAlignMakeMeasurementMap(
+                TString::Format("hMeas1VsMeas0GlobalSensor%d", globalSensor),
+                TString::Format(
+                    "FST local measurement map, global sensor %d (d%d w%d s%d)",
+                    globalSensor, disk, wedge, sensor
+                )
+            );
+            fwdAlignFillMeasurementMap(
+                tree,
+                hist,
+                fstMeasurementCut && TCut(TString::Format("fstGlobalSensor==%d", globalSensor).Data())
+            );
+            canvas->cd(offset + 1);
+            hist->Draw("COLZ");
+        }
+        fwdAlignSavePage(canvas, pdfOutput);
+    }
 
     // Residual distributions.
     TH1D *hResU = new TH1D("hResU", "FST unbiased residual 0;resUnbiased0 [um];rows", 160, -residualRangeMicron, residualRangeMicron);
@@ -322,10 +447,10 @@ void fwd_alignment_residual_qa(
     }
 
     // Local-coordinate dependence tests. These are useful for spotting rotations or scale effects.
-    TH2D *hResUVsMeas0 = new TH2D("hResUVsMeas0", "FST residual 0 vs local meas0;meas0 [cm];resUnbiased0 [um]", 120, -40, 40, 160, -residualRangeMicron, residualRangeMicron);
-    TH2D *hResUVsMeas1 = new TH2D("hResUVsMeas1", "FST residual 0 vs local meas1;meas1 [cm];resUnbiased0 [um]", 120, -40, 40, 160, -residualRangeMicron, residualRangeMicron);
-    TH2D *hResVVsMeas0 = new TH2D("hResVVsMeas0", "FST residual 1 vs local meas0;meas0 [cm];resUnbiased1 [um]", 120, -40, 40, 160, -residualRangeMicron, residualRangeMicron);
-    TH2D *hResVVsMeas1 = new TH2D("hResVVsMeas1", "FST residual 1 vs local meas1;meas1 [cm];resUnbiased1 [um]", 120, -40, 40, 160, -residualRangeMicron, residualRangeMicron);
+    TH2D *hResUVsMeas0 = new TH2D("hResUVsMeas0", "FST residual 0 vs local meas0;meas0 [cm];resUnbiased0 [um]", kFwdAlignLocalMeas0Bins, kFwdAlignLocalMeas0Min, kFwdAlignLocalMeas0Max, 160, -residualRangeMicron, residualRangeMicron);
+    TH2D *hResUVsMeas1 = new TH2D("hResUVsMeas1", "FST residual 0 vs local meas1;meas1 [cm];resUnbiased0 [um]", kFwdAlignLocalMeas1Bins, kFwdAlignLocalMeas1Min, kFwdAlignLocalMeas1Max, 160, -residualRangeMicron, residualRangeMicron);
+    TH2D *hResVVsMeas0 = new TH2D("hResVVsMeas0", "FST residual 1 vs local meas0;meas0 [cm];resUnbiased1 [um]", kFwdAlignLocalMeas0Bins, kFwdAlignLocalMeas0Min, kFwdAlignLocalMeas0Max, 160, -residualRangeMicron, residualRangeMicron);
+    TH2D *hResVVsMeas1 = new TH2D("hResVVsMeas1", "FST residual 1 vs local meas1;meas1 [cm];resUnbiased1 [um]", kFwdAlignLocalMeas1Bins, kFwdAlignLocalMeas1Min, kFwdAlignLocalMeas1Max, 160, -residualRangeMicron, residualRangeMicron);
     tree->Draw("resUnbiased0*10000:meas0>>hResUVsMeas0", fstResidualCut, "goff");
     tree->Draw("resUnbiased0*10000:meas1>>hResUVsMeas1", fstResidualCut, "goff");
     tree->Draw("resUnbiased1*10000:meas0>>hResVVsMeas0", fstResidualCut, "goff");
@@ -340,10 +465,10 @@ void fwd_alignment_residual_qa(
     fwdAlignSavePage(canvas, pdfOutput);
 
     if (hasPullBranches) {
-        TH2D *hPullUVsMeas0 = new TH2D("hPullUVsMeas0", "FST pull 0 vs local meas0;meas0 [cm];pullUnbiased0", 120, -40, 40, 160, -10, 10);
-        TH2D *hPullUVsMeas1 = new TH2D("hPullUVsMeas1", "FST pull 0 vs local meas1;meas1 [cm];pullUnbiased0", 120, -40, 40, 160, -10, 10);
-        TH2D *hPullVVsMeas0 = new TH2D("hPullVVsMeas0", "FST pull 1 vs local meas0;meas0 [cm];pullUnbiased1", 120, -40, 40, 160, -10, 10);
-        TH2D *hPullVVsMeas1 = new TH2D("hPullVVsMeas1", "FST pull 1 vs local meas1;meas1 [cm];pullUnbiased1", 120, -40, 40, 160, -10, 10);
+        TH2D *hPullUVsMeas0 = new TH2D("hPullUVsMeas0", "FST pull 0 vs local meas0;meas0 [cm];pullUnbiased0", kFwdAlignLocalMeas0Bins, kFwdAlignLocalMeas0Min, kFwdAlignLocalMeas0Max, 160, -10, 10);
+        TH2D *hPullUVsMeas1 = new TH2D("hPullUVsMeas1", "FST pull 0 vs local meas1;meas1 [cm];pullUnbiased0", kFwdAlignLocalMeas1Bins, kFwdAlignLocalMeas1Min, kFwdAlignLocalMeas1Max, 160, -10, 10);
+        TH2D *hPullVVsMeas0 = new TH2D("hPullVVsMeas0", "FST pull 1 vs local meas0;meas0 [cm];pullUnbiased1", kFwdAlignLocalMeas0Bins, kFwdAlignLocalMeas0Min, kFwdAlignLocalMeas0Max, 160, -10, 10);
+        TH2D *hPullVVsMeas1 = new TH2D("hPullVVsMeas1", "FST pull 1 vs local meas1;meas1 [cm];pullUnbiased1", kFwdAlignLocalMeas1Bins, kFwdAlignLocalMeas1Min, kFwdAlignLocalMeas1Max, 160, -10, 10);
         tree->Draw("pullUnbiased0:meas0>>hPullUVsMeas0", fstPullCut, "goff");
         tree->Draw("pullUnbiased0:meas1>>hPullUVsMeas1", fstPullCut, "goff");
         tree->Draw("pullUnbiased1:meas0>>hPullVVsMeas0", fstPullCut, "goff");

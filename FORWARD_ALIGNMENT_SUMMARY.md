@@ -25,10 +25,12 @@ StRoot/StFwdTrackMaker/StFwdTrackMaker.h
 StRoot/StFwdTrackMaker/include/Tracker/TrackFitter.h
 StRoot/StFwdTrackMaker/macro/mudst/fwd_afterburner.C
 fwd_alignment_residual_qa.C
+inspect_fst_ftus_geometry.C
+toy_fst_inner_delta_z.C
 FORWARD_ALIGNMENT_SUMMARY.md
 ```
 
-Those final changes add track-level post-selection metadata, fix the PV/FST sorting ambiguity, update the QA sorting check, keep the afterburner default at effectively all events, and add this Markdown summary.
+Those changes add track-level post-selection metadata, fix the PV/FST sorting ambiguity, update the QA sorting check, configure the afterburner alignment workflow, add geometry and delta-z toy macros, and keep this Markdown summary as the running alignment log.
 
 Generated files such as `align_test.root`, `fGeom.root`, `fwd_align_qa.pdf`, logs, MuDst/PicoDst outputs, and temporary output directories are still untracked and should not be committed unless explicitly needed.
 
@@ -437,13 +439,13 @@ fwdTrack->setGeoCache("fGeom.root");
 
 and turns on the Forward tracking chain.
 
-The final afterburner change in `fwd_afterburner.C` sets:
+The afterburner alignment configuration sets:
 
 ```cpp
-nEvents default: 100 -> 999999999
+nEvents default: 1000
 ```
 
-This makes the default afterburner run over effectively all available events unless a smaller event count is passed explicitly.
+This keeps the default run long enough for alignment QA while still bounded for quick iteration. A larger event count can still be passed explicitly at the ROOT macro call site.
 
 ## 11. QA Macro Added
 
@@ -863,6 +865,546 @@ After this final commit, before using the newest tree schema for alignment, chec
 - New `align_test.root` has FST `sorting - fstGlobalSensor = 1`.
 - `fstDisk`, `fstWedge`, and `fstSensor` still decode correctly.
 - QA macro runs on the new file and produces pull pages.
-- Decide later whether the committed afterburner default of `999999999` events should remain long-term or be changed back to a smaller default for quick tests.
+- Decide later whether the committed afterburner default of `1000` events should remain long-term or be changed for large production-style alignment tests.
 
 After that, the next alignment-specific task is to write the residual extraction macro and start producing candidate disk/sensor correction tables.
+
+## 20. June 6, 2026 Update: Sensor-Local Coordinates, Outer FST Debugging, And First Delta-Z Toy
+
+This update records the follow-up alignment work done after the initial residual QA and alignment tree scaffolding. The focus was not to solve a full alignment yet, but to clarify the FST coordinate model, make the FST planar measurement more alignment-natural, and build the first toy macro for a very restricted `delta z` alignment test.
+
+### 20.1 Main Conceptual Clarification
+
+The key conceptual separation is now:
+
+```text
+raw-ish FST strip measurement -> detector-local measurement coordinates
+geometry cache / later alignment constants -> detector placement O/U/V
+GenFit residual -> local difference between measured hit and fitted track crossing
+```
+
+This matters because an alignment procedure should move sensor placement parameters, not rewrite the measured strip coordinate. For GenFit planar measurements, the detector-local hit should be stable:
+
+```text
+meas0, meas1 = where the cluster fired inside this sensor
+```
+
+while the plane placement should carry the geometry:
+
+```text
+global hit model = O + meas0 * U + meas1 * V
+```
+
+where:
+
+- `O` is the sensor active-center origin in STAR global coordinates.
+- `U` is the sensor local x/radial-like direction expressed as a global vector.
+- `V` is the sensor local y/phi-like direction expressed as a global vector.
+
+This is the model we want for alignment iterations:
+
+```text
+same measured meas0/meas1
+new O/U/V after applying alignment
+new residuals
+```
+
+### 20.2 Geometry Origin And FTUS Sensor Ordering
+
+The FST plane origin and axes are still created in:
+
+```cpp
+StRoot/StFwdTrackMaker/include/Tracker/FwdGeomUtils.h
+```
+
+The function is:
+
+```cpp
+FwdGeomUtils::getFstSensorOrigin(int index, TVector3 &u, TVector3 &v)
+```
+
+The important correction is that STAR hit sensor ordering and AGML `FTUS` copy ordering are not the same:
+
+```cpp
+// STAR event/hit sensor order:
+sensor 0 = inner
+sensor 1 = outer
+sensor 2 = outer
+
+// AGML FTUS copy order:
+FTUS_1 = outer
+FTUS_2 = outer
+FTUS_3 = inner
+```
+
+The code now maps:
+
+```cpp
+static const int kEventSensorToFtusCopy[3] = {3, 1, 2};
+```
+
+This means:
+
+```text
+event sensor 0 -> FTUS_3
+event sensor 1 -> FTUS_1
+event sensor 2 -> FTUS_2
+```
+
+The origin is also no longer the raw `FTUS` node translation. The `FTUS` node translation is near the wedge/disk origin; the active silicon is an offset `TGeoTubeSeg` inside the node. The code now inspects the active shape and computes its active center:
+
+```cpp
+rCenter = 0.5 * (tube->GetRmin() + tube->GetRmax());
+phiCenter = 0.5 * (tube->GetPhi1() + tube->GetPhi2());
+```
+
+then transforms that local active center to global coordinates:
+
+```cpp
+_matrix->LocalToMaster(activeLocal, activeMaster);
+origin.SetXYZ(activeMaster[0], activeMaster[1], activeMaster[2]);
+```
+
+This fixed the earlier problem where all sensor origins were effectively at the wedge/disk origin rather than the active silicon center.
+
+### 20.3 U And V Axes
+
+`U` and `V` still come from the current geometry cache:
+
+```cpp
+u = column 0 of the TGeo rotation matrix
+v = column 1 of the TGeo rotation matrix
+```
+
+The code extracts them as:
+
+```cpp
+u.SetXYZ(rot[0], rot[3], rot[6]);
+v.SetXYZ(rot[1], rot[4], rot[7]);
+```
+
+Then it normalizes `V` so the local `V` direction is consistently counterclockwise / positive phi-like:
+
+```cpp
+if (u.Cross(v).Z() < 0) v = -v;
+```
+
+Important interpretation:
+
+```text
+U and V are local detector axes expressed in global STAR coordinates.
+They are not local coordinate values.
+```
+
+The local coordinate values are `meas0` and `meas1`.
+
+### 20.4 Direct Sensor-Local FST Measurement Conversion
+
+The FST planar measurement calculation is now in:
+
+```cpp
+StRoot/StFwdTrackMaker/include/Tracker/TrackFitter.h
+```
+
+inside:
+
+```cpp
+TrackFitter::createTrackPointFromPlanarMeasurement(...)
+```
+
+The current FST-specific branch starts from:
+
+```cpp
+const int globalSensor = static_cast<int>(fh->_genfit_plane_index);
+const int disk = globalSensor / (kFstNumWedgePerDisk * kFstNumSensorsPerWedge);
+const int electronicWedge = (globalSensor / kFstNumSensorsPerWedge) % kFstNumWedgePerDisk;
+const int sensor = globalSensor % kFstNumSensorsPerWedge;
+
+const double r = fh->_localPosition[0];
+const double stripPhi = fh->_localPosition[1];
+```
+
+Here:
+
+```text
+r        = radial strip center in cm
+stripPhi = meanPhiStrip * kFstStripPitchPhi
+```
+
+`stripPhi` is not global STAR phi. It is the FST phi-strip index expressed as an angle in the wedge coordinate.
+
+The full FST wedge has:
+
+```text
+128 phi bins per radial row
+8 radial rows per wedge
+```
+
+The sensors are:
+
+```text
+sensor 0 inner: full 30 degree wedge, 4 radial rows x 128 phi bins
+sensor 1 outer: one outer half, 4 radial rows x 64 phi bins
+sensor 2 outer: the other outer half, 4 radial rows x 64 phi bins
+```
+
+However, `meanPhiStrip` is effectively a wedge-level `0..127` coordinate, not a local `0..63` coordinate for each outer sensor. This was an important debugging point.
+
+The code defines:
+
+```cpp
+stripSign = kFstzFilp[disk] * kFstzDirct[electronicWedge];
+halfWedgePhi = 0.5 * kFstNumPhiSegPerWedge * kFstStripPitchPhi;
+edgeToCenterPhi = halfWedgePhi - 0.5 * kFstStripPitchPhi;
+```
+
+Meanings:
+
+```text
+stripSign
+    +1 or -1 depending on disk and wedge orientation.
+    It tells whether increasing strip number moves toward positive local phi/V.
+
+halfWedgePhi
+    15 degrees, because each wedge is 30 degrees wide.
+
+edgeToCenterPhi
+    angular distance from strip-0 center to wedge center.
+    It is 15 degrees minus half a strip pitch because strip 0 is a strip center,
+    not a physical wedge edge.
+```
+
+The local angular coordinate is:
+
+```cpp
+dphi
+```
+
+This is:
+
+```text
+hit angular offset relative to the wedge-center radial axis
+```
+
+It is not global phi.
+
+The current formula is:
+
+```cpp
+double dphi = stripSign * (stripPhi - edgeToCenterPhi);
+if (sensor == 1) {
+    dphi = stripSign * (edgeToCenterPhi - stripPhi + 0.5 * kFstStripGapPhi);
+} else if (sensor == 2) {
+    dphi = stripSign * (edgeToCenterPhi - stripPhi - 0.5 * kFstStripGapPhi);
+}
+```
+
+For the sensor center:
+
+```cpp
+const double sensorRSpan = 0.5 * kFstNumRStripsPerWedge * kFstStripPitchR;
+const double centerR = (sensor == 0)
+    ? kFstrStart[0] + 0.5 * sensorRSpan
+    : kFstrStart[kFstNumRStripsPerWedge / 2] + 0.5 * sensorRSpan;
+const double outerCenterDphi = 0.5 * (halfWedgePhi + kFstStripGapPhi);
+```
+
+The active center angles are:
+
+```text
+sensor 0: 0 degrees relative to wedge center
+sensor 1: +8 degrees times stripSign
+sensor 2: -8 degrees times stripSign
+```
+
+The local Cartesian measurement is then:
+
+```cpp
+hitOnPlane[0] = r * cos(dphi) - centerR * cos(centerDphi);
+hitOnPlane[1] = r * sin(dphi) - centerR * sin(centerDphi);
+```
+
+Interpretation:
+
+```text
+hitOnPlane[0] = radial-like local coordinate relative to the active sensor center
+hitOnPlane[1] = phi-like local coordinate relative to the active sensor center
+```
+
+This removed dependence on `plane->getO()` from the FST measurement-value calculation. That is more natural for alignment because moving the plane later should not change the strip-measured local coordinate.
+
+### 20.5 Outer Sensor Sign Debugging
+
+There was a short but important debugging loop on the outer sensors.
+
+The geometry cache inspection showed, for disk 0 / wedge 0:
+
+```text
+sensor 0 active center: 75 degrees
+sensor 1 active center: 83 degrees
+sensor 2 active center: 67 degrees
+```
+
+Relative to the wedge center at 75 degrees:
+
+```text
+sensor 0:  0 degrees
+sensor 1: +8 degrees
+sensor 2: -8 degrees
+```
+
+For disk 1, `kFstzFilp` flips this:
+
+```text
+sensor 1: -8 degrees
+sensor 2: +8 degrees
+```
+
+A temporary sign change wrongly treated sensor 2 as if its strip center were around strip `31.5`, like sensor 1. That was incorrect because `meanPhiStrip` is a wedge-level coordinate. Sensor 2's center is around strip `95.5`, not `31.5`.
+
+The bad temporary behavior was effectively:
+
+```text
+stripSign = +1:
+sensor 0 center: 0 degrees
+sensor 1 hit center: +8 degrees
+sensor 2 hit center: +7 degrees  <-- wrong side
+```
+
+The corrected behavior is:
+
+```text
+stripSign = +1:
+sensor 0 center: 0 degrees
+sensor 1 hit center: +8 degrees
+sensor 2 hit center: -8 degrees
+
+stripSign = -1:
+sensor 0 center: 0 degrees
+sensor 1 hit center: -8 degrees
+sensor 2 hit center: +8 degrees
+```
+
+This is consistent with the `fGeom.root` active sensor centers and with the final code state.
+
+The user's QA plot after the bad temporary patch showed very large alternating `pullUnbiased1` values. That plot should be discarded because it was produced with the wrong sign convention. The subsequent correction should be used for the next afterburner run.
+
+### 20.6 Geometry Inspection Macro
+
+Added:
+
+```cpp
+inspect_fst_ftus_geometry.C
+```
+
+Purpose:
+
+```text
+Print FST disk, wedge, event sensor id, GEANT FSTW copy,
+FTUS copy, node origin, active center, radial range, phi range, and path.
+```
+
+Example usage:
+
+```bash
+root -l -b -q 'inspect_fst_ftus_geometry.C("fGeom.root")'
+root -l -b -q 'inspect_fst_ftus_geometry.C("fGeom.root",0,0)'
+root -l -b -q 'inspect_fst_ftus_geometry.C("fGeom.root",-1,-1,"fst_ftus_geometry.csv")'
+```
+
+This macro was used to verify that:
+
+```text
+FTUS node translation is not the active silicon center.
+FTUS active shapes contain the correct R and phi ranges.
+STAR sensor order and AGML FTUS copy order differ.
+Outer sensor centers are at approximately +/-8 degrees from wedge center.
+```
+
+### 20.7 QA Macro Updates
+
+Updated:
+
+```cpp
+fwd_alignment_residual_qa.C
+```
+
+Important current QA behavior:
+
+```text
+Measurement maps:
+    Use all valid FST measurement rows.
+    Do not apply the track momentum/eta cut.
+
+Residual and pull plots:
+    Require trackEta >= 2.5
+    Require trackEta <= 4.0
+    Require trackP > 0.5
+    Require fit convergence
+    Require residualDim == 2
+```
+
+The local measurement-map binning is now:
+
+```text
+meas0: -6 cm to +6 cm, 1 cm bins
+meas1: -12 cm to +12 cm, 1 cm bins
+```
+
+The macro now includes:
+
+```text
+meas1 vs meas0 for all FST hits
+meas1 vs meas0 by disk
+meas1 vs meas0 by wedge
+meas1 vs meas0 by sensor-in-wedge
+meas1 vs meas0 by global sensor
+residual vs local meas0/meas1
+pull vs local meas0/meas1
+mean residual / pull by sensor
+occupancy diagnostics
+```
+
+The local measurement maps were crucial for seeing that the inner sensors centered naturally first, while the outer sensors were sensitive to the manual half-wedge conversion.
+
+### 20.8 First Toy Delta-Z Macro
+
+Added:
+
+```cpp
+toy_fst_inner_delta_z.C
+```
+
+Usage:
+
+```bash
+root -l -b -q 'toy_fst_inner_delta_z.C("align_test.root","fGeom.root")'
+```
+
+Purpose:
+
+```text
+Use only fstSensor == 0 rows to estimate a toy delta-z alignment parameter.
+```
+
+The macro reads the existing `fwdAlign` tree and uses only branches already present:
+
+```text
+fstGlobalSensor
+fstDisk
+fstWedge
+fstSensor
+hasResidual
+residualDim
+fitConverged
+trackPx
+trackPy
+trackPz
+trackP
+trackEta
+trackNHitsFit if available
+resUnbiased0
+resUnbiased1
+resUnbiasedSigma0
+resUnbiasedSigma1
+```
+
+It uses `fGeom.root` only to recover each inner sensor's `U,V` axes. Then it estimates local slopes using the track-level momentum:
+
+```cpp
+slope0 = p.Dot(U) / pz;
+slope1 = p.Dot(V) / pz;
+```
+
+The first-order model is:
+
+```text
+residual0 ~= slope0 * deltaZ
+residual1 ~= slope1 * deltaZ
+```
+
+The weighted least-squares solution is:
+
+```cpp
+deltaZ = sum(slope * residual / sigma^2) / sum(slope^2 / sigma^2)
+err    = 1 / sqrt(sum(slope^2 / sigma^2))
+```
+
+Selection used:
+
+```text
+fstSensor == 0
+hasResidual == 1
+residualDim >= 2
+fitConverged == 1
+2.5 <= trackEta <= 4.0
+trackP > 0.5
+trackNHitsFit >= 5 if the branch is available
+```
+
+On the valid `align_test.root` available on June 6, the toy macro printed:
+
+```text
+input tree entries: 316604
+selected inner FST rows: 18157
+
+all inner: deltaZ = -5.206402 cm  +/- 0.095154 cm
+disk 0:    deltaZ =  6.518399 cm  +/- 0.153254 cm
+disk 1:    deltaZ = -8.238457 cm  +/- 0.163809 cm
+disk 2:    deltaZ = -17.827814 cm +/- 0.180775 cm
+```
+
+The macro wrote:
+
+```text
+toy_fst_inner_delta_z.root
+toy_fst_inner_delta_z.pdf
+```
+
+Those output files are generated artifacts and should not be committed.
+
+### 20.9 Interpretation Of The Toy Delta-Z Numbers
+
+The toy `deltaZ` values are deliberately not yet treated as real alignment constants.
+
+Reasons:
+
+1. The macro uses track-level momentum branches, not the fitted local track direction at each measurement plane.
+2. For a real `delta z` solve, the tree should store per-hit:
+
+```text
+trackSlope0 = d(meas0_predicted) / dz
+trackSlope1 = d(meas1_predicted) / dz
+```
+
+3. The residuals may still contain remaining coordinate-model, covariance, track-selection, or weak-mode effects.
+4. The current toy result is useful as a diagnostic and a framework test, not as a correction to apply.
+
+The next serious alignment-tree schema improvement should be to add per-hit local slopes from the fitted GenFit state at the same plane where the residual is computed.
+
+### 20.10 Current Recommended Next Step
+
+Before applying any correction constants:
+
+1. Rebuild after the final corrected outer-sensor `dphi` code.
+2. Rerun the afterburner to produce a fresh `align_test.root`.
+3. Rerun `fwd_alignment_residual_qa.C`.
+4. Confirm that outer sensor local maps and pull means are improved relative to the bad temporary sign run.
+5. Run `toy_fst_inner_delta_z.C` only as a diagnostic.
+6. Add per-hit local slopes to `fwdAlign`.
+7. Redo the inner-sensor-only `delta z` toy using those real local slopes.
+8. Only after that, consider applying trial `delta z` constants in geometry/alignment.
+
+The first alignment application should still be conservative:
+
+```text
+one deltaZ per FST disk using only fstSensor == 0
+```
+
+Then, if stable:
+
+```text
+one deltaZ per inner sensor
+```
+
+Full outer-sensor alignment should wait until the manual half-wedge transformation and residual QA are stable.

@@ -5,6 +5,9 @@
 #include "TGeoNode.h"
 #include "TGeoMatrix.h"
 #include "TGeoNavigator.h"
+#include "TGeoBBox.h"
+#include "TGeoTube.h"
+#include "TMath.h"
 
 class FwdGeomUtils {
     public:
@@ -125,8 +128,10 @@ class FwdGeomUtils {
             static const int kElecToGeantWedge[12]      = {2, 7, 1, 12, 6, 11, 5, 10, 4, 9, 3, 8};
             static const int kElecToGeantWedgeDisk2[12] = {7, 1, 12, 6, 11, 5, 10, 4, 9, 3, 8, 2};
 
-            // retrive the sensor index that goes from 1-3 from global sensor index
-            int sensorIndex = (index % 3) + 1;
+            // STAR hit sensors are ordered inner/outer/outer: 0,1,2.
+            // AGML FTUS copies are ordered outer/outer/inner: 1,2,3.
+            static const int kEventSensorToFtusCopy[3] = {3, 1, 2};
+            int sensorIndex = kEventSensorToFtusCopy[index % 3];
             // retrive the wedge index that goes from 1-12 from global sensor index
             int electronicWedge = (index / 3) % 12;  // 0-indexed per-disk electronic wedge
             // retrive the plane index that goes from 4-6 from global sensor index
@@ -146,6 +151,34 @@ class FwdGeomUtils {
                 double x = _matrix->GetTranslation()[0];
                 double y = _matrix->GetTranslation()[1];
                 double z = _matrix->GetTranslation()[2];
+                TVector3 origin(x, y, z);
+
+                // FTUS nodes are placed at the wedge/disk origin, while the active silicon
+                // is an offset tube segment inside the node.  Use the active shape center as
+                // the GenFit plane origin so measurement coordinates are sensor-local.
+                TGeoShape *shape = (_volume ? _volume->GetShape() : nullptr);
+                Double_t activeLocal[3] = {0.0, 0.0, 0.0};
+                bool haveActiveCenter = false;
+                if (auto tube = dynamic_cast<TGeoTubeSeg*>(shape)) {
+                    const double rCenter = 0.5 * (tube->GetRmin() + tube->GetRmax());
+                    const double phiCenter = 0.5 * (tube->GetPhi1() + tube->GetPhi2()) * TMath::DegToRad();
+                    activeLocal[0] = rCenter * TMath::Cos(phiCenter);
+                    activeLocal[1] = rCenter * TMath::Sin(phiCenter);
+                    activeLocal[2] = 0.0;
+                    haveActiveCenter = true;
+                } else if (auto box = dynamic_cast<TGeoBBox*>(shape)) {
+                    const Double_t *boxOrigin = box->GetOrigin();
+                    activeLocal[0] = boxOrigin[0];
+                    activeLocal[1] = boxOrigin[1];
+                    activeLocal[2] = boxOrigin[2];
+                    haveActiveCenter = true;
+                }
+                if (haveActiveCenter) {
+                    Double_t activeMaster[3] = {0.0, 0.0, 0.0};
+                    _matrix->LocalToMaster(activeLocal, activeMaster);
+                    origin.SetXYZ(activeMaster[0], activeMaster[1], activeMaster[2]);
+                }
+
                 // Column 0 of R = local x-axis in global space = u
                 // Column 1 of R = local y-axis in global space = v
                 // GetRotationMatrix() is row-major: element [i*3+j] = R[i][j]
@@ -158,12 +191,12 @@ class FwdGeomUtils {
                 // across all sensors.  Test: (U × V)·ẑ < 0 means V is clockwise.
                 if (u.Cross(v).Z() < 0) v = -v;
                 if ( _verbose ){
-                    LOG_INFO << "FST Sensor " << index << " origin: " << x << ", " << y << ", " << z << endm;
+                    LOG_INFO << "FST Sensor " << index << " origin: " << origin.X() << ", " << origin.Y() << ", " << origin.Z() << endm;
                     LOG_INFO << "\tSensor " << index << " U = " << u.X() << ", " << u.Y() << ", " << u.Z() << endm;
                     LOG_INFO << "\tSensor " << index << " V = " << v.X() << ", " << v.Y() << ", " << v.Z() << endm;
                 }
 
-                return TVector3(x, y, z);
+                return origin;
             }
             std ::cerr << "Failed to get FST sensor origin for index " << index << std::endl;
             return TVector3(0,0,0);
