@@ -62,6 +62,7 @@ void inspect_fst_ftus_geometry(
     *out << "disk,wedge,eventSensor,geantFSTW,ftusCopy,"
          << "nodeX,nodeY,nodeZ,nodeR,nodePhiDeg,"
          << "activeX,activeY,activeZ,activeR,activePhiDeg,"
+         << "uPhiDeg,vPhiDeg,crossUvZ,"
          << "shapeRMin,shapeRMax,shapePhi1Deg,shapePhi2Deg,path\n";
 
     for (int disk = 0; disk < kNumDisks; ++disk) {
@@ -104,6 +105,18 @@ void inspect_fst_ftus_geometry(
                 const double nodeZ = nodeTranslation[2];
                 const double nodeR = std::hypot(nodeX, nodeY);
                 const double nodePhiDeg = std::atan2(nodeY, nodeX) * TMath::RadToDeg();
+                const Double_t *rotation = matrix->GetRotationMatrix();
+                const double ux = rotation[0];
+                const double uy = rotation[3];
+                double vx = rotation[1];
+                double vy = rotation[4];
+                const double crossUvZ = ux * vy - uy * vx;
+                if (crossUvZ < 0.0) {
+                    vx = -vx;
+                    vy = -vy;
+                }
+                const double uPhiDeg = std::atan2(uy, ux) * TMath::RadToDeg();
+                const double vPhiDeg = std::atan2(vy, vx) * TMath::RadToDeg();
 
                 double shapeRMin = std::numeric_limits<double>::quiet_NaN();
                 double shapeRMax = std::numeric_limits<double>::quiet_NaN();
@@ -155,11 +168,14 @@ void inspect_fst_ftus_geometry(
                      << nodePhiDeg << ","
                      << activeMaster[0] << ","
                      << activeMaster[1] << ","
-                     << activeMaster[2] << ","
-                     << activeR << ","
-                     << activePhiDeg << ","
-                     << shapeRMin << ","
-                     << shapeRMax << ","
+                         << activeMaster[2] << ","
+                         << activeR << ","
+                         << activePhiDeg << ","
+                         << uPhiDeg << ","
+                         << vPhiDeg << ","
+                         << crossUvZ << ","
+                         << shapeRMin << ","
+                         << shapeRMax << ","
                      << shapePhi1Deg << ","
                      << shapePhi2Deg << ","
                      << path.Data()

@@ -485,9 +485,9 @@ class TrackFitter {
 
             double dphi = stripSign * (stripPhi - edgeToCenterPhi);
             if (sensor == 1) {
-                dphi = stripSign * (edgeToCenterPhi - stripPhi + 0.5 * kFstStripGapPhi);
-            } else if (sensor == 2) {
                 dphi = stripSign * (edgeToCenterPhi - stripPhi - 0.5 * kFstStripGapPhi);
+            } else if (sensor == 2) {
+                dphi = stripSign * (edgeToCenterPhi - stripPhi + 0.5 * kFstStripGapPhi);
             }
 
             const double sensorRSpan = 0.5 * kFstNumRStripsPerWedge * kFstStripPitchR;

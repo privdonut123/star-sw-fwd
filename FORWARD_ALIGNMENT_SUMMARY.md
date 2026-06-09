@@ -26,11 +26,11 @@ StRoot/StFwdTrackMaker/include/Tracker/TrackFitter.h
 StRoot/StFwdTrackMaker/macro/mudst/fwd_afterburner.C
 fwd_alignment_residual_qa.C
 inspect_fst_ftus_geometry.C
-toy_fst_inner_delta_z.C
+toy_fst_inner_disk_xygamma.C
 FORWARD_ALIGNMENT_SUMMARY.md
 ```
 
-Those changes add track-level post-selection metadata, fix the PV/FST sorting ambiguity, update the QA sorting check, configure the afterburner alignment workflow, add geometry and delta-z toy macros, and keep this Markdown summary as the running alignment log.
+Those changes add track-level post-selection metadata, fix the PV/FST sorting ambiguity, update the QA sorting check, configure the afterburner alignment workflow, add geometry and in-plane alignment toy macros, and keep this Markdown summary as the running alignment log. The earlier delta-z toy macro was later removed because the available branches did not yet provide a trustworthy per-hit local slope model for a real z solve.
 
 Generated files such as `align_test.root`, `fGeom.root`, `fwd_align_qa.pdf`, logs, MuDst/PicoDst outputs, and temporary output directories are still untracked and should not be committed unless explicitly needed.
 
@@ -63,6 +63,15 @@ fwd_alignment_residual_qa.C
 ```
 
 It is a standalone ROOT macro that reads `align_test.root` and produces alignment QA plots.
+
+Additional standalone macros used during the current alignment debugging are:
+
+```bash
+inspect_fst_ftus_geometry.C
+toy_fst_inner_disk_xygamma.C
+```
+
+`toy_fst_inner_disk_xygamma.C` is a toy in-plane disk-level solve for `deltaX`, `deltaY`, and `gammaZ` using only inner FST sensors. It intentionally does not solve `deltaZ`.
 
 ## 3. What Was Added To `StFwdTrackMaker`
 
@@ -1267,144 +1276,128 @@ occupancy diagnostics
 
 The local measurement maps were crucial for seeing that the inner sensors centered naturally first, while the outer sensors were sensitive to the manual half-wedge conversion.
 
-### 20.8 First Toy Delta-Z Macro
+### 20.8 Delta-Z Toy Removed
 
-Added:
+The earlier file:
 
 ```cpp
 toy_fst_inner_delta_z.C
 ```
 
-Usage:
+was removed from the working tree.
 
-```bash
-root -l -b -q 'toy_fst_inner_delta_z.C("align_test.root","fGeom.root")'
+The reason is conceptual, not just cleanup: the available `fwdAlign` branches currently contain track-level momentum, but not the fitted per-hit local track direction or the exact local derivatives at each measurement plane. A real z solve needs the response of the local residual to a displacement of the plane along global z:
+
+```text
+d(residual0) / dz
+d(residual1) / dz
+```
+
+Using only global track momentum as a proxy produced toy numbers that were too easy to misread as alignment constants. Those numbers are no longer part of the recommended workflow.
+
+Generated delta-z artifacts were also removed:
+
+```text
+toy_fst_delta_z_solver.*
+toy_fst_delta_z_inner_res0.*
+toy_fst_delta_z_inner_res1.*
+toy_fst_inner_delta_z.root
+toy_fst_inner_delta_z.pdf
+```
+
+### 20.9 In-Plane Inner-Sensor Toy Solver
+
+The remaining toy solver is:
+
+```cpp
+toy_fst_inner_disk_xygamma.C
 ```
 
 Purpose:
 
 ```text
-Use only fstSensor == 0 rows to estimate a toy delta-z alignment parameter.
+Use only fstSensor == 0 rows to solve one in-plane rigid correction per FST disk.
 ```
 
-The macro reads the existing `fwdAlign` tree and uses only branches already present:
+The solved parameters are:
 
 ```text
-fstGlobalSensor
-fstDisk
-fstWedge
-fstSensor
-hasResidual
-residualDim
-fitConverged
-trackPx
-trackPy
-trackPz
-trackP
-trackEta
-trackNHitsFit if available
-resUnbiased0
-resUnbiased1
-resUnbiasedSigma0
-resUnbiasedSigma1
-```
-
-It uses `fGeom.root` only to recover each inner sensor's `U,V` axes. Then it estimates local slopes using the track-level momentum:
-
-```cpp
-slope0 = p.Dot(U) / pz;
-slope1 = p.Dot(V) / pz;
+deltaX
+deltaY
+gammaZ
 ```
 
 The first-order model is:
 
 ```text
-residual0 ~= slope0 * deltaZ
-residual1 ~= slope1 * deltaZ
+residual0 ~= -U dot [(deltaX, deltaY, 0) + gammaZ * (zhat x P)]
+residual1 ~= -V dot [(deltaX, deltaY, 0) + gammaZ * (zhat x P)]
 ```
 
-The weighted least-squares solution is:
-
-```cpp
-deltaZ = sum(slope * residual / sigma^2) / sum(slope^2 / sigma^2)
-err    = 1 / sqrt(sum(slope^2 / sigma^2))
-```
-
-Selection used:
+where:
 
 ```text
-fstSensor == 0
-hasResidual == 1
-residualDim >= 2
-fitConverged == 1
-2.5 <= trackEta <= 4.0
-trackP > 0.5
-trackNHitsFit >= 5 if the branch is available
+P = O + meas0 * U + meas1 * V
 ```
 
-On the valid `align_test.root` available on June 6, the toy macro printed:
+This is deliberately an in-plane toy. It does not solve `deltaZ`.
+
+### 20.10 June 9 Closure Status
+
+The newest useful closure diagnostic is:
 
 ```text
-input tree entries: 316604
-selected inner FST rows: 18157
-
-all inner: deltaZ = -5.206402 cm  +/- 0.095154 cm
-disk 0:    deltaZ =  6.518399 cm  +/- 0.153254 cm
-disk 1:    deltaZ = -8.238457 cm  +/- 0.163809 cm
-disk 2:    deltaZ = -17.827814 cm +/- 0.180775 cm
+measGlobal = O + meas0 * U + meas1 * V
+closure    = measGlobal - fstHitGlobal
 ```
 
-The macro wrote:
+After fixing the outer-sensor half-gap sign convention, the in-plane closure components are the trusted check:
 
 ```text
-toy_fst_inner_delta_z.root
-toy_fst_inner_delta_z.pdf
+closureU = closure dot U
+closureV = closure dot V
 ```
 
-Those output files are generated artifacts and should not be committed.
-
-### 20.9 Interpretation Of The Toy Delta-Z Numbers
-
-The toy `deltaZ` values are deliberately not yet treated as real alignment constants.
-
-Reasons:
-
-1. The macro uses track-level momentum branches, not the fitted local track direction at each measurement plane.
-2. For a real `delta z` solve, the tree should store per-hit:
+The current interpretation is:
 
 ```text
-trackSlope0 = d(meas0_predicted) / dz
-trackSlope1 = d(meas1_predicted) / dz
+closureU/V passing -> local strip-to-sensor-coordinate mapping is probably consistent.
+closureZ failing   -> sensor plane z/source-geometry convention still needs investigation.
 ```
 
-3. The residuals may still contain remaining coordinate-model, covariance, track-selection, or weak-mode effects.
-4. The current toy result is useful as a diagnostic and a framework test, not as a correction to apply.
+This is important because FST `U` and `V` are nearly transverse:
 
-The next serious alignment-tree schema improvement should be to add per-hit local slopes from the fitted GenFit state at the same plane where the residual is computed.
+```text
+U_z ~= 0
+V_z ~= 0
+```
 
-### 20.10 Current Recommended Next Step
+Therefore:
+
+```text
+measGlobal.z ~= O.z
+closureZ ~= O.z - fstHitGlobalZ
+```
+
+So `closureZ` mainly tests whether the z coordinate used by `FwdGeomUtils::getFstSensorOrigin()` matches the z coordinate used when the original `StFwdHit` global position was built. It is not primarily a test of the `r/phi` local measurement conversion.
+
+The failed z closure is not evidence by itself that `meas0/meas1` are wrong. It is evidence that z placement, shape-origin convention, or hit global z creation must be reconciled before any delta-z alignment attempt should be trusted.
+
+### 20.11 Current Recommended Next Step
 
 Before applying any correction constants:
 
-1. Rebuild after the final corrected outer-sensor `dphi` code.
-2. Rerun the afterburner to produce a fresh `align_test.root`.
-3. Rerun `fwd_alignment_residual_qa.C`.
-4. Confirm that outer sensor local maps and pull means are improved relative to the bad temporary sign run.
-5. Run `toy_fst_inner_delta_z.C` only as a diagnostic.
-6. Add per-hit local slopes to `fwdAlign`.
-7. Redo the inner-sensor-only `delta z` toy using those real local slopes.
-8. Only after that, consider applying trial `delta z` constants in geometry/alignment.
+1. Keep using `fwd_alignment_residual_qa.C` to monitor residuals, pulls, local measurement maps, and closure.
+2. Treat `closureU/V` as the primary validation for the FST local measurement conversion.
+3. Investigate `fstPlaneOriginZ` versus `fstHitGlobalZ` directly from `align_test.root`.
+4. Trace the source of `fstHitGlobalZ` in the FST hit-making path.
+5. Compare that source to the `FwdGeomUtils::getFstSensorOrigin()` active-center z calculation.
+6. Do not revive a delta-z solve until the z convention is understood and per-hit local track slopes are available.
 
-The first alignment application should still be conservative:
+The conservative alignment path remains:
 
 ```text
-one deltaZ per FST disk using only fstSensor == 0
+first:  inner-sensor-only in-plane disk corrections
+next:   inner-sensor-only per-sensor in-plane corrections
+later:  z and outer-sensor studies after the z convention and outer geometry are stable
 ```
-
-Then, if stable:
-
-```text
-one deltaZ per inner sensor
-```
-
-Full outer-sensor alignment should wait until the manual half-wedge transformation and residual QA are stable.
