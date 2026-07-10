@@ -1,2 +1,4 @@
 *.root
 plots/
+*.png
+*LOG

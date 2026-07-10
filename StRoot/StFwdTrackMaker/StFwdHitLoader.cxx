@@ -147,7 +147,7 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
             } else if ( sqrt(hitCov3(1, 1)) > sqrt(hitCov3(0, 0)) ){
                 sstr << " (vertical strip)";
             } else {
-                sstr << " (unknown orientation)";
+                sstr << " (diagonal strip, dxy = " << hitCov3(0, 1) << ")";
             }
             LOG_INFO << sstr.str() << endm;
 
@@ -160,16 +160,11 @@ int StFwdHitLoader::loadFttPointsFromStEvent( FwdDataSource::McTrackMap_t &mcTra
                 continue;
             }
 
-            // for now we skip diagonal strips
-            // We need to develop the matching algorithm in FwdTracker to be able to use these hits, 
-            // but for now we want to make sure they are not causing issues in the fitter
-            if ( sqrt(hitCov3(0, 0)) == sqrt(hitCov3(1, 1)) ){
-                LOG_INFO << "Skipping FTT point with equal covariance (diagonal/combined): "
-                         << "dx=" << sqrt(hitCov3(0, 0)) << " dy=" << sqrt(hitCov3(1, 1))
-                         << " disk=" << ((int)point->plane()) << endm;
-                continue;
-            }
-
+            // Diagonal strips have cov(0,0)==cov(1,1) with a non-zero off-diagonal
+            // term (a 45-degree rotated prolate error ellipse). The full 2x2
+            // covariance, including the off-diagonal terms, is loaded above so the
+            // fitter (ProlateSpacepointMeasurement) and the FwdTracker hit-matching
+            // both handle the rotated ellipse generally. See FwdHit::fttLargestErrorDir().
 
             // get the track id
             int track_id = point->idTruth();

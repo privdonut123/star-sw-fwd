@@ -546,12 +546,12 @@ class TrackFitter {
             measurement = new genfit::ProlateSpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
             static_cast<genfit::ProlateSpacepointMeasurement*>(measurement)->setLargestErrorDirection( led );
         } else if (fh->isFtt() ){
-            // largest error direction is in the radial direction, compute from cartesian coordinates
-            TVector3 led( fh->getX(), fh->getY(), 0 );
-            if ( fh->_covmat(0,0) > fh->_covmat(1,1))
-                led.SetXYZ( 1.0, 0, 0 );
-            else 
-                led.SetXYZ( 0.0, 1.0, 0 );
+            // Largest error direction lies along the strip length. Derive it from
+            // the 2x2 covariance so vertical, horizontal AND diagonal (45-degree
+            // rotated) strips are all handled correctly.
+            double ux = 0, uy = 0;
+            fh->fttLargestErrorDir( ux, uy );
+            TVector3 led( ux, uy, 0 );
             measurement = new genfit::ProlateSpacepointMeasurement(pv, fh->_covmat, fh->_detid, ++hitId, tp);
             static_cast<genfit::ProlateSpacepointMeasurement*>(measurement)->setLargestErrorDirection( led );
         } else {
