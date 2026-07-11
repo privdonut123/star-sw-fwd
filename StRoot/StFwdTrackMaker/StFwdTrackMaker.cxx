@@ -90,8 +90,6 @@ bool StFwdTrackMaker::mDebug = false; // initialize static member variable
 
 FwdSystem* FwdSystem::sInstance = nullptr;
 
-TH1F* hCrit2_DeltaPhi_good = nullptr;
-TH1F* hCrit2_DeltaPhi_bad = nullptr;
 
 
 //_______________________________________________________________________________________
@@ -284,9 +282,6 @@ int StFwdTrackMaker::Init() {
         auto fttZ = fwdGeoUtils.fttZ( {280.904999, 303.704987, 326.605011, 349.404999} );
         mFttZFromGeom.assign( fttZ.begin(), fttZ.end() );
     }
-
-    hCrit2_DeltaPhi_good = new TH1F("hCrit2_DeltaPhi_good", "Crit2_DeltaPhi_good", 100, 0, 100);
-    hCrit2_DeltaPhi_bad = new TH1F("hCrit2_DeltaPhi_bad", "Crit2_DeltaPhi_bad", 100, 0, 100);
     return kStOK;
 };
 
@@ -892,9 +887,9 @@ std::string StFwdTrackMaker::defaultConfig = R"(
     <TrackFinder nIterations="1">
         <Iteration nPhiSlices="1" > <!-- Options for first iteration -->
             <SegmentBuilder>
-                <Criteria name="Crit2_RZRatio" min="0" max="1.20" />
+                <!-- <Criteria name="Crit2_RZRatio" min="0" max="1.20" /> -->
                 <!-- <Criteria name="Crit2_DeltaRho" min="-50" max="50.9"/> -->
-                <Criteria name="Crit2_DeltaPhi" min="0" max="91.0" />
+                <Criteria name="Crit2_DeltaPhi" min="0" max="2.0" />
                 <!-- <Criteria name="Crit2_StraightTrackRatio" min="0.01" max="5.85"/> -->
             </SegmentBuilder>
 

@@ -6,7 +6,6 @@
 #include "KiTrack/ISectorSystem.h"
 #include "KiTrack/KiTrackExceptions.h"
 
-#include <cmath>
 #include <memory>
 #include <set>
 #include <string.h>
@@ -119,51 +118,10 @@ class FwdHit : public KiTrack::IHit {
         _detid = detid;
     }
 
-    bool isFst() const { return _detid == kFstId; }
-    bool isFtt() const { return _detid == kFttId; }
-    bool isEpd() const { return _detid == kFcsPresId; }
+    bool isFst() const { return _detid == kFstId; } 
+    bool isFtt() const { return _detid == kFttId; } 
+    bool isEpd() const { return _detid == kFcsPresId; } 
     bool isPV() const { return _detid == kTpcId; }
-
-    // In-plane (x,y) measurement geometry derived from the 2x2 block of the
-    // covariance matrix. An sTGC strip measures precisely perpendicular to its
-    // length and coarsely (strip-length/sqrt(12)) along it, so the position
-    // covariance is a prolate ellipse. For vertical/horizontal strips the
-    // ellipse is axis-aligned (cov(0,1)==0); for diagonal strips it is rotated
-    // 45 degrees, giving cov(0,0)==cov(1,1) with a non-zero off-diagonal term.
-    // These helpers handle all orientations uniformly via the analytic 2x2
-    // symmetric eigen-decomposition.
-
-    // Unit vector along the LARGEST position error (i.e. along the strip length).
-    void fttLargestErrorDir( double &ux, double &uy ) const {
-        const double a = _covmat(0, 0);
-        const double b = _covmat(0, 1);
-        const double c = _covmat(1, 1);
-        if ( fabs(b) < 1e-12 ) {
-            if ( a >= c ) { ux = 1.0; uy = 0.0; }
-            else          { ux = 0.0; uy = 1.0; }
-            return;
-        }
-        // Larger eigenvalue and its eigenvector (lambda+ - c, b) of [[a,b],[b,c]]
-        const double lambdaPlus = 0.5 * (a + c) + sqrt( 0.25 * (a - c) * (a - c) + b * b );
-        double vx = lambdaPlus - c;
-        double vy = b;
-        const double n = sqrt(vx * vx + vy * vy);
-        if ( n > 0 ) { vx /= n; vy /= n; }
-        ux = vx; uy = vy;
-    }
-
-    // Angle in [0, pi) of the precise (smallest-error) measurement direction,
-    // i.e. perpendicular to the strip length. Used to group strips of the same
-    // orientation when matching hits to a projected track state.
-    double fttPreciseAngle() const {
-        double ux, uy;
-        fttLargestErrorDir( ux, uy );
-        // precise direction is perpendicular to the largest-error direction
-        double ang = atan2( ux, -uy );
-        if ( ang < 0 ) ang += M_PI;       // direction is unsigned -> fold to [0, pi)
-        if ( ang >= M_PI ) ang -= M_PI;
-        return ang;
-    }
 
     std::shared_ptr<McTrack> getMcTrack() const { return _mcTrack; }
 

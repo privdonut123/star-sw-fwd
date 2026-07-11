@@ -15,8 +15,6 @@
 #include "TDecompChol.h"
 
 #include <algorithm>
-#include <cmath>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -1775,8 +1773,7 @@ class ForwardTrackMaker {
 
 
     /**
-     * @brief Finds FTT strips near projected state, keeping the closest hit per
-     *        measurement orientation (horizontal, vertical and the two diagonals)
+     * @brief Finds FTT strips near projected state, first for horizontal and then for vertical strips
      *
      * @param available_hits : FTT hits to consider
      * @param msp : measured state on plane from existing track fit projection
@@ -1793,9 +1790,8 @@ class ForwardTrackMaker {
             return found_hits;
         }
         
-        // we will find the closest strip hit per measurement orientation
-        // (horizontal, vertical and the two diagonals) and add them to the
-        // found_hits if they pass the threshold
+        // we will find the closest horizontal and vertical strip hits
+        // and add them to the found_hits if they pass the threshold
         TLorentzVector lv1, lv2;
         lv1.SetPxPyPzE( msp.getPos().X(), msp.getPos().Y(), 0, 1 );
 
@@ -1803,24 +1799,22 @@ class ForwardTrackMaker {
             printf( "findFttHitsNearProjectedState, msp = (%f, %f)\n", msp.getPos().X(), msp.getPos().Y() );
         }
 
-        // Group strips by their precise (smallest-error) measurement direction so
-        // that each independent orientation contributes one constraint. This covers
-        // vertical and horizontal strips as well as the two diagonal orientations
-        // (45-degree rotated error ellipse, cov(0,0)==cov(1,1)). Each orientation
-        // measures the track position along one direction, so keeping the closest
-        // hit per orientation provides complementary 1D constraints.
-        struct OrientCandidate {
-            KiTrack::IHit *hit = nullptr;
-            double dp = 99, dr = 99, dx = 99, dy = 99;
-        };
-        std::map<int, OrientCandidate> candidates; // keyed by quantized precise angle
-        const double angleBin = M_PI / 8.0;        // ~22.5 deg buckets
+        double horizontalMin_dx = 99;
+        double horizontalMin_dy = 99;
+        double horizontalMin_dr = 99;
+        double horizontalMin_dp = 99;
+        KiTrack::IHit *horizontalClosest = nullptr;
+
+        double verticalMin_dx = 99;
+        double verticalMin_dy = 99;
+        double verticalMin_dr = 99;
+        double verticalMin_dp = 99;
+        KiTrack::IHit *verticalClosest = nullptr;
 
         for (auto h : available_hits) {
-
-            FwdHit *fh = dynamic_cast<FwdHit*>(h);
-            double hsx = sqrt(fh->_covmat(0, 0));
-            double hsy = sqrt(fh->_covmat(1, 1));
+            
+            double hsx = sqrt(dynamic_cast<FwdHit*>(h)->_covmat(0, 0));
+            double hsy = sqrt(dynamic_cast<FwdHit*>(h)->_covmat(1, 1));
 
             lv2.SetPxPyPzE( h->getX(), h->getY(), 0, 1 );
             double sr = fabs(lv1.Pt() - lv2.Pt());
@@ -1828,40 +1822,64 @@ class ForwardTrackMaker {
             double sx = fabs(h->getX() - msp.getPos().X());
             double sy = fabs(h->getY() - msp.getPos().Y());
 
-            double preciseAngle = fh->fttPreciseAngle();
-            int orientKey = (int)lround( preciseAngle / angleBin ) % (int)lround( M_PI / angleBin );
-
             // Show the comparison of the projected state to the hit position, including the hit covariances, for debugging
-            // if the hit is within the thresholds in both phi and R, print out the details for debugging
+            // if the hit is within 5x the thresholds in both phi and R, print out the details for debugging
             if (verbose && sp < thresholdPhi && sr < thresholdR){
-                printf( "\t vs. hit@(%f+/-%f, %f+/-%f) => dx=%f, dy=%f, dR=%f, dPhi=%f (tid=%d), preciseAngle=%.1f deg (orientKey=%d)\n",
-                        h->getX(), hsx, h->getY(), hsy, sx, sy, sr, sp, fh->_tid, preciseAngle * 180.0 / M_PI, orientKey );
+                int tid = dynamic_cast<FwdHit*>(h)->_tid;
+                printf( "\t vs. hit@(%f+/-%f, %f+/-%f) => dx=%f, dy=%f, dR=%f, dPhi=%f (tid=%d), strip=", h->getX(), hsx, h->getY(), hsy, sx, sy, sr, sp, tid );
+                if ( hsx > hsy ){
+                    printf( "horizontal\n" );
+                } else if ( hsy > hsx ){
+                    printf( "vertical\n" );
+                } else {
+                    printf( "unknown orientation\n" );
+                }
+            }
+    
+            if ( hsx > hsy ){ // horizontal strip
+                if ( sp < horizontalMin_dp ){
+                    horizontalMin_dp = sp;
+                    horizontalClosest = h;
+                    horizontalMin_dx = sx;
+                    horizontalMin_dy = sy;
+                    horizontalMin_dr = sr;
+                }
+            } else if ( hsy > hsx ){ // vertical strip
+                if ( sp < verticalMin_dp ){
+                    verticalMin_dp = sp;
+                    verticalClosest = h;
+                    verticalMin_dx = sx;
+                    verticalMin_dy = sy;
+                    verticalMin_dr = sr;
+                }
+            } else {
+                LOG_WARN << "Hit with equal covariance in x and y, skipping" << endm;
+                LOG_WARN << "HSX = " << hsx << ", HSY = " << hsy << endm;
             }
 
-            OrientCandidate &cand = candidates[orientKey];
-            if ( sp < cand.dp ){
-                cand.dp = sp;
-                cand.hit = h;
-                cand.dx = sx;
-                cand.dy = sy;
-                cand.dr = sr;
-            }
         } // loop h
 
-        // For each orientation, add its closest hit if it passes the thresholds
-        for ( auto &kv : candidates ) {
-            OrientCandidate &cand = kv.second;
-            if ( !cand.hit ) continue;
-            if ( fabs(cand.dp) < thresholdPhi && fabs(cand.dr) < thresholdR && (cand.dx < thresholdX || cand.dy < thresholdY) ) {
-                found_hits.push_back(cand.hit);
-                LOG_INFO << "Adding FTT strip hit (orientKey=" << kv.first << ") with dPhi = " << cand.dp
-                         << ", dR = " << cand.dr << ", dx = " << cand.dx << ", dy = " << cand.dy
-                         << " (tid=" << dynamic_cast<FwdHit*>(cand.hit)->_tid << ")" << endm;
-            } else {
-                LOG_INFO << "Closest FTT strip (orientKey=" << kv.first << ") rejected: dPhi = " << cand.dp
-                         << ", dR = " << cand.dr << ", dx = " << cand.dx << ", dy = " << cand.dy << endm;
-            }
+        // check threshold and add the closest horizontal strip hit
+        if (  fabs(horizontalMin_dp) < thresholdPhi && fabs(horizontalMin_dr) < thresholdR && (horizontalMin_dx < thresholdX || horizontalMin_dy < thresholdY) ) {
+            found_hits.push_back(horizontalClosest);
+            LOG_INFO << "Adding horizontal strip hit with dPhi = " << horizontalMin_dp << ", dR = " << horizontalMin_dr << ", dx = " << horizontalMin_dx << ", dy = " << horizontalMin_dy << endm;
         }
+        
+        // check threshold and add the closest vertical strip hit
+        if (  fabs(verticalMin_dp) < thresholdPhi && fabs(verticalMin_dr) < thresholdR && (verticalMin_dx < thresholdX || verticalMin_dy < thresholdY) ) {
+            found_hits.push_back(verticalClosest);
+            LOG_INFO << "Adding vertical strip hit with dPhi = " << verticalMin_dp << ", dR = " << verticalMin_dr << ", dx = " << verticalMin_dx << ", dy = " << verticalMin_dy << endm;
+        }
+        
+
+        if ( horizontalClosest )
+            LOG_INFO << "Closest horizontal FTT strip to FST state: " << Form( "dR=%f, dPhi=%f, dx=%f, dy=%f (tid=%d) ", horizontalMin_dr, horizontalMin_dp, horizontalMin_dx, horizontalMin_dy, dynamic_cast<FwdHit*>(horizontalClosest)->_tid ) << endm;
+        else
+            LOG_INFO << "No horizontal FTT strip found near projected state" << endm;
+        if ( verticalClosest )
+            LOG_INFO << "Closest vertical FTT strip to FST state: " << Form( "dR=%f, dPhi=%f, dx=%f, dy=%f (tid=%d) ", verticalMin_dr, verticalMin_dp, verticalMin_dx, verticalMin_dy, dynamic_cast<FwdHit*>(verticalClosest)->_tid ) << endm;
+        else
+            LOG_INFO << "No vertical FTT strip found near projected state" << endm;
 
         return found_hits;
     } // findFttStripsNearProjectedState
