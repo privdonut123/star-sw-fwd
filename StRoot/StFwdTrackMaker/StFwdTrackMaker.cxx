@@ -573,9 +573,33 @@ int StFwdTrackMaker::Make() {
     if ( idealNumberOfSeeds > 0 ){
         float seedFindingEff = ( mForwardTracker -> getTrackSeeds().size() + 1e-5 ) / ( idealNumberOfSeeds + 1e-5 );
         LOG_INFO << "    (vs. " << idealNumberOfSeeds << " McTracks with FST>2, eff = " << seedFindingEff << ")" << endm;
-    } 
+    }
     /**********************************************************************/
-    
+
+    /**********************************************************************/
+    // Extract FCS ECAL clusters for FCS-constrained (trkType=5) fitting
+    {
+        std::vector<ForwardTrackMaker::FcsCluster> fcsClusters;
+        StFcsCollection* fcsColl = stEvent->fcsCollection();
+        if (fcsColl && mFcsDb) {
+            for (int det = 0; det <= 1; det++) {  // ECAL north=0, south=1
+                StSPtrVecFcsCluster& cls = fcsColl->clusters(det);
+                for (size_t ic = 0; ic < cls.size(); ic++) {
+                    StFcsCluster* clu = cls[ic];
+                    if (!clu || clu->energy() <= 0) continue;
+                    StThreeVectorD xyz = mFcsDb->getStarXYZfromColumnRow(det, clu->x(), clu->y());
+                    ForwardTrackMaker::FcsCluster fc;
+                    fc.x = xyz.x(); fc.y = xyz.y(); fc.z = xyz.z();
+                    fc.e = clu->energy(); fc.det = det;
+                    fcsClusters.push_back(fc);
+                }
+            }
+        }
+        LOG_INFO << "FCS-constrained: loaded " << fcsClusters.size() << " ECAL clusters for trkType=5 fitting" << endm;
+        mForwardTracker->setFcsClusters(fcsClusters);
+    }
+    /**********************************************************************/
+
     /**********************************************************************/
     // Run Track fitting on the seeds we found
     LOG_INFO << "\tFitting FWD Track Seeds" << endm;
@@ -858,6 +882,25 @@ void StFwdTrackMaker::FillEvent() {
     }
 
     // -------------------------------------------------------------------
+    // Add the BLC (beam-line-constrained) vertex, if found, so that
+    // kBLCVertexConstrained tracks below can be remapped to it.
+    int blcPvIndex = -1;
+    if ( mForwardTracker->getBLCVtxNTracks() > 0 ) {
+        StPrimaryVertex *bpv = new StPrimaryVertex();
+        TVector3 bp = mForwardTracker->getBLCVtxPos();
+        bpv->setPosition( StThreeVectorF( bp.X(), bp.Y(), bp.Z() ) );
+        float sigZ = (float)mForwardTracker->getBLCVtxSigmaZ();
+        float cov6[6] = { 0.01f, 0.f, 0.01f, 0.f, 0.f, sigZ*sigZ }; // sigmaXY=0.1cm
+        bpv->setCovariantMatrix( cov6 );
+        bpv->setNumTracksUsedInFinder( mForwardTracker->getBLCVtxNTracks() );
+        bpv->setBLCVertex();
+        stEvent->addPrimaryVertex( bpv );
+        blcPvIndex = static_cast<int>(stEvent->numberOfPrimaryVertices()) - 1;
+        LOG_DEBUG << "Added BLC vertex at z=" << bp.Z() << " sigmaZ=" << sigZ
+                  << " nTracks=" << mForwardTracker->getBLCVtxNTracks() << endm;
+    }
+
+    // -------------------------------------------------------------------
     // Add the tracks, remapping mVertexIndex to the StEvent PV collection.
     size_t indexTrack = 0;
     for ( auto &gtr : mForwardTracker->getTrackResults() ) {
@@ -868,9 +911,12 @@ void StFwdTrackMaker::FillEvent() {
             // Beamline, and PrimaryVertex-constrained tracks the relevant PV
             // is the event PV (and DCA is measured against it). For
             // ForwardVertex-constrained tracks the relevant PV is the RAVE
-            // forward vertex at offset + iVtx.
+            // forward vertex at offset + iVtx. For BLCVertex-constrained
+            // tracks the relevant PV is the BLC vertex added above.
             if ( gtr.mTrackType == StFwdTrack::kForwardVertexConstrained ) {
                 gtr.mVertexIndex = fwdRaveOffset + gtr.mVertexIndex;
+            } else if ( gtr.mTrackType == StFwdTrack::kBLCVertexConstrained && blcPvIndex >= 0 ) {
+                gtr.mVertexIndex = blcPvIndex;
             } else if ( eventPvIndex >= 0 ) {
                 gtr.mVertexIndex = eventPvIndex;
             } else {

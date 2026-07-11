@@ -58,6 +58,10 @@ class ForwardTrackMaker {
     const std::vector<genfit::GFRaveVertex*> &getVertices() const { return mFwdVertices; }
     const EventStats &getEventStats() const { return mEventStats; }
 
+    TVector3 getBLCVtxPos()     const { return mBLCVtxPos; }
+    double   getBLCVtxSigmaZ()  const { return sqrt(std::max(0.0, (double)mBLCVtxHit._covmat(2,2))); }
+    int      getBLCVtxNTracks() const { return mBLCVtxNTracks; }
+
     void Clear(){
         for ( auto &gtr : mTrackResults ){
             gtr.Clear();
@@ -976,6 +980,295 @@ class ForwardTrackMaker {
         return beamlineTracks;
     }
 
+    // Fit BLC-derived forward vertex and refit BLC tracks constrained to that vertex point.
+    //
+    // Algorithm:
+    //   1. Select good BLC tracks; extract DCA-z (mDCA.Z()) as z-estimate.
+    //   2. Weighted mean z_vtx with w_i = nFitPoints; scatter-based sigma_vtx.
+    //   3. Iterative outlier rejection: remove |z_i - z_vtx| > N*sigma.
+    //   4. Build FwdHit at (x_BL, y_BL, z_vtx) with sigma_xy from beam spot,
+    //      sigma_z from vertex fit scatter.
+    //   5. Refit each BLC track with that hit appended to its seed.
+    std::vector<GenfitTrackResult> doBLCVertexFitting( std::vector<GenfitTrackResult> &beamlineTracks ) {
+        if (verbose) LOG_INFO << ">>doBLCVertexFitting( #blc = " << beamlineTracks.size() << " )" << endm;
+        long long itStart = FwdTrackerUtils::nowNanoSecond();
+        mBLCVtxNTracks = 0; // reset per-event
+
+        std::vector<GenfitTrackResult> blcVtxTracks;
+
+        // --- Config ---
+        const int    minNFit    = mConfig.get<int>   ("TrackFitter:blcVtxMinNFitHits",  4);
+        const double maxChi2Ndf = mConfig.get<double>("TrackFitter:blcVtxMaxChi2Ndf",  10.0);
+        const double looseDcaZ  = mConfig.get<double>("TrackFitter:blcVtxLooseDcaZ",  100.0);
+        const double maxDcaXY   = mConfig.get<double>("TrackFitter:blcVtxMaxDcaXY",    10.0); // rejects sentinel (99,99,99) from failed extrapolateToLine; valid BLC tracks have DCA-XY~0
+        const double outlierN   = mConfig.get<double>("TrackFitter:blcVtxOutlierNSigma", 3.0);
+        const double sigmaXY    = mConfig.get<double>("TrackFitter:blcVtxSigmaXY",       0.1);
+        const double sigmaZsingle = mConfig.get<double>("TrackFitter:blcVtxSigmaZSingle", 30.0); // loose z when only 1 track
+
+        // --- Step 1: collect good BLC tracks for vertex input ---
+        struct TrkZ { double z; double w; };
+        std::vector<TrkZ> trkZs;
+        for (auto &gtr : beamlineTracks) {
+            if (!gtr.mIsFitConvergedFully) continue;
+            if (gtr.mNumFitPoints < minNFit) continue;
+            if (gtr.mNdf > 0 && gtr.mChi2 / gtr.mNdf > maxChi2Ndf) continue;
+            double dcaXY = sqrt(gtr.mDCA.X()*gtr.mDCA.X() + gtr.mDCA.Y()*gtr.mDCA.Y());
+            if (dcaXY > maxDcaXY) continue; // rejects sentinel (99,99,99); valid BLC tracks have DCA-XY~0
+            double zi = gtr.mDCA.Z();
+            if (fabs(zi) > looseDcaZ) continue;
+            trkZs.push_back({zi, (double)gtr.mNumFitPoints}); // weight = nFitPoints
+        }
+
+        // --- Steps 2-3: weighted mean + outlier rejection ---
+        double z_vtx    = mBeamlineHit.getZ(); // fallback = beam hit z (0)
+        double sigma_vtx = sigmaZsingle;        // fallback for single-track or 0-track events
+
+        if (!trkZs.empty()) {
+            for (int iter = 0; iter < 3; iter++) {
+                double sumW = 0, sumWZ = 0;
+                for (auto &tz : trkZs) { sumW += tz.w; sumWZ += tz.w * tz.z; }
+                if (sumW <= 0) break;
+                z_vtx = sumWZ / sumW;
+
+                if (trkZs.size() >= 2) {
+                    double sumWdz2 = 0;
+                    for (auto &tz : trkZs) sumWdz2 += tz.w * (tz.z - z_vtx) * (tz.z - z_vtx);
+                    // weighted RMS; floor at 1 cm to avoid over-constraint
+                    sigma_vtx = std::max(1.0, sqrt(sumWdz2 / (((double)trkZs.size()-1.0) * sumW / trkZs.size())));
+                }
+
+                bool removed = false;
+                for (auto it = trkZs.begin(); it != trkZs.end(); ) {
+                    if (fabs(it->z - z_vtx) > outlierN * sigma_vtx) {
+                        it = trkZs.erase(it); removed = true;
+                    } else { ++it; }
+                }
+                if (!removed) break;
+            }
+        }
+
+        if (verbose || kProfile)
+            LOG_INFO << "BLCVertex: z_vtx=" << z_vtx << " cm  sigma_vtx=" << sigma_vtx
+                     << " cm  nTrkUsed=" << trkZs.size() << "/" << beamlineTracks.size() << endm;
+
+        // --- Step 4: build the vertex hit ---
+        // Apply slope correction: beamline position at the fitted vertex z
+        double x_BL = mBeamlineHit.getX() + mBeamlineDxDz * z_vtx;
+        double y_BL = mBeamlineHit.getY() + mBeamlineDyDz * z_vtx;
+        mBLCVtxPos.SetXYZ(x_BL, y_BL, z_vtx);
+        mBLCVtxHit.setXYZDetId(x_BL, y_BL, z_vtx, kTpcId);
+        mBLCVtxHit._covmat.Zero();
+        mBLCVtxHit._covmat(0, 0) = sigmaXY * sigmaXY;
+        mBLCVtxHit._covmat(1, 1) = sigmaXY * sigmaXY;
+        mBLCVtxHit._covmat(2, 2) = sigma_vtx * sigma_vtx;
+        mBLCVtxNTracks = (int)trkZs.size();
+
+        // --- Step 5: refit each BLC track with the vertex hit ---
+        size_t index = 0;
+        for (auto &gtr : beamlineTracks) {
+            if (kProfile) mEventStats.mAttemptedBLCVtxFits++;
+
+            Seed_t seedWithVtx = gtr.mSeed;
+            seedWithVtx.push_back(&mBLCVtxHit);
+
+            GenfitTrackResult gtrV;
+            if (!gtr.mIsFitConvergedFully) {
+                gtrV = fitTrack(seedWithVtx);
+            } else {
+                gtrV = fitTrack(seedWithVtx, &gtr.mMomentum, gtr.mCharge);
+            }
+            gtrV.mTrackType        = StFwdTrack::kBLCVertexConstrained;
+            gtrV.mGlobalTrackIndex = gtr.mGlobalTrackIndex;
+            gtrV.mVertexIndex      = 0;
+
+            if (!gtrV.mIsFitConvergedFully) {
+                if (kProfile) mEventStats.mFailedBLCVtxFits++;
+                gtrV.mIndex = index;
+                if (kSaveFailedFits) blcVtxTracks.push_back(gtrV);
+                else gtrV.Clear();
+                index++;
+                continue;
+            }
+            if (kProfile) mEventStats.mGoodBLCVtxFits++;
+            gtrV.setDCA(mBLCVtxPos); // extrapolates to vertex point (see GenfitTrackResult::setDCA)
+
+            // refit with additional hits
+            GenfitTrackResult gtrVRefit = refitTrack(gtrV, mBLCVtxPos);
+            gtrVRefit.mIndex           = index;
+            gtrVRefit.mTrackType       = StFwdTrack::kBLCVertexConstrained;
+            gtrVRefit.mGlobalTrackIndex = gtr.mGlobalTrackIndex;
+            gtrVRefit.mVertexIndex      = 0;
+
+            if (gtrVRefit.mIsFitConvergedFully) {
+                blcVtxTracks.push_back(gtrVRefit);
+                gtrV.Clear();
+                if (kProfile) mEventStats.mGoodBLCVtxRefits++;
+            } else {
+                blcVtxTracks.push_back(gtrV);
+                gtrVRefit.Clear();
+                if (kProfile) mEventStats.mFailedBLCVtxRefits++;
+            }
+            index++;
+        }
+
+        long long duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6;
+        if (kProfile) mEventStats.mBLCVtxFitDuration.push_back((float)duration);
+
+        if (verbose > 0 && kProfile) {
+            LOG_INFO << "\tBLCVertex Track Fitting Results"
+                     << Form(" (took %lld ms): Attempts=%d Good=%d Failed=%d GoodRefit=%d FailedRefit=%d",
+                             duration,
+                             mEventStats.mAttemptedBLCVtxFits,
+                             mEventStats.mGoodBLCVtxFits,
+                             mEventStats.mFailedBLCVtxFits,
+                             mEventStats.mGoodBLCVtxRefits,
+                             mEventStats.mFailedBLCVtxRefits) << endm;
+        }
+
+        return blcVtxTracks;
+    }
+
+    // FCS ECAL cluster data for FCS-constrained fitting (set per event from StFwdTrackMaker)
+    struct FcsCluster { double x, y, z, e; int det; };
+    std::vector<FcsCluster> mFcsClusters;
+    std::vector<FwdHit>     mFcsHits; // per-track FCS hits, kept alive until FillEvent
+
+    void setFcsClusters(const std::vector<FcsCluster>& clusters) { mFcsClusters = clusters; }
+
+    // Step 3.6: refit each BLCVtx track with the matched FCS ECAL cluster (trkType=5)
+    std::vector<GenfitTrackResult> doFCSConstrainedFitting(std::vector<GenfitTrackResult>& blcVtxTracks) {
+        if (verbose) LOG_INFO << ">>doFCSConstrainedFitting( #blcVtx=" << blcVtxTracks.size() << " )" << endm;
+
+        std::vector<GenfitTrackResult> fcsTracks;
+        if (mFcsClusters.empty()) {
+            LOG_INFO << "FCS-constrained: no ECAL clusters this event, skipping" << endm;
+            return fcsTracks;
+        }
+
+        const double matchDr  = mConfig.get<double>("TrackFitter:fcsMatchDr",   5.0);
+        const double matchEoP = mConfig.get<double>("TrackFitter:fcsMatchEoP",  0.0); // 0=off; >0 require |E/p-1|<matchEoP
+        const double sigmaPos = mConfig.get<double>("TrackFitter:fcsSigmaPos",  1.2 );
+        const double sigmaZ   = mConfig.get<double>("TrackFitter:fcsSigmaZ",   10.0 );
+        const double zPlane   = mConfig.get<double>("TrackFitter:fcsZPlane",  725.0 );
+
+        auto fcsPlane = std::make_shared<genfit::DetPlane>(
+            TVector3(0, 0, zPlane), TVector3(0, 0, 1) );
+        // Intermediate plane at z=500 cm: past the solenoid return yoke (~z=350 cm),
+        // fringe field is ~10-20% of peak. Used as fallback when full extrapolation fails.
+        const double zMid = mConfig.get<double>("TrackFitter:fcsZMid", 500.0);
+        auto fcsMidPlane = std::make_shared<genfit::DetPlane>(
+            TVector3(0, 0, zMid), TVector3(0, 0, 1) );
+
+        mFcsHits.clear();
+        mFcsHits.reserve(blcVtxTracks.size());
+
+        int nLooper = 0, nFallback = 0, nNoCluster = 0;
+
+        size_t index = 0;
+        for (auto& gtrBLC : blcVtxTracks) {
+            if (!gtrBLC.mIsFitConvergedFully) { index++; continue; }
+
+            // Project BLCVtx track to ECAL shower-max plane.
+            // Low-pT tracks loop in the STAR field and fail projectToPlane with a genfit::Exception.
+            // Fallback: project to z=500 cm (fringe field region), then straight-line to z=725 cm.
+            TVector3 posAtFCS;
+            double dynMatchDr = matchDr;
+            bool usedFallback = false;
+            try {
+                auto msp = mTrackFitter->projectToPlane(fcsPlane, gtrBLC.mTrack);
+                posAtFCS = msp.getPos();
+                // Dynamic matching window from Genfit covariance propagated to FCS plane.
+                // State: (q/p, u', v', u, v) — cov(3,3)=σ_u², cov(4,4)=σ_v² (position on plane, cm²).
+                const auto& cov = msp.getCov();
+                double sigSq = std::max(0.0, (double)cov(3,3))
+                             + std::max(0.0, (double)cov(4,4))
+                             + sigmaPos * sigmaPos;
+                dynMatchDr = 4.0 * sqrt(sigSq);
+                dynMatchDr = std::max(dynMatchDr,  5.0);
+                dynMatchDr = std::min(dynMatchDr, 50.0);
+            } catch (genfit::Exception&) {
+                nLooper++;
+                // Fallback: project to z=500 cm, then straight-line to z=725 cm.
+                // Tracks that fail at z=725 cm but succeed at z=500 cm are borderline loopers
+                // that exit the solenoid region; the remaining ~225 cm has weak fringe field.
+                try {
+                    auto msp5 = mTrackFitter->projectToPlane(fcsMidPlane, gtrBLC.mTrack);
+                    TVector3 pos5 = msp5.getPos();
+                    TVector3 mom5 = msp5.getMom();
+                    if (fabs(mom5.Z()) < 1e-6) { index++; continue; }  // sanity: backward-going
+                    double dz = zPlane - pos5.Z();
+                    posAtFCS.SetXYZ(pos5.X() + mom5.X() * dz / mom5.Z(),
+                                    pos5.Y() + mom5.Y() * dz / mom5.Z(),
+                                    zPlane);
+                    // Straight-line ignores fringe field over ~225 cm → larger window than RK gives.
+                    dynMatchDr = 20.0;
+                    usedFallback = true;
+                    nFallback++;
+                } catch (genfit::Exception&) {
+                    index++; continue;  // true looper, can't reach z=500 cm either
+                }
+            }
+
+            // Find closest ECAL cluster on same side passing dr and optional E/p cuts
+            double pMag = gtrBLC.mMomentum.Mag();
+            double bestDr = dynMatchDr;
+            int bestIc = -1;
+            for (int ic = 0; ic < (int)mFcsClusters.size(); ic++) {
+                const auto& cl = mFcsClusters[ic];
+                if (posAtFCS.X() * cl.x <= 0) continue;  // same North/South side
+                double dx = posAtFCS.X() - cl.x, dy = posAtFCS.Y() - cl.y;
+                double dr = sqrt(dx*dx + dy*dy);
+                if (dr >= bestDr) continue;
+                if (matchEoP > 0 && pMag > 0 && fabs(cl.e/pMag - 1.0) > matchEoP) continue;
+                bestDr = dr; bestIc = ic;
+            }
+
+            if (bestIc < 0) { nNoCluster++; index++; continue; }
+            const auto& cl = mFcsClusters[bestIc];
+            LOG_INFO << "FCS-constrained: trk " << index << " matched ECAL cluster at ("
+                      << cl.x << "," << cl.y << "," << cl.z << ") E=" << cl.e
+                      << " dr=" << bestDr << " E/p=" << (pMag>0?cl.e/pMag:0) << endm;
+
+            // Build FwdHit for ECAL cluster (kTpcId → 3D spacepoint, like vertex hits)
+            mFcsHits.push_back(FwdHit());
+            FwdHit& fcsHit = mFcsHits.back();
+            fcsHit.setXYZDetId(cl.x, cl.y, cl.z, kTpcId);
+            fcsHit._covmat.Zero();
+            fcsHit._covmat(0, 0) = sigmaPos * sigmaPos;
+            fcsHit._covmat(1, 1) = sigmaPos * sigmaPos;
+            fcsHit._covmat(2, 2) = sigmaZ   * sigmaZ;
+
+            Seed_t seedWithFCS = gtrBLC.mSeed;
+            seedWithFCS.push_back(&fcsHit);
+
+            GenfitTrackResult gtrFCS;
+            if (gtrBLC.mIsFitConvergedFully)
+                gtrFCS = fitTrack(seedWithFCS, &gtrBLC.mMomentum, gtrBLC.mCharge);
+            else
+                gtrFCS = fitTrack(seedWithFCS);
+
+            gtrFCS.mTrackType        = StFwdTrack::kFCSConstrained;
+            gtrFCS.mGlobalTrackIndex = gtrBLC.mGlobalTrackIndex;
+            gtrFCS.mVertexIndex      = 0;
+            gtrFCS.mIndex            = index;
+
+            if (gtrFCS.mIsFitConvergedFully) {
+                gtrFCS.setDCA(mBLCVtxPos);
+                fcsTracks.push_back(std::move(gtrFCS));
+            } else {
+                gtrFCS.Clear();
+            }
+            index++;
+        }
+
+        LOG_INFO << "FCS-constrained: " << fcsTracks.size() << " FCS-constrained tracks from "
+                 << blcVtxTracks.size() << " BLCVtx tracks"
+                 << " | looper(to725)=" << nLooper
+                 << " fallback(via500)=" << nFallback
+                 << " no_cluster=" << nNoCluster << endm;
+        return fcsTracks;
+    } // doFCSConstrainedFitting
+
     std::vector<GenfitTrackResult> doSecondaryTrackFitting( const std::vector<GenfitTrackResult> &globalTracks) {
         mFwdVerticesAsHits.clear();
         if (verbose){
@@ -1130,6 +1423,8 @@ class ForwardTrackMaker {
         std::vector<GenfitTrackResult> globalTracks;
         std::vector<GenfitTrackResult> primaryTracks;
         std::vector<GenfitTrackResult> beamlineTracks;
+        std::vector<GenfitTrackResult> blcVtxTracks;
+        std::vector<GenfitTrackResult> fcsConstrainedTracks;
         std::vector<GenfitTrackResult> secondaryTracks;
 
         // Should we try to refit the track with aadditional points from other detectors?
@@ -1194,6 +1489,27 @@ class ForwardTrackMaker {
         // End Step 3
         /***********************************************************************************************************/
 
+        /***********************************************************************************************************/
+        // Step 3.5: BLC-Vertex fitting — fit z_vtx from BLC DCA-z, refit tracks to that point
+        const bool do_blcvtx_fitting = mConfig.get<bool>("TrackFitter:doBLCVertexFitting", true);
+        if (do_blcvtx_fitting && do_beamline_fitting) {
+            blcVtxTracks = doBLCVertexFitting(beamlineTracks);
+        } else {
+            LOG_INFO << "Event configuration is skipping BLC vertex fitting" << endm;
+        }
+        // End Step 3.5
+        /***********************************************************************************************************/
+
+        /***********************************************************************************************************/
+        // Step 3.6: FCS-Constrained fitting — refit BLCVtx tracks with matched ECAL cluster (trkType=5)
+        const bool do_fcs_fitting = mConfig.get<bool>("TrackFitter:doFCSConstrainedFitting", true);
+        if (do_fcs_fitting && do_blcvtx_fitting && !mFcsClusters.empty()) {
+            fcsConstrainedTracks = doFCSConstrainedFitting(blcVtxTracks);
+        } else {
+            LOG_INFO << "Event configuration is skipping FCS-constrained fitting" << endm;
+        }
+        // End Step 3.6
+        /***********************************************************************************************************/
 
         const bool do_fwd_primary_fitting = mConfig.get<bool>("TrackFitter:doPrimaryTrackFitting", true);;
         /***********************************************************************************************************/
@@ -1222,6 +1538,8 @@ class ForwardTrackMaker {
         mTrackResults.insert( mTrackResults.end(), globalTracks.begin(), globalTracks.end() );
         mTrackResults.insert( mTrackResults.end(), primaryTracks.begin(), primaryTracks.end() );
         mTrackResults.insert( mTrackResults.end(), beamlineTracks.begin(), beamlineTracks.end() );
+        mTrackResults.insert( mTrackResults.end(), blcVtxTracks.begin(), blcVtxTracks.end() );
+        mTrackResults.insert( mTrackResults.end(), fcsConstrainedTracks.begin(), fcsConstrainedTracks.end() );
         mTrackResults.insert( mTrackResults.end(), secondaryTracks.begin(), secondaryTracks.end() );
         LOG_DEBUG << "Copied globals, beamline, primary, and secondary. Now mTrackResults.size() = " << mTrackResults.size() << endm;
 
@@ -2164,6 +2482,10 @@ class ForwardTrackMaker {
     FwdHit mBeamlineHit;
     double mBeamlineDxDz = 0.0; // dx/dz slope from DB (0 = MC default)
     double mBeamlineDyDz = 0.0; // dy/dz slope from DB (0 = MC default)
+    // BLCVertex — hit and position for the beam-line-constrained vertex fit
+    FwdHit  mBLCVtxHit;
+    TVector3 mBLCVtxPos;
+    int      mBLCVtxNTracks = 0;
     vector<FwdHit> mFwdVerticesAsHits;
     genfit::GFRaveVertexFactory mGFRVertexFactory;
 
