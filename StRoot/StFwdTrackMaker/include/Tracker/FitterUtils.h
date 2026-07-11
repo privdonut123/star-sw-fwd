@@ -36,6 +36,13 @@ class GenericFitSeeder : public FitSeedMaker {
     public:
         GenericFitSeeder() {}
         virtual ~GenericFitSeeder() {}
+        // Fix (Issue #25, Bug 1): sentinel returned by computeSignedCurvature() for
+        // collinear (undefined-curvature) point triples. Must be excluded in
+        // averageCurvature() -- previously that filter checked "!= -1" instead of
+        // this sentinel, so collinear triples (guaranteed for genuinely straight
+        // tracks, e.g. B=0) leaked through as a bogus near-zero curvature, blowing
+        // up the seed pT estimate (pt = K*B/curvature).
+        static constexpr double kCollinearCurvature = -1e-7;
         // Simple function to calculate the determinant of a 2x2 matrix
         inline double determinant(double a, double b, double c, double d) {
             return a * d - b * c;
@@ -63,7 +70,7 @@ class GenericFitSeeder : public FitSeedMaker {
                 LOG_DEBUG << "p1 = " << p1.x << ", " << p1.y << endm;
                 LOG_DEBUG << "p2 = " << p2.x << ", " << p2.y << endm;
                 LOG_DEBUG << "p3 = " << p3.x << ", " << p3.y << endm;
-                return -1e-7; // Curvature is undefined for collinear points
+                return kCollinearCurvature; // Curvature is undefined for collinear points
             }
 
             // Calculate the radius of the circumcircle using the formula:
@@ -100,7 +107,7 @@ class GenericFitSeeder : public FitSeedMaker {
                             // printf("Skipping non extreme points \n");
                             continue;
                         }
-                        if (curvature != -1) {  // Exclude invalid (collinear) combinations
+                        if (curvature != kCollinearCurvature) {  // Exclude invalid (collinear) combinations
                             totalCurvature += curvature;
                             ++validCombinations;
                         }
@@ -131,30 +138,54 @@ class GenericFitSeeder : public FitSeedMaker {
             // GeV*cm/kGauss, and B=5 below is kGauss (5 kG = 0.5 T). Numerical
             // value was already correct.
             const double K = 0.00029979; // momentum in GeV/c, Bfield in kGauss (B=5 kG = 0.5 T)
-            double pt = fabs((K*5)/qc); // pT from average measured curv
+            // Fix (Issue #25, Bug 2): qc == -1 means averageCurvature() found no
+            // usable (non-collinear) point triple -- e.g. too few points, or a
+            // genuinely straight track (guaranteed collinear at B=0). There is no
+            // curvature to convert to pT in that case; fall back to a high-pT
+            // (~straight-track) default instead of dividing by the sentinel, which
+            // previously produced a degenerate ~1.5 MeV seed and crashed downstream
+            // field-map lookups with a NaN assertion (StarMagField::Search).
+            bool curvatureKnown = (qc != -1.0);
+            double pt = curvatureKnown ? fabs((K*5)/qc) : 10.0; // pT from average measured curv
             LOG_INFO << "GenericFitSeeder::makeSeed::pt = " << pt << endm;
             // Fix (Issue #17): this line was dead code -- immediately overwritten
             // two lines below by the proper SetXYZ call.
             //momSeed.SetXYZ(pt/sqrt(2.0),pt/sqrt(2.0),10);
-            // compute the seed's eta from seed points
+            // Fix (Issue #24, 2026-06-22 seed theta fix): use disk 0 and disk 2
+            // (outermost pair) for theta/phi estimation, not disk 0/disk 1. The
+            // wider baseline gives a better eta estimate and avoids the degenerate
+            // case where disk 0 and disk 1 rasterize to the same strip center
+            // (Rxy=0 -> tan(theta)=0 -> pz blows up).
             TVector3 p0 = TVector3(seed[0]->getX(), seed[0]->getY(), seed[0]->getZ());
-            TVector3 p1 = TVector3(seed[1]->getX(), seed[1]->getY(), seed[1]->getZ());
-            double dx = (p1.X() - p0.X());
-            double dy = (p1.Y() - p0.Y());
-            double dz = (p1.Z() - p0.Z());
+            TVector3 p2 = TVector3(seed[2]->getX(), seed[2]->getY(), seed[2]->getZ());
+            double dx = (p2.X() - p0.X());
+            double dy = (p2.Y() - p0.Y());
+            double dz = (p2.Z() - p0.Z());
             double phi = TMath::ATan2(dy, dx);
             double Rxy = sqrt(dx * dx + dy * dy);
             double theta = TMath::ATan2(Rxy, dz);
             if (abs(dx) < 1e-6 || abs(dy) < 1e-6){
-                phi = TMath::ATan2( p1.Y(), p1.X() );
+                phi = TMath::ATan2( p2.Y(), p2.X() );
             }
 
             // momSeed.SetPhi(phi);
             // momSeed.SetTheta(theta);
-            momSeed.SetXYZ(pt * cos(phi), pt * sin(phi), pt / tan(theta));
-            
-            // assign charge based on sign of curvature
-            q = sgn<double>(qc);
+            // Fix (Issue #25, Bug 3): completes the seed[0]/seed[2] baseline fix
+            // above, which reduces but does not eliminate the Rxy=0 degenerate
+            // case -- a real event was found where disk0 and disk2 also land at
+            // identical (x,y), still giving tan(theta)=0. Guard the division
+            // directly instead of letting it blow up to +-inf/NaN, which
+            // previously crashed downstream field-map lookups (StarMagField::
+            // Search NaN assertion). Fall back to a fixed high-|pz|, sign-matched
+            // to the z-direction of travel.
+            double tanTheta = tan(theta);
+            double pz = (fabs(tanTheta) > 1e-6) ? (pt / tanTheta) : ((dz >= 0) ? 10.0 : -10.0);
+            momSeed.SetXYZ(pt * cos(phi), pt * sin(phi), pz);
+
+            // assign charge based on sign of curvature; default to +1 when curvature
+            // is unknown (sgn(-1) would otherwise always return -1, silently biasing
+            // every degenerate seed negative) (Issue #25, Bug 2).
+            q = curvatureKnown ? sgn<double>(qc) : 1;
         }
 };
 
