@@ -38,6 +38,7 @@ class SiRasterizer;
 class McTrack;
 
 class StFcsDb;
+class TFile;
 
 // ROOT includes
 #include "TNtuple.h"
@@ -111,6 +112,7 @@ class StFwdTrackMaker : public StMaker {
     void ProcessFwdTracks();
     void FillEvent();
     void FillTrackDeltas();
+    void FillAlignment();
     bool SkipEvent();
 
     StFwdTrack * makeStFwdTrack( GenfitTrackResult &gtr, size_t indexTrack );
@@ -132,6 +134,89 @@ class StFwdTrackMaker : public StMaker {
     static std::string defaultConfig;
     bool configLoaded = false;
     TString mGeoCache;
+    TFile *mAlignmentFile = nullptr;
+    TTree *mAlignmentTree = nullptr;
+    std::string mAlignmentOutputFilename = "StFwdAlignment.root";
+
+    int mAlignRun = 0;
+    int mAlignEvent = 0;
+    int mAlignTrackIndex = 0;
+    int mAlignPointIndex = 0;
+    int mAlignMeasurementIndex = 0;
+    int mAlignDetId = 0;
+    int mAlignHitId = 0;
+    int mAlignFstGlobalSensor = -1;
+    int mAlignFstDisk = -1;
+    int mAlignFstWedge = -1;
+    int mAlignFstSensor = -1;
+    int mAlignMeasurementDim = 0;
+    int mAlignResidualDim = 0;
+    int mAlignHasResidual = 0;
+    int mAlignNSeeds = 0;
+    int mAlignNFitTracks = 0;
+    int mAlignNdf = 0;
+    int mAlignFitConverged = 0;
+    int mAlignFitConvergedFully = 0;
+    int mAlignFitConvergedPartially = 0;
+    int mAlignTrackNHitsFit = 0;
+    int mAlignTrackNFstHits = 0;
+    float mAlignChi2 = 0;
+    float mAlignPval = 0;
+    float mAlignTrackPx = 0;
+    float mAlignTrackPy = 0;
+    float mAlignTrackPz = 0;
+    float mAlignTrackP = 0;
+    float mAlignTrackPt = 0;
+    float mAlignTrackEta = 0;
+    float mAlignSorting = 0;
+    float mAlignMeas0 = 0;
+    float mAlignMeas1 = 0;
+    float mAlignMeas2 = 0;
+    float mAlignTrackPred0 = 0;
+    float mAlignTrackPred1 = 0;
+    float mAlignTrackPred2 = 0;
+    float mAlignFstRawR = 0;
+    float mAlignFstRawStripPhi = 0;
+    float mAlignFstMeanPhiStrip = 0;
+    float mAlignFstHitGlobalX = 0;
+    float mAlignFstHitGlobalY = 0;
+    float mAlignFstHitGlobalZ = 0;
+    float mAlignFstPlaneOriginX = 0;
+    float mAlignFstPlaneOriginY = 0;
+    float mAlignFstPlaneOriginZ = 0;
+    float mAlignFstPlaneUX = 0;
+    float mAlignFstPlaneUY = 0;
+    float mAlignFstPlaneUZ = 0;
+    float mAlignFstPlaneVX = 0;
+    float mAlignFstPlaneVY = 0;
+    float mAlignFstPlaneVZ = 0;
+    float mAlignFstMeasGlobalX = 0;
+    float mAlignFstMeasGlobalY = 0;
+    float mAlignFstMeasGlobalZ = 0;
+    float mAlignFstClosureX = 0;
+    float mAlignFstClosureY = 0;
+    float mAlignFstClosureZ = 0;
+    float mAlignFstClosureU = 0;
+    float mAlignFstClosureV = 0;
+    float mAlignFstClosureMag = 0;
+    float mAlignResBiased0 = 0;
+    float mAlignResBiased1 = 0;
+    float mAlignResBiased2 = 0;
+    float mAlignResBiasedSigma0 = 0;
+    float mAlignResBiasedSigma1 = 0;
+    float mAlignResBiasedSigma2 = 0;
+    float mAlignPullBiased0 = 0;
+    float mAlignPullBiased1 = 0;
+    float mAlignPullBiased2 = 0;
+    float mAlignResUnbiased0 = 0;
+    float mAlignResUnbiased1 = 0;
+    float mAlignResUnbiased2 = 0;
+    float mAlignResUnbiasedSigma0 = 0;
+    float mAlignResUnbiasedSigma1 = 0;
+    float mAlignResUnbiasedSigma2 = 0;
+    float mAlignPullUnbiased0 = 0;
+    float mAlignPullUnbiased1 = 0;
+    float mAlignPullUnbiased2 = 0;
 
     // Helper functions for modifying configuration
     public:
@@ -139,6 +224,8 @@ class StFwdTrackMaker : public StMaker {
      * @param fn : filename of output ROOT file
     */
     void setOutputFilename( std::string fn ) { mFwdConfig.set( "Output:url", fn ); }
+    void setFillAlignment( bool fill = true ) { SetAttr("fillAlignment", fill ? 1 : 0); }
+    void setAlignmentOutputFilename( std::string fn ) { mAlignmentOutputFilename = fn; }
     
     /** @brief Set the data source for FTT hits
      *

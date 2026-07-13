@@ -142,6 +142,8 @@ void fwd_afterburner( 	const Char_t * fileList = "st_physics_23037002_raw_100006
 		fwdTrack->setGeoCache( "fGeom.root" );
 		fwdTrack->setSeedFindingWithFst();
 		fwdTrack->setTrackRefit( true );
+		fwdTrack->setFillAlignment( true );
+		fwdTrack->setAlignmentOutputFilename( "align_test.root" );
 
 		// Fitter Options
 		fwdTrack->setFitDebugLvl( 0 );
@@ -320,10 +322,8 @@ void fwd_afterburner( 	const Char_t * fileList = "st_physics_23037002_raw_100006
 	/*******************************************************************************************/
 
 	// Chain Finish
-	// if (nEntries > 1) {
-	// 	cout << "FINISH up" << endl;
-	// 	chain->Finish();
-	// }
+	cout << "FINISH up" << endl;
+	chain->Finish();
 
 	// delete chain;
 }
