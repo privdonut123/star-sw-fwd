@@ -131,6 +131,7 @@ int StFwdQAMaker::Init() {
     AddHist( mHists["phi"] =                new TH1F("phi", ";#phi; counts", 100, -3.1415926, 3.1415926) );
     AddHist( mHists["pt"] =                 new TH1F("pt", "; pT; counts", 500, 0, 10) );
     AddHist( mHists["charge"] =             new TH1F("charge", "; charge; counts", 4, -2, 2) );
+    AddHist( mHists["charge_goodtrks"] =             new TH1F("charge_goodtrks", "; charge_goodtrks; counts", 4, -2, 2) );
     AddHist( mHists["ecalMatchPerTrack"] =  new TH1F("ecalMatchPerTrack", ";N_{match} / track; counts", 5, 0, 5) );
     AddHist( mHists["hcalMatchPerTrack"] =  new TH1F("hcalMatchPerTrack", ";N_{match} / track; counts", 5, 0, 5) );
     AddHist( mHists["matchedEcalEnergy"] =  new TH1F("matchedEcalEnergy", ";Energy; counts", 100, 0, 15) );
@@ -554,7 +555,10 @@ void StFwdQAMaker::ProcessFwdTracks(  ){
         getHist("pt")->Fill( fwdTrack->momentum().perp() );
 
         getHist("charge")->Fill( fwdTrack->charge() );
-
+	
+	if(fwdTrack->numberOfFitPoints() > 3 && fwdTrack->chi2() < 5){
+		getHist("charge_goodtrks")->Fill( fwdTrack->charge());
+	}
         // ecal proj
         int detId = kFcsWcalId;
         TVector3 ecalXYZ;
