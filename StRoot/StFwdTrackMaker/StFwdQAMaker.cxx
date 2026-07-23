@@ -96,7 +96,7 @@ StFwdQAMaker::StFwdQAMaker() : StMaker("fwdQAMaker"), mTreeFile(nullptr), mTree(
 
 int StFwdQAMaker::Init() {
 
-    mTreeFile = new TFile( mTreeFilename.Data(), "RECREATE");
+    /*mTreeFile = new TFile( mTreeFilename.Data(), "RECREATE");
     mTree = new TTree("fwd", "fwd tracking tree");
 
     mTree->Branch("header",           &mTreeData. header, 3200, 99 );
@@ -113,7 +113,7 @@ int StFwdQAMaker::Init() {
     mTreeData.epdHits.createBranch(mTree, "epdHits");
 
     mTreeData.reco.createBranch(mTree, "reco");
-    mTreeData.seeds.createBranch(mTree, "seeds");
+    mTreeData.seeds.createBranch(mTree, "seeds");*/
 
 
 
@@ -163,7 +163,29 @@ int StFwdQAMaker::Init() {
     AddHist( mHists["trkHcalY"] =           new TH2F( "trkHcalY", ";trkY;hcalY", 300, -150, 150, 300, -150, 150 ) );
     AddHist( mHists["trkHcalMinX"] =        new TH2F( "trkHcalMinX", ";trkX;hcalX", 300, -150, 150, 300, -150, 150 ) );
     AddHist( mHists["trkHcalMinY"] =        new TH2F( "trkHcalMinY", ";trkY;hcalY", 300, -150, 150, 300, -150, 150 ) );
-
+    //AddHist( mHists["fttHitMap"] = new TH2F("fttHitMap", "FTT Point Map; x (cm); y (cm)", 200, -50, 50, 200, -50, 50) );
+    // General FST Hit Map
+    AddHist( mHists["fttHitMap"] = new TH2F("fttHitMap", "FTT Global Hits (All Planes); x [cm]; y [cm]", 700, -700, 700, 700, -700, 700) );
+    
+    for (int i = 0; i < 4; i++) {
+        AddHist( mHists[Form("fttHitMap_plane%d", i)] = new TH2F(Form("fttHitMap_plane%d", i), Form("FTT Global Hits Plane %d; x [cm]; y [cm]", i), 700, -700, 700, 700, -700, 700) );
+    }
+    
+    AddHist( mHists["fstHitMap"] = new TH2F("fstHitMap", "FST Hit Map All; x (cm); y (cm)", 200, -50, 50, 200, -50, 50) );
+    //
+    // // FST Disk-specific Hit Maps (mimicking your Z-cuts)
+    AddHist( mHists["fstHitMap_Disk1"] = new TH2F("fstHitMap_Disk1", "FST Disk 1 (z < 155); x (cm); y (cm)", 200, -50, 50, 200, -50, 50) );
+    AddHist( mHists["fstHitMap_Disk2"] = new TH2F("fstHitMap_Disk2", "FST Disk 2 (165 < z < 175); x (cm); y (cm)", 200, -50, 50, 200, -50, 50) );
+    AddHist( mHists["fstHitMap_Disk3"] = new TH2F("fstHitMap_Disk3", "FST Disk 3 (z > 175); x (cm); y (cm)", 200, -50, 50, 200, -50, 50) );
+   
+    // --- FTT Cluster QA ---
+    // // 1D histograms since clusters are 1-dimensional groupings of strips
+    AddHist( mHists["fttCluster_plane"] = new TH1F("fttCluster_plane", "FTT Clusters per Plane; Plane Index; Counts", 4, -0.5, 3.5) );
+    AddHist( mHists["fttCluster_size"]  = new TH1F("fttCluster_size", "FTT Cluster Size; Number of Strips in Cluster; Counts", 15, 0.5, 15.5) );
+    // --- Run-By-Run QA Histograms ---
+   // X-axis: Mapped Run Index (124 days * 150 slots/day = 18600 bins max)
+   AddHist( mHists["rbr_fttPoints"] = new TH2F("rbr_fttPoints", "FTT Points vs Run; Mapped Run Index; FTT Points per Event", 19000, 0, 19000, 200, 0, 1000) );
+   AddHist( mHists["rbr_fstHits"]   = new TH2F("rbr_fstHits", "FST Hits vs Run; Mapped Run Index; FST Hits per Event", 19000, 0, 19000, 200, 0, 1000) );
 //===================================================================================================================================
 
     return kStOk;
@@ -173,12 +195,12 @@ int StFwdQAMaker::Init() {
 
 int StFwdQAMaker::Finish() {
 
-    if ( mTreeFile && mTree ){
+    /*if ( mTreeFile && mTree ){
         mTreeFile->cd();
         mTree->Write();
         mTreeFile->Write();
         LOG_DEBUG << "StFwdQA File written" << endm;
-    }
+    }*/
 
     //beginning new
     if ( mLocalOutputFile != "" ){
@@ -251,7 +273,39 @@ int StFwdQAMaker::Make() {
     FillFstPoints(); //no fst
     FillFttClusters();
     FillFcsStMuDst();
-    mTree->Fill();
+    //mTree->Fill();
+
+
+    if (mMuDst && mMuDst->event()) {
+        int runNumber = mMuDst->event()->runNumber();
+        int mappedIndex = -1;
+        
+        if (runNumber > 0) {
+            int yy = runNumber / 1000000;
+            int ddd = (runNumber / 1000) % 1000;
+            int seq = runNumber % 1000;
+            int absoluteDay = (yy - 22) * 365 + (ddd - 349); 
+            mappedIndex = (absoluteDay * 150) + seq;
+        }
+
+        if (mappedIndex >= 0) {
+            int nFttPoints = 0;
+            if (mMuDst->muFttCollection()) {
+                nFttPoints = mMuDst->muFttCollection()->numberOfPoints();
+            }
+
+            int nFstHits = 0;
+            if (mMuDst->muFstCollection()) {
+                nFstHits = mMuDst->muFstCollection()->numberOfHits(); 
+            }
+
+            getHist("rbr_fttPoints")->Fill(mappedIndex, nFttPoints);
+            getHist("rbr_fstHits")->Fill(mappedIndex, nFstHits);
+        }
+    }
+
+
+
 
     return kStOk;
 }
@@ -270,7 +324,17 @@ void StFwdQAMaker::FillFstPoints(){
     LOG_INFO << "Loading " << fst->numberOfHits() << " StMuFstHits" << endm;
     for ( unsigned int index = 0; index < fst->numberOfHits(); index++){
         StMuFstHit * muFstHit = fst->getHit( index );
-        mTreeData.fstPoints.add( muFstHit );
+        //mTreeData.fstPoints.add( muFstHit );
+	
+	float x = muFstHit->xyz().X();
+	float y = muFstHit->xyz().Y();
+	float z = muFstHit->xyz().Z();
+	
+	getHist("fstHitMap")->Fill(x,y);	
+
+	if(z < 155.0) getHist("fstHitMap_Disk1")->Fill(x,y);
+	else if ( z > 165.0 && z < 175.0) getHist("fstHitMap_Disk2")->Fill(x,y);
+	else if( z > 175.0) getHist("fstHitMap_Disk3")->Fill(x,y);
     } // index
 }
 
@@ -376,11 +440,30 @@ void StFwdQAMaker::FillFttClusters(){
         for ( size_t i = 0; i < muFttCollection->numberOfClusters(); i++ ){
             StMuFttCluster * c = muFttCollection->getCluster(i);
             mTreeData.fttClusters.add( c );
+
+
+
+	    int plane = (int)c->plane();
+            int nStrips = (int)c->nStrips(); 
+
+            getHist("fttCluster_plane")->Fill(plane);
+            getHist("fttCluster_size")->Fill(nStrips);
         }
 
         for ( size_t i = 0; i < muFttCollection->numberOfPoints(); i++ ){
             StMuFttPoint * c = muFttCollection->getPoint(i);
             mTreeData.fttPoints.add( c );
+            
+            // Extract the global coordinates and the layer index
+            float globalX = c->xyz().X();
+            float globalY = c->xyz().Y();
+            int plane     = (int)c->plane(); 
+                                                             
+            // Fill an overall integrated map
+            getHist("fttHitMap")->Fill(globalX, globalY);
+                                                                                                 
+            // Fill a separate map for each specific layer
+            getHist(Form("fttHitMap_plane%d", plane))->Fill(globalX, globalY);
         }
     }
     else{
