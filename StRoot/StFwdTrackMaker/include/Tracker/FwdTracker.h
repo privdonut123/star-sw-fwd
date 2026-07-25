@@ -152,6 +152,7 @@ class ForwardTrackMaker {
             }
 
             crit->setSaveValues(mSaveCriteriaValues);
+            LOG_DEBUG << "SetSaveValues for " << name << " to " << mSaveCriteriaValues << endm;
 
             if (mSaveCriteriaValues)
                 crits.push_back(new CriteriaKeeper(crit)); // CriteriaKeeper intercepts values and saves them
@@ -1724,6 +1725,7 @@ class ForwardTrackMaker {
         clearCriteria( mThreeHitCrit );
         mThreeHitCrit = loadCriteria(criteriaPath);
         automaton.addCriteria(mThreeHitCrit);
+        automaton.lengthenSegments(); // this will build 3-hit segments from the 2-hit segments
 
         duration = (FwdTrackerUtils::nowNanoSecond() - itStart) * 1e-6; // milliseconds
         if (kProfile) mEventStats.mStep3Duration.push_back( duration );
